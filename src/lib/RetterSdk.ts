@@ -1,0 +1,49 @@
+import Retter, {RetterRegion} from "@retter/sdk";
+import {RIO_CLI_PLATFORM, RIO_CLI_ROOT_DOMAIN, RIO_CLI_ROOT_PROJECT_ID, RIO_CLI_STAGE} from "../config";
+import {Auth} from "./Auth";
+
+
+export enum RetterRootClasses {
+    Project = 'Project',
+    User = 'User',
+    RetterClass = 'RetterClass',
+}
+
+export enum RetterRootMethods {
+    generateAdminCustomToken = 'generateCustomTokenForRioCLI',
+    getClassFiles = 'getFiles',
+    upsertModel = 'upsertModel',
+    createClass = 'createClass',
+    saveClassFiles = 'save',
+    deployClass = 'deploy',
+}
+
+export class RetterSdk {
+
+    private static retterRootSdk: Retter
+
+    static prepareRootUrlByKeyValue(classId: string, methodName: string, options: { key: string, value: string }) {
+        let url = RIO_CLI_ROOT_DOMAIN
+        if (RIO_CLI_STAGE === 'PROD') {
+            url = `${RIO_CLI_ROOT_PROJECT_ID}.api.${url}`
+        } else {
+            url = `${RIO_CLI_ROOT_PROJECT_ID}.test-api.${url}`
+        }
+        return `https://${url}/CALL/${classId}/${methodName}/${options.key}!${options.value}`
+    }
+
+    static async getRootRetterSdkByAdminProfile(profile: string): Promise<Retter> {
+        if (this.retterRootSdk) return this.retterRootSdk
+        const sdk = Retter.getInstance({
+            projectId: RIO_CLI_ROOT_PROJECT_ID,
+            region: RIO_CLI_STAGE === 'PROD' ? RetterRegion.euWest1 : RetterRegion.euWest1Beta,
+            platform: RIO_CLI_PLATFORM,
+            logLevel: 'silent'
+        })
+
+        await sdk.authenticateWithCustomToken((await Auth.getRootAdminCustomToken(profile)))
+
+        this.retterRootSdk = sdk
+        return sdk
+    }
+}
