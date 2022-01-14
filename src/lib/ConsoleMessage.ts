@@ -1,7 +1,6 @@
 import {IDeploymentOperationItem, IFileChangesByClassName} from "./Deployment";
 import chalk from "chalk";
 import {IPreDeploymentContext} from "./ProjectManager";
-import ora from 'ora';
 
 export enum DeploymentMessageStatus {
     STARTED = "STARTED",
@@ -16,7 +15,6 @@ export enum DeploymentMessageStatus {
 export class ConsoleMessage {
 
     static message(message: string) {
-        console.log(ora(message).start())
         console.log(message)
     }
 
