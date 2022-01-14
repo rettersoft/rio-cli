@@ -184,7 +184,7 @@ export class Deployment {
 
             if (Deployment.isChanged(deploymentSummary)) {
                 ConsoleMessage.deploymentMessage(currentClassDeploymentItem, DeploymentMessageStatus.DEPLOYING)
-                await api.deployClass(className)
+                await api.deployClass(className, force)
                 ConsoleMessage.deploymentMessage(currentClassDeploymentItem, DeploymentMessageStatus.DEPLOYED)
             }
         }
