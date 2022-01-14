@@ -44,7 +44,7 @@ module.exports = {
             const response = await prompts({
                 type: 'confirm',
                 name: 'value',
-                message: `Are you sure you want to deploy changes the project id ${chalk.greenBright.bold(projectRioConfig.projectId)}`,
+                message: `Are you sure to proceed?`,
                 initial: true
             });
             if (!response.value) {

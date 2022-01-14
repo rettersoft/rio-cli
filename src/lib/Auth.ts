@@ -24,8 +24,8 @@ export class Auth {
             const result = await axios({
                 url: RetterSdk.prepareRootUrlByKeyValue(RetterRootClasses.User, RetterRootMethods.generateAdminCustomToken, byKeyValue),
                 method: 'post',
-                params: {
-                    "token": token
+                data: {
+                    "idToken": token
                 }
             })
             if (!result || !result.data || !result.data.customToken) {
