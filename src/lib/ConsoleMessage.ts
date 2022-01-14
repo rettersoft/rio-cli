@@ -1,6 +1,8 @@
 import {IDeploymentOperationItem, IFileChangesByClassName} from "./Deployment";
 import chalk from "chalk";
 import {IPreDeploymentContext} from "./ProjectManager";
+import {getBorderCharacters, table} from "table"
+import {TableUserConfig} from "table/dist/src/types/api";
 
 export enum DeploymentMessageStatus {
     STARTED = "STARTED",
@@ -16,6 +18,18 @@ export class ConsoleMessage {
 
     static message(message: string) {
         console.log(message)
+    }
+
+    static table(data: unknown[][], title?: string) {
+        const tableConfig: TableUserConfig = {
+            columnDefault: {},
+            header: title ? {
+                alignment: 'center',
+                content: chalk.blueBright(title),
+            } : undefined,
+            border: getBorderCharacters('norc')
+        }
+        console.log(table(data, tableConfig))
     }
 
     static deploymentMessage(item: IDeploymentOperationItem, status: DeploymentMessageStatus) {

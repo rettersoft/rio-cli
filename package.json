@@ -16,7 +16,8 @@
     "test": "jest",
     "patch-release": "npm version patch && npm run build && npm publish --access public",
     "postinstall": "node ./dist/bootstrap.js postinstall",
-    "preuninstall": "node ./dist/bootstrap.js preuninstall"
+    "preuninstall": "node ./dist/bootstrap.js preuninstall",
+    "link": "npm run build && npm link"
   },
   "dependencies": {
     "@retter/rio-generator": "1.0.2",
@@ -27,6 +28,7 @@
     "fs-extra": "10.0.0",
     "jsonwebtoken": "8.5.1",
     "prompts": "2.4.2",
+    "table": "^6.8.0",
     "yaml": "1.10.2",
     "yargs": "17.3.0"
   },
