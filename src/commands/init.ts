@@ -5,6 +5,8 @@ import fs from "fs";
 import {Repo} from "../lib/Repo";
 import {Api} from "../lib/Api";
 import afterCommand from "./AfterCommand";
+import path from "path";
+import {CustomError} from "../lib/CustomError";
 
 
 interface Input extends GlobalInput {
@@ -31,14 +33,18 @@ module.exports = {
     handler: async (args) => {
         ConsoleMessage.message(`[${chalk.greenBright.bold(args["alias"])}] Project creating...`)
 
-        // mkdir and chdir to project folder
-        fs.mkdirSync(args["alias"])
-        process.chdir(args["alias"])
+        if (fs.existsSync(path.join(process.cwd(), args["alias"]))) {
+            CustomError.throwError(`[${chalk.redBright(args["alias"])}] folder already exist`)
+        }
 
         const project = await Api.getInstance(args.profile).createNewProject(args["alias"])
 
         ConsoleMessage.message(`[${chalk.greenBright.bold(args["alias"])}] Project created`)
         console.table({alias: project.detail.alias, projectId: project.projectId})
+
+        // mkdir and chdir to project folder
+        fs.mkdirSync(args["alias"])
+        process.chdir(args["alias"])
 
         await Repo.downloadAndExtractGitRepo(project.projectId, args.template)
 
