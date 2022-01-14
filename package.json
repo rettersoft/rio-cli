@@ -1,6 +1,6 @@
 {
-  "name": "@rettersoft/rio-cli",
-  "version": "1.0.3",
+  "name": "@retter/rio-cli",
+  "version": "1.0.0",
   "description": "Retter.io Command Line Tool",
   "main": "./dist/index.js",
   "bin": {
@@ -55,7 +55,7 @@
     "tool",
     "retter.io"
   ],
-  "author": "@rettersoft",
+  "author": "@retter",
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/rettersoft/rio-cli/issues"
