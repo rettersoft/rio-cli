@@ -77,6 +77,6 @@ export class Project {
     }
 
     static readModelFile(modelName: string) {
-        return FileExtra.getFileContextOrFail(path.join(process.cwd(), PROJECT_MODELS_FOLDER, modelName)).toString('utf-8')
+        return FileExtra.getFileContextOrFail(path.join(process.cwd(), PROJECT_MODELS_FOLDER, `${modelName}.json`)).toString('utf-8')
     }
 }
