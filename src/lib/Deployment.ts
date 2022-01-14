@@ -173,12 +173,16 @@ export class Deployment {
                         break
                 }
             }
-            await api.saveClassFiles(className, preparedData)
+
+            if (preparedData.length) {
+                await api.saveClassFiles(className, preparedData)
+            }
+
             for (const item of changedFileDeployments) {
                 ConsoleMessage.deploymentMessage(item, DeploymentMessageStatus.SAVED)
             }
 
-            if (changedFileDeployments.length) {
+            if (Deployment.isChanged(deploymentSummary)) {
                 ConsoleMessage.deploymentMessage(currentClassDeploymentItem, DeploymentMessageStatus.DEPLOYING)
                 await api.deployClass(className)
                 ConsoleMessage.deploymentMessage(currentClassDeploymentItem, DeploymentMessageStatus.DEPLOYED)
