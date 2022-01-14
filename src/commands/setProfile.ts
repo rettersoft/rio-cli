@@ -3,7 +3,6 @@ import {CliConfig} from "../lib/CliConfig";
 import {RIO_CLI_DEFAULT_ADMIN_PROFILE_NAME} from "../config";
 import chalk from "chalk";
 import {ConsoleMessage} from "../lib/ConsoleMessage";
-import afterCommand from "./AfterCommand";
 
 
 interface Input extends GlobalInput {
@@ -31,8 +30,6 @@ module.exports = {
             secretId: args["secret-id"], secretKey: args["secret-key"], profileName: args["profile-name"],
         })
         ConsoleMessage.message(chalk.green(`successfully saved [${args["profile-name"]}]`))
-
-        afterCommand()
     }
 } as ICommand<Input, Input>
 

@@ -2,7 +2,6 @@ import {GlobalInput, ICommand} from "./ICommand";
 import chalk from "chalk";
 import {ConsoleMessage} from "../lib/ConsoleMessage";
 import prompts from "prompts";
-import afterCommand from "./AfterCommand";
 import {ProjectManager} from "../lib/ProjectManager";
 import {Project} from "../lib/Project";
 import {Deployment} from "../lib/Deployment";
@@ -58,7 +57,7 @@ module.exports = {
         ConsoleMessage.message(chalk.greenBright('DEPLOYMENT_DONE'))
 
 
-        afterCommand()
+        
     }
 } as ICommand<Input, Input>
 

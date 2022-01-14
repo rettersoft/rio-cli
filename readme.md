@@ -8,11 +8,6 @@ Rio Command Line Tool
 > npm i -g @rettersoft/rio-cli
 ```
 
-Note: If you have access/permission problems, you can try below:
-
-```shell
-> sudo npm install -g @rettersoft/rio-cli --unsafe-perm=true --allow-root 
-```
 ### Before Starting
 
 ``Rbs Console > Right Top Dropdown Menu > Settings``

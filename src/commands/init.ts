@@ -4,7 +4,6 @@ import {ConsoleMessage} from "../lib/ConsoleMessage";
 import fs from "fs";
 import {Repo} from "../lib/Repo";
 import {Api} from "../lib/Api";
-import afterCommand from "./AfterCommand";
 import path from "path";
 import {CustomError} from "../lib/CustomError";
 
@@ -48,7 +47,7 @@ module.exports = {
 
         await Repo.downloadAndExtractGitRepo(project.projectId, args.template)
 
-        afterCommand()
+        
     }
 } as ICommand<Input, Input>
 

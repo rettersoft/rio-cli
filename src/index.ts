@@ -16,6 +16,8 @@ yargs
         }
     })
     .commandDir(path.join(__dirname, 'commands'), {exclude: /ICommand\.(ts|js)|AfterCommand\.(ts|js)/g})
-    .parse()
+    .demandCommand()
+    .showHelpOnFail(true)
+    .strict()
 
 yargs.argv;
