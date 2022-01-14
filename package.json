@@ -2,10 +2,13 @@
   "name": "@rettersoft/rio-cli",
   "version": "0.0.1",
   "description": "Retter.io Command Line Tool",
-  "main": "index.js",
+  "main": "./dist/index.js",
   "bin": {
     "rio": "./dist/index.js"
   },
+  "files": [
+    "./dist/**/*"
+  ],
   "scripts": {
     "build": "tsc -b",
     "clean": "tsc --build --clean && rm -rf dist",
