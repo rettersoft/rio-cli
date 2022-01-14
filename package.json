@@ -6,9 +6,6 @@
   "bin": {
     "rio": "./dist/index.js"
   },
-  "files": [
-    "./dist/**/*"
-  ],
   "scripts": {
     "build": "tsc -b",
     "clean": "tsc --build --clean && rm -rf dist",
