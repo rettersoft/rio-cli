@@ -6,6 +6,7 @@ import {Repo} from "../lib/Repo";
 import {Api} from "../lib/Api";
 import path from "path";
 import {CustomError} from "../lib/CustomError";
+import afterCommand from "./AfterCommand";
 
 
 interface Input extends GlobalInput {
@@ -46,8 +47,8 @@ module.exports = {
         process.chdir(args["alias"])
 
         await Repo.downloadAndExtractGitRepo(project.projectId, args.template)
+        afterCommand()
 
-        
     }
 } as ICommand<Input, Input>
 

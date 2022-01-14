@@ -5,6 +5,7 @@ import prompts from "prompts";
 import {ProjectManager} from "../lib/ProjectManager";
 import {Project} from "../lib/Project";
 import {Deployment} from "../lib/Deployment";
+import afterCommand from "./AfterCommand";
 
 interface Input extends GlobalInput {
     "approval-required": boolean
@@ -56,8 +57,8 @@ module.exports = {
         await Deployment.deploy(deploymentSummary)
         ConsoleMessage.message(chalk.greenBright('DEPLOYMENT_DONE'))
 
+        afterCommand()
 
-        
     }
 } as ICommand<Input, Input>
 

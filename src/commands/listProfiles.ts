@@ -1,5 +1,6 @@
 import {GlobalInput, ICommand} from "./ICommand";
 import {CliConfig} from "../lib/CliConfig";
+import afterCommand from "./AfterCommand";
 
 interface Input extends GlobalInput {
 
@@ -11,7 +12,7 @@ module.exports = {
     handler: () => {
         console.table(CliConfig.listAdminProfiles())
 
-        
+        afterCommand()
     }
 } as ICommand<Input, Input>
 

@@ -1,5 +1,6 @@
 import {GlobalInput, ICommand} from "./ICommand";
 import {ProjectManager} from "../lib/ProjectManager";
+import afterCommand from "./AfterCommand";
 
 interface Input extends GlobalInput {
 
@@ -11,8 +12,8 @@ module.exports = {
      Usage: rio generate`,
     handler: async () => {
         await ProjectManager.generateRioFiles()
+        afterCommand()
 
-        
     }
 } as ICommand<Input, Input>
 
