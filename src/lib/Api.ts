@@ -31,7 +31,7 @@ interface IApi {
 
     saveClassFiles(className: string, input: ISaveClassFilesInput[]): Promise<void>
 
-    deployClass(className: string): Promise<void>
+    deployClass(className: string, force: boolean): Promise<void>
 }
 
 export class Api implements IApi {
@@ -81,7 +81,7 @@ export class Api implements IApi {
         })
     }
 
-    async deployClass(className: string): Promise<void> {
+    async deployClass(className: string, force: boolean): Promise<void> {
         const projectRioConfig = Project.getProjectRioConfig()
         const sdk = await RetterSdk.getRootRetterSdkByAdminProfile(this.profile)
         const classInstance = await sdk.getCloudObject({
@@ -91,7 +91,10 @@ export class Api implements IApi {
         })
 
         await classInstance.call({
-            method: RetterRootMethods.deployClass
+            method: RetterRootMethods.deployClass,
+            body: {
+                force
+            }
         })
 
         await (new Promise((resolve, reject) => {

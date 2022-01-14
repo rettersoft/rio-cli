@@ -73,7 +73,7 @@ export class Deployment {
 
     }
 
-    static async deploy(deploymentSummary: IPreDeploymentContext) {
+    static async deploy(deploymentSummary: IPreDeploymentContext, force: boolean) {
         const api = Api.getInstance(deploymentSummary.profile)
 
         for (const item of [

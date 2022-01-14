@@ -8,7 +8,8 @@ import {Deployment} from "../lib/Deployment";
 import afterCommand from "./AfterCommand";
 
 interface Input extends GlobalInput {
-    "approval-required": boolean
+    "no-approval-required": boolean
+    "force": boolean
 }
 
 module.exports = {
@@ -16,8 +17,14 @@ module.exports = {
     description: 'Deploy the project',
     builder: yargs => {
         yargs.options('approval-required', {
-            describe: 'Deployment manual approval is required \n Example: rio deploy --approval-required false',
+            describe: 'Deployment manual approval is required \n Example: rio deploy --approval-required',
             default: true,
+            boolean: true,
+            type: "boolean"
+        });
+        yargs.options('force', {
+            describe: 'Force the deployment \n Example: rio deploy --no-approval-required --force',
+            default: false,
             boolean: true,
             type: "boolean"
         });
@@ -26,6 +33,8 @@ module.exports = {
         ConsoleMessage.message(`PROFILE: ${chalk.greenBright.bold(args.profile)}`)
 
         const projectRioConfig = Project.getProjectRioConfig()
+
+        ConsoleMessage.message(`PROJECT_ID: ${chalk.greenBright.bold(projectRioConfig.projectId)}`)
 
         const deploymentSummary = await ProjectManager.preDeployment(args.profile)
 
@@ -54,7 +63,7 @@ module.exports = {
         }
 
         ConsoleMessage.message(chalk.bgGray('DEPLOYMENT_STARTED'))
-        await Deployment.deploy(deploymentSummary)
+        await Deployment.deploy(deploymentSummary, args.force)
         ConsoleMessage.message(chalk.greenBright('DEPLOYMENT_DONE'))
 
         afterCommand()
