@@ -53,7 +53,7 @@ export class Project {
     static listModelNames() {
         const modelsFolder = fs.readdirSync(PROJECT_MODELS_FOLDER, {withFileTypes: true})
         const modelFiles = modelsFolder.filter(l => l.isFile() && l.name.endsWith('.json'))
-        return modelFiles.map(file => file.name)
+        return modelFiles.map(file => file.name.replace('.json', ''))
     }
 
     static listClassFileNames(className: string) {
