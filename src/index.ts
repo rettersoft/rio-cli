@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 import yargs from "yargs"
-import {RIO_CLI_DEFAULT_ADMIN_PROFILE_NAME} from "./config";
+import {RIO_CLI_DEFAULT_ADMIN_PROFILE_NAME, RIO_CLI_STAGE} from "./config";
 import path from "path";
 import {hideBin} from 'yargs/helpers'
 
@@ -9,6 +9,7 @@ import {hideBin} from 'yargs/helpers'
 (async () => {
     await yargs(hideBin(process.argv))
         .usage(`RIO CLI
+    ${RIO_CLI_STAGE !== 'PROD' ? 'STAGE:'.concat(RIO_CLI_STAGE) : ''}
     Usage: rio <command>
     `)
         .options({

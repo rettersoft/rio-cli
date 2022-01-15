@@ -31,10 +31,17 @@ export class Auth {
             if (!result || !result.data || !result.data.customToken) {
                 console.error('Custom token error!')
             } else {
-                ConsoleMessage.message('Auth Info:')
-                console.table(
-                    JSON.parse(Buffer.from(result.data.customToken.split('.')[1], 'base64').toString('utf-8'))
-                )
+                const token = JSON.parse(Buffer.from(result.data.customToken.split('.')[1], 'base64').toString('utf-8'))
+                ConsoleMessage.table([
+                    Object.keys(token).filter(key => !['claims'].includes(key)),
+                    Object.keys(token).filter(key => !['claims'].includes(key)).map((key) => token[key]),
+                ], 'Auth Data')
+                if (token['claims']) {
+                    ConsoleMessage.table([
+                        Object.keys(token['claims']),
+                        Object.keys(token['claims']).map((key) => token['claims'][key]),
+                    ], 'Auth Claims')
+                }
                 return result.data.customToken
             }
         } catch (e) {
