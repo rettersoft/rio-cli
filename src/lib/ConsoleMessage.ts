@@ -28,7 +28,7 @@ export class ConsoleMessage {
         const tableConfig: TableUserConfig = {
             columnDefault: {},
             header: title ? {
-                alignment: 'center',
+                alignment: 'left',
                 content: chalk.blueBright(title),
             } : undefined,
             border: getBorderCharacters('norc')

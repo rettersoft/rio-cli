@@ -1,10 +1,11 @@
 import fs from "fs";
 import path from "path";
-import {RIO_CLI_CONFIG_FILE_NAME, RIO_CLI_CONFIG_PATH, RIO_CLI_TEMP_FOLDER} from "../config";
+import {RIO_CLI_CONFIG_FILE_NAME, RIO_CLI_CONFIG_PATH} from "../config";
 
 export interface IRIOCliConfigProfileItemData {
     secretId: string;
     secretKey: string;
+    noAuthDump: boolean;
 }
 
 export interface IRIOCliConfig {
@@ -40,27 +41,30 @@ export class CliConfig {
         })
     }
 
-    static upsertAdminProfile(props: { profileName: string, secretId: string, secretKey: string }) {
+    static upsertAdminProfile(props: { profileName: string, secretId: string, secretKey: string, noAuthDump: boolean }) {
         const {
             profileName,
             secretId,
             secretKey,
+            noAuthDump
         } = props
-        if (!profileName || !secretId || !secretKey)
+        if (!profileName || !secretId || !secretKey || noAuthDump === undefined)
             throw new Error('profile name, secret id and secret key are required')
         let cliConfig: IRIOCliConfig = CliConfig.getCliConfig();
 
         if (cliConfig) {
             cliConfig.profiles[profileName] = {
                 secretId,
-                secretKey
+                secretKey,
+                noAuthDump
             }
         } else {
             cliConfig = {
                 profiles: {
                     [profileName]: {
                         secretKey,
-                        secretId
+                        secretId,
+                        noAuthDump
                     }
                 }
             }

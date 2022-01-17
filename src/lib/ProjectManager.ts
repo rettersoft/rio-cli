@@ -3,9 +3,10 @@ import {generator as rioGenerator} from "@retter/rio-generator";
 import {FileExtra} from "./FileExtra";
 import path from "path";
 import {PROJECT_CLASSES_FOLDER, PROJECT_RIO_CLASS_FILE} from "../config";
-import {IAllClassContents, Project} from "./Project";
+import {IClassContents, Project} from "./Project";
 import {Api} from "./Api";
 import {Deployment, IClassesDeploymentSummary, IDeploymentSummary, IFileChangesByClassName} from "./Deployment";
+import chalk from "chalk";
 
 export interface IPreDeploymentContext {
     profile: string
@@ -18,7 +19,18 @@ export interface IPreDeploymentContext {
 
 export class ProjectManager {
 
-    static async preDeployment(profile: string): Promise<IPreDeploymentContext> {
+    static async preDeployment(profile: string, classes?: string[]): Promise<IPreDeploymentContext> {
+        if (classes && !Array.isArray(classes)) throw new Error('invalid classes input')
+
+        if (classes) {
+            ConsoleMessage.table([
+                [chalk.blueBright("Selected Classes")],
+                ...classes.map(c => {
+                    return [c]
+                })
+            ])
+        }
+
         const api = Api.getInstance(profile)
         const projectRioConfig = Project.getProjectRioConfig()
         const project = await api.getProject(projectRioConfig.projectId)
@@ -31,10 +43,10 @@ export class ProjectManager {
             acc[modelName] = JSON.parse(localModelContents[modelName])
             return acc
         }, {})
-        const localClasses = Project.getAllLocalClassContents()
+        const localClasses = Project.getLocalClassContents(classes)
 
         const remoteModels = project.detail.modelDefinitions
-        const remoteClasses = await project.detail.classes.reduce<Promise<IAllClassContents>>(async (acc, classItem) => {
+        let remoteClasses = await project.detail.classes.reduce<Promise<IClassContents>>(async (acc, classItem) => {
             const className = classItem.classId
             const clonedAcc = await acc
             clonedAcc[className] = (await api.getRemoteClassFiles(projectRioConfig.projectId, className))
@@ -43,7 +55,17 @@ export class ProjectManager {
                     return acc
                 }, {})
             return clonedAcc
-        }, Promise.resolve<IAllClassContents>({}))
+        }, Promise.resolve<IClassContents>({}))
+
+        //filter selected classes if defined
+        if (classes && classes.length) {
+            remoteClasses = classes.reduce<IClassContents>((acc, className) => {
+                if (remoteClasses[className]) {
+                    acc[className] = remoteClasses[className]
+                }
+                return acc
+            }, {})
+        }
 
         const modelDeploymentsSummary = Deployment.getModelDeploymentsContext(localModels, remoteModels)
         const classDeploymentsSummary = Deployment.getClassDeploymentsContext(localClasses, remoteClasses)

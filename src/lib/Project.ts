@@ -3,7 +3,6 @@ import {
     PROJECT_CLASS_TEMPLATE_FILE,
     PROJECT_CLASSES_FOLDER,
     PROJECT_MODELS_FOLDER,
-    PROJECT_RIO_CLASS_FILE,
     PROJECT_RIO_CONFIG
 } from "../config";
 import path from "path";
@@ -13,14 +12,14 @@ export interface IProjectRioConfig {
     projectId: string
 }
 
-export interface IAllClassContents {
+export interface IClassContents {
     [className: string]: { [fileName: string]: string }
 }
 
 export class Project {
 
-    static getAllLocalClassContents() {
-        return Project.listClassNames().reduce<IAllClassContents>(
+    static getLocalClassContents(classes?: string[]) {
+        return (classes || Project.listClassNames()).reduce<IClassContents>(
             (acc, className) => {
                 acc[className] = Project.getClassFileContents(className)
                 return acc

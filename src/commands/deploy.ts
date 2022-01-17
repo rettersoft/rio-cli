@@ -1,4 +1,4 @@
-import {GlobalInput} from "./ICommand";
+import {DeploymentGlobalInput, GlobalInput} from "./ICommand";
 import chalk from "chalk";
 import {ConsoleMessage} from "../lib/ConsoleMessage";
 import prompts from "prompts";
@@ -8,7 +8,7 @@ import {Deployment} from "../lib/Deployment";
 import afterCommand from "./AfterCommand";
 import {CommandModule} from "yargs";
 
-interface Input extends GlobalInput {
+interface Input extends GlobalInput, DeploymentGlobalInput {
     "no-approval-required": boolean
     "force": boolean
 }
@@ -30,6 +30,10 @@ module.exports = {
             boolean: true,
             type: "boolean"
         });
+        yargs.options('classes', {
+            describe: 'Filtered classes for deployment',
+            type: "array"
+        });
         return yargs
     },
     handler: async (args) => {
@@ -39,7 +43,7 @@ module.exports = {
 
         ConsoleMessage.message(`PROJECT_ID: ${chalk.greenBright.bold(projectRioConfig.projectId)}`)
 
-        const deploymentSummary = await ProjectManager.preDeployment(args.profile)
+        const deploymentSummary = await ProjectManager.preDeployment(args.profile, args.classes)
 
         if (Deployment.isChanged(deploymentSummary)) {
             ConsoleMessage.preDeployLog(deploymentSummary)

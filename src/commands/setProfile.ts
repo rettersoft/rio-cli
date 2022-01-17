@@ -10,7 +10,8 @@ import {CommandModule} from "yargs";
 interface Input extends GlobalInput {
     "profile-name": string,
     "secret-id": string,
-    "secret-key": string
+    "secret-key": string,
+    "no-auth-dump": boolean
 }
 
 module.exports = {
@@ -27,11 +28,12 @@ module.exports = {
         })
         yargs.options('secret-id', {describe: 'Secret Id', type: 'string', demandOption: true})
         yargs.options('secret-key', {describe: 'Secret Key', type: 'string', demandOption: true})
+        yargs.options('no-auth-dump', {describe: 'Close authentication info', type: "boolean", default: false})
         return yargs
     },
     handler: async (args) => {
         CliConfig.upsertAdminProfile({
-            secretId: args["secret-id"], secretKey: args["secret-key"], profileName: args["profile-name"],
+            secretId: args["secret-id"], secretKey: args["secret-key"], profileName: args["profile-name"], noAuthDump: args["no-auth-dump"]
         })
         ConsoleMessage.message(chalk.green(`successfully saved [${args["profile-name"]}]`))
         afterCommand()

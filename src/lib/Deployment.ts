@@ -1,4 +1,4 @@
-import {IAllClassContents} from "./Project";
+import {IClassContents} from "./Project";
 import {Api, ISaveClassFilesInput} from "./Api";
 import {ConsoleMessage, DeploymentMessageStatus} from "./ConsoleMessage";
 import {IPreDeploymentContext} from "./ProjectManager";
@@ -248,7 +248,7 @@ export class Deployment {
         }
     }
 
-    static getClassDeploymentsContext(localClasses: IAllClassContents, remoteClasses: IAllClassContents): {
+    static getClassDeploymentsContext(localClasses: IClassContents, remoteClasses: IClassContents): {
         classDeploymentsSummary: IClassesDeploymentSummary,
         classesFileChanges: IFileChangesByClassName
     } {

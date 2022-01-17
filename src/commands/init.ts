@@ -42,8 +42,11 @@ module.exports = {
 
         const project = await Api.getInstance(args.profile).createNewProject(args["alias"])
 
-        ConsoleMessage.message(`[${chalk.greenBright.bold(args["alias"])}] Project created`)
-        console.table({alias: project.detail.alias, projectId: project.projectId})
+        ConsoleMessage.message(`Project created`)
+        ConsoleMessage.table([
+            ["Project Id", "Alias"],
+            [project.projectId, project.detail.alias]
+        ], "Project")
 
         // mkdir and chdir to project folder
         fs.mkdirSync(args["alias"])
