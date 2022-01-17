@@ -22,7 +22,7 @@ export class Project {
     static getAllLocalClassContents() {
         return Project.listClassNames().reduce<IAllClassContents>(
             (acc, className) => {
-                acc[className] = Project.getClassFileContents(className, [PROJECT_RIO_CLASS_FILE])
+                acc[className] = Project.getClassFileContents(className)
                 return acc
             }, {})
     }

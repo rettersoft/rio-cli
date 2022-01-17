@@ -14,6 +14,9 @@ module.exports = {
     description: 'Show deployment changes',
     handler: async (args) => {
         ConsoleMessage.message(chalk.bgGray('PRE_DEPLOYMENT_STARTED'))
+
+        await ProjectManager.generateRioFiles()
+
         const deploymentSummary = await ProjectManager.preDeployment(args.profile)
         if (Deployment.isChanged(deploymentSummary))
             ConsoleMessage.preDeployLog(deploymentSummary)
