@@ -1,4 +1,4 @@
-import {GlobalInput, ICommand} from "./ICommand";
+import {GlobalInput} from "./ICommand";
 import chalk from "chalk";
 import {ConsoleMessage} from "../lib/ConsoleMessage";
 import prompts from "prompts";
@@ -6,6 +6,7 @@ import {ProjectManager} from "../lib/ProjectManager";
 import {Project} from "../lib/Project";
 import {Deployment} from "../lib/Deployment";
 import afterCommand from "./AfterCommand";
+import {CommandModule} from "yargs";
 
 interface Input extends GlobalInput {
     "no-approval-required": boolean
@@ -15,7 +16,8 @@ interface Input extends GlobalInput {
 module.exports = {
     command: 'deploy',
     description: 'Deploy the project',
-    builder: yargs => {
+    aliases: ['d'],
+    builder: (yargs) => {
         yargs.options('approval-required', {
             describe: 'Deployment manual approval is required \n Example: rio deploy --approval-required',
             default: true,
@@ -28,6 +30,7 @@ module.exports = {
             boolean: true,
             type: "boolean"
         });
+        return yargs
     },
     handler: async (args) => {
         ConsoleMessage.message(`PROFILE: ${chalk.greenBright.bold(args.profile)}`)
@@ -69,5 +72,5 @@ module.exports = {
         afterCommand()
 
     }
-} as ICommand<Input, Input>
+} as CommandModule<Input, Input>
 

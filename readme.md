@@ -50,7 +50,9 @@ Create the rio file for each of classes
 ```shell
 > rio init TEST
 > cd TEST
-> rio generate
+> rio generate # optional
+> rio pre-deploy # optional
+> rio deploy
 ```
 
 ### Project Pre-Deployment

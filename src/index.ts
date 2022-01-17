@@ -22,6 +22,5 @@ import {hideBin} from 'yargs/helpers'
         .demandCommand()
         .showHelpOnFail(true)
         .strict()
-        .completion()
         .parse()
 })().then().catch();

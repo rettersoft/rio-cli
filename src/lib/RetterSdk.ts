@@ -1,6 +1,8 @@
 import Retter, {RetterRegion} from "@retter/sdk";
 import {RIO_CLI_PLATFORM, RIO_CLI_ROOT_DOMAIN, RIO_CLI_ROOT_PROJECT_ID, RIO_CLI_STAGE} from "../config";
 import {Auth} from "./Auth";
+import {ConsoleMessage} from "./ConsoleMessage";
+import {RetterCloudObject, RetterCloudObjectCall, RetterCloudObjectConfig} from "@retter/sdk/dist/types";
 
 
 export enum RetterRootClasses {
@@ -45,5 +47,34 @@ export class RetterSdk {
 
         this.retterRootSdk = sdk
         return sdk
+    }
+
+    static async getCloudObject(sdk: Retter, config: RetterCloudObjectConfig) {
+        try {
+            return await sdk.getCloudObject(config)
+        } catch (e) {
+            let err = `Getting Cloud Object \n` + e.toString()
+            if (e.response && e.response.data && e.response.data.message) {
+                ConsoleMessage.errorMessage(`${err} \n ${e.response.data.message}`)
+            } else {
+                ConsoleMessage.errorMessage(`${err} \n Unknown error`)
+            }
+            throw new Error()
+        }
+    }
+
+    static async callMethod<D = any>(cloudObject: RetterCloudObject, params: RetterCloudObjectCall): Promise<D> {
+        try {
+            const resp = await cloudObject.call<D>(params)
+            return resp.data
+        } catch (e) {
+            let err = `Calling Method \n` + e.toString()
+            if (e.response && e.response.data && e.response.data.message) {
+                ConsoleMessage.errorMessage(`${err} \n ${e.response.data.message}`)
+            } else {
+                ConsoleMessage.errorMessage(`${err} \n Unknown error`)
+            }
+            throw new Error()
+        }
     }
 }

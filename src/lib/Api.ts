@@ -50,13 +50,12 @@ export class Api implements IApi {
 
     async createClass(className: string, templateId?: string): Promise<void> {
         const projectRioConfig = Project.getProjectRioConfig()
-        const sdk = await RetterSdk.getRootRetterSdkByAdminProfile(this.profile)
-        const projectInstance = await sdk.getCloudObject({
+        const projectInstance = await RetterSdk.getCloudObject(await RetterSdk.getRootRetterSdkByAdminProfile(this.profile), {
             useLocal: true,
             classId: RetterRootClasses.Project,
             instanceId: projectRioConfig.projectId,
         })
-        await projectInstance.call({
+        await RetterSdk.callMethod(projectInstance, {
             method: RetterRootMethods.createClass,
             body: {
                 classId: className
@@ -66,14 +65,14 @@ export class Api implements IApi {
 
     async saveClassFiles(className: string, input: ISaveClassFilesInput[]): Promise<void> {
         const projectRioConfig = Project.getProjectRioConfig()
-        const sdk = await RetterSdk.getRootRetterSdkByAdminProfile(this.profile)
-        const classInstance = await sdk.getCloudObject({
-            useLocal: true,
-            classId: RetterRootClasses.RetterClass,
-            instanceId: `${projectRioConfig.projectId}_${className}`,
-        })
+        const classInstance = await RetterSdk.getCloudObject(await RetterSdk.getRootRetterSdkByAdminProfile(this.profile),
+            {
+                useLocal: true,
+                classId: RetterRootClasses.RetterClass,
+                instanceId: `${projectRioConfig.projectId}_${className}`,
+            })
 
-        await classInstance.call({
+        await RetterSdk.callMethod(classInstance, {
             method: RetterRootMethods.saveClassFiles,
             body: {
                 files: input
@@ -83,14 +82,13 @@ export class Api implements IApi {
 
     async deployClass(className: string, force: boolean): Promise<void> {
         const projectRioConfig = Project.getProjectRioConfig()
-        const sdk = await RetterSdk.getRootRetterSdkByAdminProfile(this.profile)
-        const classInstance = await sdk.getCloudObject({
+        const classInstance = await RetterSdk.getCloudObject(await RetterSdk.getRootRetterSdkByAdminProfile(this.profile), {
             useLocal: true,
             classId: RetterRootClasses.RetterClass,
             instanceId: `${projectRioConfig.projectId}_${className}`,
         })
 
-        await classInstance.call({
+        await RetterSdk.callMethod(classInstance, {
             method: RetterRootMethods.deployClass,
             body: {
                 force
@@ -133,13 +131,13 @@ export class Api implements IApi {
 
     async upsertModel(modelName: string, modelDefinition?: object): Promise<void> {
         const projectRioConfig = Project.getProjectRioConfig()
-        const sdk = await RetterSdk.getRootRetterSdkByAdminProfile(this.profile)
-        const projectInstance = await sdk.getCloudObject({
-            useLocal: true,
-            classId: RetterRootClasses.Project,
-            instanceId: projectRioConfig.projectId,
-        })
-        await projectInstance.call({
+        const projectInstance = await RetterSdk.getCloudObject(await RetterSdk.getRootRetterSdkByAdminProfile(this.profile),
+            {
+                useLocal: true,
+                classId: RetterRootClasses.Project,
+                instanceId: projectRioConfig.projectId,
+            })
+        await RetterSdk.callMethod(projectInstance, {
             method: RetterRootMethods.upsertModel,
             body: {
                 modelName,
@@ -149,13 +147,13 @@ export class Api implements IApi {
     }
 
     async createNewProject(alias: string): Promise<{ projectId: string, detail: IProjectDetail }> {
-        const sdk = await RetterSdk.getRootRetterSdkByAdminProfile(this.profile)
-        const projectInstance = await sdk.getCloudObject({
-            classId: RetterRootClasses.Project,
-            body: {
-                alias
-            }
-        })
+        const projectInstance = await RetterSdk.getCloudObject(await RetterSdk.getRootRetterSdkByAdminProfile(this.profile),
+            {
+                classId: RetterRootClasses.Project,
+                body: {
+                    alias
+                }
+            })
 
         return {
             projectId: projectInstance.instanceId,
@@ -164,12 +162,12 @@ export class Api implements IApi {
     }
 
     async getProject(projectId: string): Promise<{ detail: IProjectDetail }> {
-        const sdk = await RetterSdk.getRootRetterSdkByAdminProfile(this.profile)
-        const projectInstance = await sdk.getCloudObject({
-            useLocal: true,
-            classId: RetterRootClasses.Project,
-            instanceId: projectId
-        })
+        const projectInstance = await RetterSdk.getCloudObject(await RetterSdk.getRootRetterSdkByAdminProfile(this.profile),
+            {
+                useLocal: true,
+                classId: RetterRootClasses.Project,
+                instanceId: projectId
+            })
 
         return {
             detail: (await projectInstance.getState()).data.public as any
@@ -177,16 +175,17 @@ export class Api implements IApi {
     }
 
     async getRemoteClassFiles(projectId: string, className: string): Promise<RemoteClassFileItem[]> {
-        const sdk = await RetterSdk.getRootRetterSdkByAdminProfile(this.profile)
-        const retterClassInstance = await sdk.getCloudObject({
-            useLocal: true,
-            classId: RetterRootClasses.RetterClass,
-            instanceId: `${projectId}_${className}`
-        })
-        const response = await retterClassInstance.call<RemoteClassFileItem[]>({
+        const retterClassInstance = await RetterSdk.getCloudObject(await RetterSdk.getRootRetterSdkByAdminProfile(this.profile),
+            {
+                useLocal: true,
+                classId: RetterRootClasses.RetterClass,
+                instanceId: `${projectId}_${className}`
+            })
+        const response = await RetterSdk.callMethod<RemoteClassFileItem[]>(retterClassInstance, {
             method: RetterRootMethods.getClassFiles
         })
-        return response.data.map(item => {
+
+        return response.map(item => {
             return {
                 ...item,
                 content: gunzipSync(Buffer.from(item.content, 'base64')).toString('utf-8'),

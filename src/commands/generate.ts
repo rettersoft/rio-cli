@@ -1,6 +1,7 @@
-import {GlobalInput, ICommand} from "./ICommand";
+import {GlobalInput} from "./ICommand";
 import {ProjectManager} from "../lib/ProjectManager";
 import afterCommand from "./AfterCommand";
+import {CommandModule} from "yargs";
 
 interface Input extends GlobalInput {
 
@@ -10,10 +11,11 @@ module.exports = {
     command: 'generate',
     description: `Generate rio class files
      Usage: rio generate`,
+    aliases: ['g'],
     handler: async () => {
         await ProjectManager.generateRioFiles()
         afterCommand()
 
     }
-} as ICommand<Input, Input>
+} as CommandModule<Input, Input>
 

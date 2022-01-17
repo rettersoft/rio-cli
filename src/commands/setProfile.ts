@@ -1,9 +1,10 @@
-import {GlobalInput, ICommand} from "./ICommand";
+import {GlobalInput} from "./ICommand";
 import {CliConfig} from "../lib/CliConfig";
 import {RIO_CLI_DEFAULT_ADMIN_PROFILE_NAME} from "../config";
 import chalk from "chalk";
 import {ConsoleMessage} from "../lib/ConsoleMessage";
 import afterCommand from "./AfterCommand";
+import {CommandModule} from "yargs";
 
 
 interface Input extends GlobalInput {
@@ -14,6 +15,7 @@ interface Input extends GlobalInput {
 
 module.exports = {
     command: 'set-profile',
+    aliases: ['sp'],
     description: `Upsert admin profile in local storage
     Usage: rio set-profile --profile-name PROFILE_NAME --secret-id SECRET_ID --secret-key SECRET_KEY
     `,
@@ -25,6 +27,7 @@ module.exports = {
         })
         yargs.options('secret-id', {describe: 'Secret Id', type: 'string', demandOption: true})
         yargs.options('secret-key', {describe: 'Secret Key', type: 'string', demandOption: true})
+        return yargs
     },
     handler: async (args) => {
         CliConfig.upsertAdminProfile({
@@ -33,5 +36,5 @@ module.exports = {
         ConsoleMessage.message(chalk.green(`successfully saved [${args["profile-name"]}]`))
         afterCommand()
     }
-} as ICommand<Input, Input>
+} as CommandModule<Input, Input>
 

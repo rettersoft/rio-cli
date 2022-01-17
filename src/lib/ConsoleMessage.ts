@@ -16,6 +16,10 @@ export enum DeploymentMessageStatus {
 
 export class ConsoleMessage {
 
+    static errorMessage(message: string) {
+        console.error(chalk.redBright(message))
+    }
+
     static message(message: string) {
         console.log(message)
     }

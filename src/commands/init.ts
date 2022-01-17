@@ -1,4 +1,4 @@
-import {GlobalInput, ICommand} from "./ICommand";
+import {GlobalInput} from "./ICommand";
 import chalk from "chalk";
 import {ConsoleMessage} from "../lib/ConsoleMessage";
 import fs from "fs";
@@ -7,6 +7,7 @@ import {Api} from "../lib/Api";
 import path from "path";
 import {CustomError} from "../lib/CustomError";
 import afterCommand from "./AfterCommand";
+import {CommandModule} from "yargs";
 
 
 interface Input extends GlobalInput {
@@ -16,6 +17,7 @@ interface Input extends GlobalInput {
 
 module.exports = {
     command: 'init [alias]',
+    aliases: ['i'],
     description: `Create a new project
     Usage: init [alias]`,
     builder: yargs => {
@@ -29,6 +31,7 @@ module.exports = {
             default: 'Default',
             describe: 'Cloud objects template name \n Example: rio init --template Default',
         })
+        return yargs
     },
     handler: async (args) => {
         ConsoleMessage.message(`[${chalk.greenBright.bold(args["alias"])}] Project creating...`)
@@ -50,5 +53,5 @@ module.exports = {
         afterCommand()
 
     }
-} as ICommand<Input, Input>
+} as CommandModule<Input, Input>
 

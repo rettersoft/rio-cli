@@ -1,8 +1,9 @@
-import {GlobalInput, ICommand} from "./ICommand";
+import {GlobalInput} from "./ICommand";
 import {CliConfig} from "../lib/CliConfig";
 import afterCommand from "./AfterCommand";
 import chalk from "chalk";
 import {ConsoleMessage} from "../lib/ConsoleMessage";
+import {CommandModule} from "yargs";
 
 interface Input extends GlobalInput {
 
@@ -10,6 +11,7 @@ interface Input extends GlobalInput {
 
 module.exports = {
     command: 'list-profiles',
+    aliases: ['lp'],
     description: 'List local admin profiles',
     handler: () => {
 
@@ -22,5 +24,5 @@ module.exports = {
 
         afterCommand()
     }
-} as ICommand<Input, Input>
+} as CommandModule<Input, Input>
 

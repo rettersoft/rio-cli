@@ -23,6 +23,9 @@ export class ProjectManager {
         const projectRioConfig = Project.getProjectRioConfig()
         const project = await api.getProject(projectRioConfig.projectId)
 
+        // generate new rio files
+        await ProjectManager.generateRioFiles()
+
         const localModelContents = Project.getModelFileContents()
         const localModels = Object.keys(localModelContents).reduce<{ [modelName: string]: object }>((acc, modelName) => {
             acc[modelName] = JSON.parse(localModelContents[modelName])
