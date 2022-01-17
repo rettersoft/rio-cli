@@ -66,7 +66,7 @@ export class ProjectManager {
                 return acc
             }, {}),
             models: Project.listModelNames().reduce<{ [modelName: string]: string }>((acc, modelName) => {
-                acc[modelName] = Project.readModelFile(modelName)
+                acc[modelName] = JSON.parse(Project.readModelFile(modelName))
                 return acc
             }, {})
         })
