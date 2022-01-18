@@ -13,7 +13,7 @@ module.exports = {
      Usage: rio generate`,
     aliases: ['g'],
     handler: async () => {
-        await ProjectManager.generateRioFiles()
+        await ProjectManager.generateAndSaveRioFiles()
         afterCommand()
 
     }

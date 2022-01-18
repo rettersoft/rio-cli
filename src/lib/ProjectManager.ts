@@ -36,7 +36,7 @@ export class ProjectManager {
         const project = await api.getProject(projectRioConfig.projectId)
 
         // generate new rio files
-        await ProjectManager.generateRioFiles()
+        await ProjectManager.generateAndSaveRioFiles()
 
         const localModelContents = Project.getModelFileContents()
         const localModels = Object.keys(localModelContents).reduce<{ [modelName: string]: object }>((acc, modelName) => {
@@ -77,7 +77,19 @@ export class ProjectManager {
         }
     }
 
-    static async generateRioFiles() {
+    static async generateAndSaveRioFiles() {
+
+        const rioFile = await ProjectManager.generateRioFile()
+
+        ConsoleMessage.message('Rio class files saving...')
+        const classNames = Project.listClassNames()
+        await Promise.all(classNames.map(className => {
+            return FileExtra.writeFile(path.join(process.cwd(), PROJECT_CLASSES_FOLDER, className, PROJECT_RIO_CLASS_FILE), rioFile)
+        }))
+        ConsoleMessage.message('Rio class files saved')
+    }
+
+    static async generateRioFile() {
         ConsoleMessage.message('Rio class file generating...')
 
         const classNames = Project.listClassNames()
@@ -93,12 +105,7 @@ export class ProjectManager {
             }, {})
         })
         ConsoleMessage.message('Rio class file generated')
-
-        ConsoleMessage.message('Rio class files saving...')
-        await Promise.all(classNames.map(className => {
-            return FileExtra.writeFile(path.join(process.cwd(), PROJECT_CLASSES_FOLDER, className, PROJECT_RIO_CLASS_FILE), rioFile)
-        }))
-        ConsoleMessage.message('Rio class files saved')
+        return rioFile
     }
 
 }
