@@ -1,6 +1,12 @@
 import fs from "fs";
 import path from "path";
-import {RIO_CLI_CONFIG_FILE_NAME, RIO_CLI_CONFIG_PATH} from "../config";
+import {
+    RIO_CLI_CONFIG_FILE_NAME,
+    RIO_CLI_CONFIG_PATH,
+    RIO_CLI_DEFAULT_ADMIN_PROFILE_NAME,
+    RIO_CLI_SECRET_ID,
+    RIO_CLI_SECRET_KEY
+} from "../config";
 
 export interface IRIOCliConfigProfileItemData {
     secretId: string;
@@ -74,6 +80,13 @@ export class CliConfig {
     }
 
     static getAdminConfig(profileName: string): IRIOCliConfigProfileItemData {
+        if (profileName === RIO_CLI_DEFAULT_ADMIN_PROFILE_NAME && RIO_CLI_SECRET_ID && RIO_CLI_SECRET_KEY) {
+            return {
+                noAuthDump: false,
+                secretKey: RIO_CLI_SECRET_KEY,
+                secretId: RIO_CLI_SECRET_ID
+            }
+        }
         const profile = this.getCliConfig().profiles[profileName]
         if (!profile) throw new Error(`Admin profile not found [${profileName}]`)
         return profile
