@@ -19,15 +19,21 @@ module.exports = {
             describe: 'Filtered classes for deployment',
             type: "array"
         });
+        yargs.options('force', {
+            describe: 'Force the pre-deployment \n Example: rio pre-deploy --force',
+            default: false,
+            boolean: true,
+            type: "boolean"
+        });
         return yargs
     },
     handler: async (args) => {
         ConsoleMessage.message(chalk.bgGray('PRE_DEPLOYMENT_STARTED'))
 
-        console.log(typeof args.classes,args.classes)
+        console.log(typeof args.classes, args.classes)
 
         const deploymentSummary = await ProjectManager.preDeployment(args.profile, args.classes)
-        if (Deployment.isChanged(deploymentSummary))
+        if (args.force || Deployment.isChanged(deploymentSummary))
             ConsoleMessage.preDeployLog(deploymentSummary)
         else
             ConsoleMessage.message(chalk.bgGray('NO_CHANGES'))

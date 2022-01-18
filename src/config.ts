@@ -11,6 +11,9 @@ export const RIO_CLI_COS_TEMPLATES_REPO_NAME = 'rio-cos-templates'
 export const RIO_CLI_PLATFORM = 'RIO'
 export const RIO_CLI_DEFAULT_ADMIN_PROFILE_NAME = 'DEFAULT'
 
+export const RIO_CLI_SECRET_ID = process.env.RIO_CLI_SECRET_ID
+export const RIO_CLI_SECRET_KEY = process.env.RIO_CLI_SECRET_KEY
+
 export const PROJECT_RIO_CLASS_FILE = 'rio.ts'
 export const PROJECT_CLASSES_FOLDER = 'classes'
 export const PROJECT_MODELS_FOLDER = 'models'

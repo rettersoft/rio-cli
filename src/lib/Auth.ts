@@ -34,8 +34,8 @@ export class Auth {
                 const token = JSON.parse(Buffer.from(result.data.customToken.split('.')[1], 'base64').toString('utf-8'))
                 if (!config.noAuthDump) {
                     ConsoleMessage.table([
-                        Object.keys(token).filter(key => !['claims'].includes(key)),
-                        Object.keys(token).filter(key => !['claims'].includes(key)).map((key) => token[key]),
+                        Object.keys(token).filter(key => !['claims', 'projectId'].includes(key)),
+                        Object.keys(token).filter(key => !['claims', 'projectId'].includes(key)).map((key) => token[key]),
                     ], 'Auth Data')
                     if (token['claims']) {
                         ConsoleMessage.table([

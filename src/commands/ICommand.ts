@@ -4,4 +4,5 @@ export interface GlobalInput {
 
 export interface DeploymentGlobalInput {
     classes?: string[]
+    force: boolean
 }

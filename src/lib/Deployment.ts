@@ -80,6 +80,7 @@ export class Deployment {
             ...deploymentSummary.modelDeploymentsSummary.createdItems,
             ...deploymentSummary.modelDeploymentsSummary.editedItems,
             ...deploymentSummary.modelDeploymentsSummary.deletedItems,
+            ...(force ? deploymentSummary.modelDeploymentsSummary.noneItems : []),
             ...deploymentSummary.classDeploymentsSummary.classDeploymentsSummary.createdItems,
             ...deploymentSummary.classDeploymentsSummary.classDeploymentsSummary.deletedItems,
         ]) {
@@ -136,6 +137,7 @@ export class Deployment {
                 ...deploymentSummary.classDeploymentsSummary.classDeploymentsSummary.noneItems,
                 ...deploymentSummary.classDeploymentsSummary.classDeploymentsSummary.deletedItems,
                 ...deploymentSummary.classDeploymentsSummary.classDeploymentsSummary.createdItems,
+                ...deploymentSummary.classDeploymentsSummary.classDeploymentsSummary.noneItems,
             ].find(item => item.path === className)
             if (!currentClassDeploymentItem || currentClassDeploymentItem.status === IDeploymentObjectItemStatus.DELETED) continue
 
@@ -145,6 +147,7 @@ export class Deployment {
                 ...deploymentSummary.classDeploymentsSummary.classesFileChanges[className].fileEdited,
                 ...deploymentSummary.classDeploymentsSummary.classesFileChanges[className].fileDeleted,
                 ...deploymentSummary.classDeploymentsSummary.classesFileChanges[className].fileCreated,
+                ...(force ? deploymentSummary.classDeploymentsSummary.classesFileChanges[className].fileNone : [])
             ]
             for (const item of changedFileDeployments) {
                 ConsoleMessage.deploymentMessage(item, DeploymentMessageStatus.SAVING)
@@ -169,6 +172,15 @@ export class Deployment {
                             name: item.path.split('/').pop()!
                         })
                         break
+                    case IDeploymentObjectItemStatus.NONE:
+                        // force save
+                        if (force) {
+                            preparedData.push({
+                                status: 'EDITED',
+                                name: item.path.split('/').pop()!
+                            })
+                        }
+                        break
                     default:
                         break
                 }
@@ -182,7 +194,7 @@ export class Deployment {
                 ConsoleMessage.deploymentMessage(item, DeploymentMessageStatus.SAVED)
             }
 
-            if (Deployment.isChanged(deploymentSummary)) {
+            if (force || Deployment.isChanged(deploymentSummary)) {
                 ConsoleMessage.deploymentMessage(currentClassDeploymentItem, DeploymentMessageStatus.DEPLOYING)
                 await api.deployClass(className, force)
                 ConsoleMessage.deploymentMessage(currentClassDeploymentItem, DeploymentMessageStatus.DEPLOYED)

@@ -9,8 +9,7 @@ import afterCommand from "./AfterCommand";
 import {CommandModule} from "yargs";
 
 interface Input extends GlobalInput, DeploymentGlobalInput {
-    "no-approval-required": boolean
-    "force": boolean
+    "ignore-approval": boolean
 }
 
 module.exports = {
@@ -18,16 +17,16 @@ module.exports = {
     description: 'Deploy the project',
     aliases: ['d'],
     builder: (yargs) => {
-        yargs.options('approval-required', {
-            describe: 'Deployment manual approval is required \n Example: rio deploy --approval-required',
-            default: true,
+        yargs.options('ignore-approval', {
+            describe: 'Ignore deployment manual approval \n Example: rio deploy --ignore-approval',
+            default: false,
             boolean: true,
             type: "boolean"
         });
         yargs.options('force', {
-            describe: 'Force the deployment \n Example: rio deploy --no-approval-required --force',
-            default: false,
+            describe: 'Force the deployment \n Example: rio deploy --force',
             boolean: true,
+            default: false,
             type: "boolean"
         });
         yargs.options('classes', {
@@ -37,6 +36,8 @@ module.exports = {
         return yargs
     },
     handler: async (args) => {
+        if (args.force) ConsoleMessage.message(chalk.blueBright.bold('FORCED'))
+
         ConsoleMessage.message(`PROFILE: ${chalk.greenBright.bold(args.profile)}`)
 
         const projectRioConfig = Project.getProjectRioConfig()
@@ -56,7 +57,7 @@ module.exports = {
         /**
          * MANUAL-APPROVAL
          */
-        if (args["approval-required"]) {
+        if (!args["ignore-approval"]) {
             const response = await prompts({
                 type: 'confirm',
                 name: 'value',
