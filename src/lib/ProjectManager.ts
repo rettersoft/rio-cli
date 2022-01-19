@@ -1,4 +1,3 @@
-import {ConsoleMessage} from "./ConsoleMessage";
 import {generator as rioGenerator} from "@retter/rio-generator";
 import {FileExtra} from "./FileExtra";
 import path from "path";
@@ -6,7 +5,6 @@ import {PROJECT_CLASSES_FOLDER, PROJECT_RIO_CLASS_FILE} from "../config";
 import {IClassContents, Project} from "./Project";
 import {Api} from "./Api";
 import {Deployment, IClassesDeploymentSummary, IDeploymentSummary, IFileChangesByClassName} from "./Deployment";
-import chalk from "chalk";
 
 export interface IPreDeploymentContext {
     profile: string
@@ -21,15 +19,6 @@ export class ProjectManager {
 
     static async preDeployment(profile: string, classes?: string[]): Promise<IPreDeploymentContext> {
         if (classes && !Array.isArray(classes)) throw new Error('invalid classes input')
-
-        if (classes) {
-            ConsoleMessage.table([
-                [chalk.blueBright("Selected Classes")],
-                ...classes.map(c => {
-                    return [c]
-                })
-            ])
-        }
 
         const api = Api.getInstance(profile)
         const projectRioConfig = Project.getProjectRioConfig()
@@ -78,23 +67,17 @@ export class ProjectManager {
     }
 
     static async generateAndSaveRioFiles() {
-
         const rioFile = await ProjectManager.generateRioFile()
-
-        ConsoleMessage.message('Rio class files saving...')
-        const classNames = Project.listClassNames()
-        await Promise.all(classNames.map(className => {
+        await Promise.all(Project.listClassNames().map(className => {
             return FileExtra.writeFile(path.join(process.cwd(), PROJECT_CLASSES_FOLDER, className, PROJECT_RIO_CLASS_FILE), rioFile)
         }))
-        ConsoleMessage.message('Rio class files saved')
     }
 
     static async generateRioFile() {
-        ConsoleMessage.message('Rio class file generating...')
 
         const classNames = Project.listClassNames()
 
-        const rioFile = await rioGenerator({
+        return await rioGenerator({
             classes: classNames.reduce<{ [className: string]: string }>((acc, className) => {
                 acc[className] = Project.readClassTemplateString(className)
                 return acc
@@ -104,8 +87,6 @@ export class ProjectManager {
                 return acc
             }, {})
         })
-        ConsoleMessage.message('Rio class file generated')
-        return rioFile
     }
 
 }

@@ -2,11 +2,13 @@ import fs from "fs";
 import {
     PROJECT_CLASS_TEMPLATE_FILE,
     PROJECT_CLASSES_FOLDER,
+    PROJECT_MODEL_FILE_EXTENSION,
     PROJECT_MODELS_FOLDER,
     PROJECT_RIO_CONFIG
 } from "../config";
 import path from "path";
 import {FileExtra} from "./FileExtra";
+import * as process from "process";
 
 export interface IProjectRioConfig {
     projectId: string
@@ -76,6 +78,6 @@ export class Project {
     }
 
     static readModelFile(modelName: string) {
-        return FileExtra.getFileContextOrFail(path.join(process.cwd(), PROJECT_MODELS_FOLDER, `${modelName}.json`)).toString('utf-8')
+        return FileExtra.getFileContextOrFail(path.join(process.cwd(), PROJECT_MODELS_FOLDER, `${modelName + PROJECT_MODEL_FILE_EXTENSION}`)).toString('utf-8')
     }
 }

@@ -4,6 +4,10 @@ import {ConsoleMessage, DeploymentMessageStatus} from "./ConsoleMessage";
 import {IPreDeploymentContext} from "./ProjectManager";
 import {CustomError} from "./CustomError";
 import {gzipSync} from "zlib";
+import {Ignore} from "./Ignore";
+import path from "path";
+import process from "process";
+import {PROJECT_CLASSES_FOLDER, PROJECT_MODEL_FILE_EXTENSION, PROJECT_MODELS_FOLDER} from "../config";
 
 enum IDeploymentObjectItemStatus {
     EDITED = 'EDITED',
@@ -204,6 +208,32 @@ export class Deployment {
     }
 
     static getModelDeploymentsContext(localModels: IProjectModels, remoteModels: IProjectModels): IDeploymentSummary {
+
+        /**
+         * IGNORE LOCAL FILES
+         */
+        localModels = Object.keys(localModels).reduce<IProjectModels>((acc, localModelName) => {
+            if (!Ignore.isIgnored(
+                path.relative(process.cwd(), path.join(PROJECT_MODELS_FOLDER, localModelName + PROJECT_MODEL_FILE_EXTENSION))
+            )) {
+                acc[localModelName] = localModels[localModelName]
+            }
+            return acc
+        }, {})
+
+        /**
+         * IGNORE REMOTE FILES
+         */
+        remoteModels = Object.keys(remoteModels).reduce<IProjectModels>((acc, remoteModelName) => {
+            if (!Ignore.isIgnored(
+                path.relative(process.cwd(), path.join(PROJECT_MODELS_FOLDER, remoteModelName + PROJECT_MODEL_FILE_EXTENSION))
+            )) {
+                acc[remoteModelName] = remoteModels[remoteModelName]
+            }
+            return acc
+        }, {})
+
+
         const deleted: IDeploymentOperationItem[] = Object.keys(remoteModels).reduce<IDeploymentOperationItem[]>((acc, modelName) => {
             if (!localModels[modelName]) {
                 acc.push({
@@ -264,6 +294,37 @@ export class Deployment {
         classDeploymentsSummary: IClassesDeploymentSummary,
         classesFileChanges: IFileChangesByClassName
     } {
+
+        /**
+         * IGNORE LOCAL FILES
+         */
+        localClasses = Object.keys(localClasses).reduce<IClassContents>((acc, localClassName) => {
+            acc[localClassName] = Object.keys(localClasses[localClassName]).reduce<{ [fileName: string]: string }>((subAcc, localClassFileName) => {
+                if (!Ignore.isIgnored(
+                    path.relative(process.cwd(), path.join(PROJECT_CLASSES_FOLDER, localClassName, localClassFileName))
+                )) {
+                    subAcc[localClassFileName] = localClasses[localClassName][localClassFileName]
+                }
+                return subAcc
+            }, {})
+            return acc
+        }, {})
+
+        /**
+         * IGNORE REMOTE FILES
+         */
+        remoteClasses = Object.keys(remoteClasses).reduce<IClassContents>((acc, remoteClassName) => {
+            acc[remoteClassName] = Object.keys(remoteClasses[remoteClassName]).reduce<{ [fileName: string]: string }>((subAcc, remoteClassFileName) => {
+                if (!Ignore.isIgnored(
+                    path.relative(process.cwd(), path.join(PROJECT_CLASSES_FOLDER, remoteClassName, remoteClassFileName))
+                )) {
+                    subAcc[remoteClassFileName] = remoteClasses[remoteClassName][remoteClassFileName]
+                }
+                return subAcc
+            }, {})
+            return acc
+        }, {})
+
         const classDeleted: IDeploymentOperationItem[] = []
         const classNone: IDeploymentOperationItem[] = []
         const classCreated: IDeploymentOperationItem[] = []
@@ -278,7 +339,7 @@ export class Deployment {
                 status: IDeploymentObjectItemStatus.DELETED
             })
             Object.keys(remoteClasses[className]).forEach(fileName => {
-                if (!localClasses[className][fileName]) {
+                if (!localClasses[className] || !localClasses[className][fileName]) {
                     if (!classesFileChanges[className]) {
                         classesFileChanges[className] = {
                             fileNone: [],

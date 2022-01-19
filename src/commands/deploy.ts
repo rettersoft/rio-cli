@@ -2,14 +2,21 @@ import {DeploymentGlobalInput, GlobalInput} from "./ICommand";
 import chalk from "chalk";
 import {ConsoleMessage} from "../lib/ConsoleMessage";
 import prompts from "prompts";
-import {ProjectManager} from "../lib/ProjectManager";
-import {Project} from "../lib/Project";
+import {IPreDeploymentContext, ProjectManager} from "../lib/ProjectManager";
+import {IProjectRioConfig, Project} from "../lib/Project";
 import {Deployment} from "../lib/Deployment";
 import afterCommand from "./AfterCommand";
 import {CommandModule} from "yargs";
+import Listr from "listr";
 
 interface Input extends GlobalInput, DeploymentGlobalInput {
     "ignore-approval": boolean
+    "fail-no-changes": boolean
+}
+
+interface TaskContext {
+    config: IProjectRioConfig
+    deploymentSummary: IPreDeploymentContext
 }
 
 module.exports = {
@@ -17,6 +24,11 @@ module.exports = {
     description: 'Deploy the project',
     aliases: ['d'],
     builder: (yargs) => {
+        yargs.options('fail-no-changes', {
+            describe: 'Fail on no changes',
+            type: "boolean",
+            boolean: true
+        });
         yargs.options('ignore-approval', {
             describe: 'Ignore deployment manual approval \n Example: rio deploy --ignore-approval',
             default: false,
@@ -38,21 +50,40 @@ module.exports = {
     handler: async (args) => {
         if (args.force) ConsoleMessage.message(chalk.blueBright.bold('FORCED'))
 
-        ConsoleMessage.message(`PROFILE: ${chalk.greenBright.bold(args.profile)}`)
+        const preTasks = new Listr([
+            {
+                title: 'Prepare',
+                task: () => {
+                    return new Listr([
+                        {
+                            title: "Getting Config",
+                            task: async (ctx: TaskContext) => {
+                                ctx.config = Project.getProjectRioConfig()
+                            }
+                        },
+                        {
+                            title: "Preparing Deployment Summary",
+                            task: async (ctx: TaskContext) => {
+                                ctx.deploymentSummary = await ProjectManager.preDeployment(args.profile, args.classes)
+                            }
+                        }
+                    ])
+                }
+            }
+        ])
 
-        const projectRioConfig = Project.getProjectRioConfig()
+        const ctx: TaskContext = await preTasks.run()
 
-        ConsoleMessage.message(`PROJECT_ID: ${chalk.greenBright.bold(projectRioConfig.projectId)}`)
-
-        const deploymentSummary = await ProjectManager.preDeployment(args.profile, args.classes)
-
-        if (Deployment.isChanged(deploymentSummary)) {
-            ConsoleMessage.preDeployLog(deploymentSummary)
-        } else {
-            ConsoleMessage.message(chalk.greenBright('NO_CHANGES'))
-            process.exit()
+        if (!args.force && !Deployment.isChanged(ctx.deploymentSummary)) {
+            if (args["fail-no-changes"]) {
+                throw new Error('No Changes')
+            } else {
+                ConsoleMessage.message(chalk.bold.greenBright('No Changes'))
+                process.exit()
+            }
         }
 
+        ConsoleMessage.message(JSON.stringify(ctx.deploymentSummary, null, 2))
 
         /**
          * MANUAL-APPROVAL
@@ -63,16 +94,16 @@ module.exports = {
                 name: 'value',
                 message: `Are you sure to proceed?`,
                 initial: true
-            });
+            })
             if (!response.value) {
-                ConsoleMessage.message(chalk.gray.bold('Deployment cancelled!'))
+                ConsoleMessage.message('Deployment cancelled!')
                 process.exit()
             }
         }
 
-        ConsoleMessage.message(chalk.bgGray('DEPLOYMENT_STARTED'))
-        await Deployment.deploy(deploymentSummary, args.force)
-        ConsoleMessage.message(chalk.greenBright('DEPLOYMENT_DONE'))
+        ConsoleMessage.message(`${chalk.greenBright.bold(ctx.config.projectId)} ${chalk.green('DEPLOYMENT STARTED')}`)
+        await Deployment.deploy(ctx.deploymentSummary, args.force)
+        ConsoleMessage.message(chalk.greenBright('DEPLOYMENT DONE'))
 
         afterCommand()
 

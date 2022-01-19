@@ -1,8 +1,5 @@
-describe('CloudObjects Tests', function (){
-
-
-    test('test', async ()=>{
-
-
+describe('CloudObjects Tests', function () {
+    test('test', async () => {
+            
     })
 })

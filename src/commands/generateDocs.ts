@@ -5,15 +5,18 @@ import {Tmp} from "../lib/Tmp";
 import {FileExtra} from "../lib/FileExtra";
 import path from "path";
 import {ProjectManager} from "../lib/ProjectManager";
-import {ConsoleMessage} from "../lib/ConsoleMessage";
 import {PROJECT_GENERATED_DOCS_FOLDER, PROJECT_RIO_CLASS_FILE} from "../config";
-import {execSync} from "child_process";
-
-const TypeDoc = require('typedoc');
+import {execSync, spawn} from "child_process";
+import Listr from "listr";
+import fs from "fs";
 
 interface Input extends GlobalInput {
     out: string
     open: boolean
+}
+
+interface TaskContext {
+
 }
 
 module.exports = {
@@ -35,76 +38,115 @@ module.exports = {
         return yargs
     },
     handler: async (args) => {
-        ConsoleMessage.message('Docs generating...')
-        let compileTmp;
+        const compileTmp = Tmp.getUniqueTmpPath()
+        const outputDir = args.out;
+
+        const tasks = new Listr([
+            {
+                title: 'Docs',
+                task: () => {
+                    return new Listr([
+                        {
+                            title: "Preparing Files",
+                            task: async (ctx) => {
+                                const tsConfig = {
+                                    "compilerOptions": {
+                                        "lib": ["ES2015", "dom"],
+                                        "module": "commonjs",
+                                        "target": "es5",
+                                        "sourceMap": false,
+                                        "esModuleInterop": true,
+                                        "moduleResolution": "node",
+                                        "downlevelIteration": true
+                                    },
+                                    "typedocOptions": {
+                                        "entryPoints": ["rio.ts"],
+                                        "out": PROJECT_GENERATED_DOCS_FOLDER
+                                    }
+                                }
+
+                                const packageJson = {
+                                    "name": "docs",
+                                    "version": "0.0.1",
+                                    "scripts": {
+                                        "td": "typedoc"
+                                    },
+                                    "dependencies": {
+                                        "@retter/rdk": "^1.0.7",
+                                        "@types/node": "^17.0.9",
+                                        "typedoc": "^0.22.11",
+                                        "typescript": "^4.3.5"
+                                    }
+                                }
+
+                                fs.mkdirSync(path.join(compileTmp, PROJECT_GENERATED_DOCS_FOLDER))
+
+                                await FileExtra.writeFile(path.join(compileTmp, PROJECT_RIO_CLASS_FILE),
+                                    (await ProjectManager.generateRioFile()))
+
+                                await FileExtra.writeFile(path.join(compileTmp, "tsconfig.json"), JSON.stringify(tsConfig))
+
+                                await FileExtra.writeFile(path.join(compileTmp, "package.json"), JSON.stringify(packageJson))
+                            }
+                        },
+                        {
+                            title: "Loading Dependencies",
+                            task: (ctx) => {
+                                return new Promise((resolve, reject) => {
+                                    const npmInstall = spawn("npm",
+                                        ["install", "--no-warnings"], {
+                                            stdio: "ignore",
+                                            cwd: path.join(compileTmp)
+                                        })
+                                    npmInstall.on("close", () => {
+                                        resolve(true)
+                                    })
+                                    npmInstall.on("error", () => {
+                                        reject(false)
+                                    })
+                                })
+                            }
+                        },
+                        {
+                            title: "Rendering",
+                            task: async (ctx) => {
+                                return new Promise((resolve, reject) => {
+                                    const npmInstall = spawn("npm",
+                                        ["run", "td"], {
+                                            stdio: "ignore",
+                                            cwd: compileTmp
+                                        })
+                                    npmInstall.on("close", () => {
+                                        resolve(true)
+                                    })
+                                    npmInstall.on("error", (err) => {
+                                        console.error(err)
+                                        reject(false)
+                                    })
+                                })
+                            }
+                        },
+                        {
+                            title: "Final",
+                            task: async (ctx) => {
+                                FileExtra.copySync(path.join(compileTmp, PROJECT_GENERATED_DOCS_FOLDER), outputDir)
+                            }
+                        }
+                    ])
+                }
+            }
+        ])
         try {
-            compileTmp = Tmp.getUniqueTmpPath()
-
-            const tsConfig = {
-                "compilerOptions": {
-                    "lib": ["ES2015", "dom"],
-                    "module": "commonjs",
-                    "target": "es5",
-                    "sourceMap": false,
-                    "esModuleInterop": true,
-                    "moduleResolution": "node",
-                    "downlevelIteration": true
-                }
-            }
-
-            const packageJson = {
-                "name": "docs",
-                "version": "0.0.1",
-                "dependencies": {
-                    "@retter/rdk": "^1.0.7",
-                    "@types/node": "^17.0.9"
-                }
-            }
-
-
-            await FileExtra.writeFile(path.join(compileTmp, PROJECT_RIO_CLASS_FILE),
-                (await ProjectManager.generateRioFile()))
-
-            await FileExtra.writeFile(path.join(compileTmp, "tsconfig.json"), JSON.stringify(tsConfig))
-
-            await FileExtra.writeFile(path.join(compileTmp, "package.json"), JSON.stringify(packageJson))
-
-            execSync('npm i --prefix ' + path.join(compileTmp), {stdio: "ignore"})
-
-            const app = new TypeDoc.Application();
-
-            // If you want TypeDoc to load tsconfig.json / typedoc.json files
-            app.options.addReader(new TypeDoc.TSConfigReader());
-            app.options.addReader(new TypeDoc.TypeDocReader());
-
-            const outputDir = args.out;
-
-            app.bootstrap({
-                // typedoc options here
-                entryPoints: [path.join(compileTmp, PROJECT_RIO_CLASS_FILE)],
-                tsconfig: path.join(compileTmp, "tsconfig.json")
-            });
-
-            const project = app.convert();
-
-            if (project) {
-                // Project may not have converted correctly
-
-                // Rendered docs
-                await app.generateDocs(project, outputDir);
-                // Alternatively generate JSON output
-                await app.generateJson(project, outputDir + "/documentation.json");
-            }
-            Tmp.clearUniqueTmpPath(compileTmp)
-            ConsoleMessage.message('Docs generated')
+            await tasks.run()
 
             if (args.open) {
                 execSync('open ' + path.join(outputDir, 'index.html'))
             }
 
+            //Tmp.clearUniqueTmpPath(compileTmp)
         } catch (e) {
             if (compileTmp) {
-                Tmp.clearUniqueTmpPath(compileTmp)
+                //Tmp.clearUniqueTmpPath(compileTmp)
             }
             throw e
         }

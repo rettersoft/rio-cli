@@ -14,9 +14,7 @@ export class Tmp {
     }
 
     static clearUniqueTmpPath(uniquePath: string) {
-        console.log('Tmp cleaning...')
         fs.rmdirSync(uniquePath, {recursive: true})
-        console.log('Tmp cleaned...')
     }
 
 }

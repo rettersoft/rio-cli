@@ -1,18 +1,24 @@
 import {GlobalInput} from "./ICommand";
 import chalk from "chalk";
-import {ConsoleMessage} from "../lib/ConsoleMessage";
 import fs from "fs";
 import {Repo} from "../lib/Repo";
 import {Api} from "../lib/Api";
 import path from "path";
 import {CustomError} from "../lib/CustomError";
-import afterCommand from "./AfterCommand";
 import {CommandModule} from "yargs";
+import Listr from "listr";
+import {IProjectDetail} from "../Interfaces/IProjectDetail";
+import afterCommand from "./AfterCommand";
+import {ConsoleMessage} from "../lib/ConsoleMessage";
 
 
 interface Input extends GlobalInput {
     alias: string,
     template: string,
+}
+
+interface TaskContext {
+    project: { projectId: string, detail: IProjectDetail }
 }
 
 module.exports = {
@@ -34,27 +40,48 @@ module.exports = {
         return yargs
     },
     handler: async (args) => {
-        ConsoleMessage.message(`[${chalk.greenBright.bold(args["alias"])}] Project creating...`)
-
         if (fs.existsSync(path.join(process.cwd(), args["alias"]))) {
             CustomError.throwError(`[${chalk.redBright(args["alias"])}] folder already exist`)
         }
 
-        const project = await Api.getInstance(args.profile).createNewProject(args["alias"])
+        const tasks = new Listr([
+            {
+                title: 'Project Initialization',
+                task: () => {
+                    return new Listr([
+                        {
+                            title: `[${chalk.greenBright.bold(args["alias"])}] Creating`,
+                            task: async (ctx: TaskContext) => {
+                                ctx.project = await Api.getInstance(args.profile).createNewProject(args["alias"])
+                            }
+                        },
+                        {
+                            title: `[${chalk.greenBright.bold(args["alias"])}] Preparing Folders`,
+                            task: async (ctx: TaskContext) => {
+                                // mkdir and chdir to project folder
+                                fs.mkdirSync(args["alias"])
+                                process.chdir(args["alias"])
+                            }
+                        },
+                        {
+                            title: `[${chalk.greenBright.bold(args["alias"])}] Cloning Template`,
+                            task: async (ctx: TaskContext) => {
+                                await Repo.downloadAndExtractGitRepo(ctx.project.projectId, args.template)
+                            }
+                        }
+                    ])
+                }
+            }
+        ])
 
-        ConsoleMessage.message(`Project created`)
+        const ctx: TaskContext = await tasks.run()
+
         ConsoleMessage.table([
             ["Project Id", "Alias"],
-            [project.projectId, project.detail.alias]
+            [chalk.greenBright.bold(ctx.project.projectId), chalk.whiteBright.bold(ctx.project.detail.alias)]
         ], "Project")
 
-        // mkdir and chdir to project folder
-        fs.mkdirSync(args["alias"])
-        process.chdir(args["alias"])
-
-        await Repo.downloadAndExtractGitRepo(project.projectId, args.template)
         afterCommand()
-
     }
 } as CommandModule<Input, Input>
 

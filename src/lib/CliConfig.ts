@@ -18,6 +18,11 @@ export interface IRIOCliConfig {
     profiles: { [profileName: string]: IRIOCliConfigProfileItemData }
 }
 
+export interface AdminProfileSummary {
+    name: string
+    secretId: string
+}
+
 export class CliConfig {
 
     static getCliConfig(): IRIOCliConfig {
@@ -31,7 +36,7 @@ export class CliConfig {
 
     }
 
-    static listAdminProfiles() {
+    static listAdminProfiles(): AdminProfileSummary[] {
         let cliConfigFileContent;
         try {
             cliConfigFileContent = fs.readFileSync(path.join(RIO_CLI_CONFIG_PATH, RIO_CLI_CONFIG_FILE_NAME)).toString('utf-8')

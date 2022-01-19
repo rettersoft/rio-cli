@@ -1,7 +1,6 @@
 import Retter, {RetterRegion} from "@retter/sdk";
 import {RIO_CLI_PLATFORM, RIO_CLI_ROOT_DOMAIN, RIO_CLI_ROOT_PROJECT_ID, RIO_CLI_STAGE} from "../config";
 import {Auth} from "./Auth";
-import {ConsoleMessage} from "./ConsoleMessage";
 import {RetterCloudObject, RetterCloudObjectCall, RetterCloudObjectConfig} from "@retter/sdk/dist/types";
 
 
@@ -43,7 +42,8 @@ export class RetterSdk {
             logLevel: 'silent'
         })
 
-        await sdk.authenticateWithCustomToken((await Auth.getRootAdminCustomToken(profile)))
+        const customAuth = await Auth.getRootAdminCustomToken(profile)
+        await sdk.authenticateWithCustomToken(customAuth.customToken)
 
         this.retterRootSdk = sdk
         return sdk
@@ -55,11 +55,11 @@ export class RetterSdk {
         } catch (e) {
             let err = `Getting Cloud Object \n` + e.toString()
             if (e.response && e.response.data && e.response.data.message) {
-                ConsoleMessage.errorMessage(`${err} \n ${e.response.data.message}`)
+                err += '\n' + e.response.data.message
             } else {
-                ConsoleMessage.errorMessage(`${err} \n Unknown error`)
+                err += '\nUnknown error'
             }
-            throw new Error()
+            throw new Error(err)
         }
     }
 
@@ -70,11 +70,11 @@ export class RetterSdk {
         } catch (e) {
             let err = `Calling Method \n` + e.toString()
             if (e.response && e.response.data && e.response.data.message) {
-                ConsoleMessage.errorMessage(`${err} \n ${e.response.data.message}`)
+                err += '\n' + e.response.data.message
             } else {
-                ConsoleMessage.errorMessage(`${err} \n Unknown error`)
+                err += '\nUnknown error'
             }
-            throw new Error()
+            throw new Error(err)
         }
     }
 }

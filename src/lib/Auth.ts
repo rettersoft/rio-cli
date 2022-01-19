@@ -3,7 +3,6 @@ import axios from "axios";
 import {CliConfig} from "./CliConfig";
 import {RetterRootClasses, RetterRootMethods, RetterSdk} from "./RetterSdk";
 import {RIO_CLI_ROOT_PROJECT_ID} from "../config";
-import {ConsoleMessage} from "./ConsoleMessage";
 
 
 export class Auth {
@@ -29,30 +28,17 @@ export class Auth {
                 }
             })
             if (!result || !result.data || !result.data.customToken) {
-                console.error('Custom token error!')
+                throw new Error('Custom token error!')
             } else {
                 const token = JSON.parse(Buffer.from(result.data.customToken.split('.')[1], 'base64').toString('utf-8'))
-                if (!config.noAuthDump) {
-                    ConsoleMessage.table([
-                        Object.keys(token).filter(key => !['claims', 'projectId'].includes(key)),
-                        Object.keys(token).filter(key => !['claims', 'projectId'].includes(key)).map((key) => token[key]),
-                    ], 'Auth Data')
-                    if (token['claims']) {
-                        ConsoleMessage.table([
-                            Object.keys(token['claims']),
-                            Object.keys(token['claims']).map((key) => token['claims'][key]),
-                        ], 'Auth Claims')
-                    }
+                return {
+                    customToken: result.data.customToken,
+                    tokenData: token
                 }
-                return result.data.customToken
             }
         } catch (e) {
-            console.error(e.toString())
-            if (e.response) {
-                console.log(e.response.data)
-            }
+            throw new Error(e.toString())
         }
-        process.exit(0)
     }
 
 }
