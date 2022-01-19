@@ -4,6 +4,7 @@ import yargs from "yargs"
 import {RIO_CLI_DEFAULT_ADMIN_PROFILE_NAME, RIO_CLI_STAGE} from "./config";
 import path from "path";
 import {hideBin} from 'yargs/helpers'
+import chalk from "chalk";
 
 
 (async () => {
@@ -20,7 +21,13 @@ import {hideBin} from 'yargs/helpers'
         })
         .commandDir(path.join(__dirname, 'commands'), {exclude: /ICommand\.(ts|js)|AfterCommand\.(ts|js)/g})
         .demandCommand()
-        .showHelpOnFail(true)
+        .fail((msg, err, yargs) => {
+            console.log('\n')
+            console.error(chalk.redBright.bold(err.name))
+            console.error(chalk.redBright(err.message))
+            process.exit(1)
+        })
+        .showHelpOnFail(false)
         .strict()
         .parse()
 })().then().catch();

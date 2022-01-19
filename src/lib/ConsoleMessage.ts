@@ -1,7 +1,7 @@
 import {IDeploymentOperationItem, IFileChangesByClassName} from "./Deployment";
 import chalk from "chalk";
 import {IPreDeploymentContext} from "./ProjectManager";
-import {getBorderCharacters, table} from "table"
+import {createStream, getBorderCharacters, table, WritableStream} from "table"
 import {TableUserConfig} from "table/dist/src/types/api";
 
 export enum DeploymentMessageStatus {
@@ -16,12 +16,14 @@ export enum DeploymentMessageStatus {
 
 export class ConsoleMessage {
 
+    static deploymentCurrentTableStream: WritableStream;
+
     static errorMessage(message: string) {
         console.error(chalk.redBright(message))
     }
 
     static message(message: string) {
-        console.log(message)
+        console.log('\n' + message)
     }
 
     static table(data: unknown[][], title?: string) {
@@ -36,7 +38,38 @@ export class ConsoleMessage {
         console.log(table(data, tableConfig))
     }
 
+    static customDeploymentMessage(message: string) {
+        ConsoleMessage.deploymentCurrentTableStream.write([
+            '',
+            '',
+            '',
+            '',
+            chalk.bold.gray(message),
+        ])
+    }
+
     static deploymentMessage(item: IDeploymentOperationItem, status: DeploymentMessageStatus) {
+        if (!ConsoleMessage.deploymentCurrentTableStream) {
+            ConsoleMessage.deploymentCurrentTableStream = createStream({
+                columnDefault: {
+                    width: 8
+                },
+                columnCount: 5,
+                columns: [
+                    {
+                        width: 22,
+                        alignment: 'left'
+                    },
+                    {alignment: 'left', width: 10},
+                    {alignment: 'left', width: 10},
+                    {alignment: 'left'},
+                    {alignment: 'left', width: 30},
+
+                ],
+                border: getBorderCharacters('norc')
+            })
+        }
+
         let statusStyle;
         switch (status) {
             case DeploymentMessageStatus.FAILED:
@@ -54,13 +87,13 @@ export class ConsoleMessage {
                 statusStyle = chalk.bold.gray
                 break
         }
-        console.log(
+        ConsoleMessage.deploymentCurrentTableStream.write([
             chalk.gray((new Date()).toLocaleString()),
             statusStyle(status),
             chalk.green(item.type),
             chalk.bold.gray(item.status),
             chalk.bold.gray(item.path),
-        )
+        ])
     }
 
     static preDeployLog(preDeploymentContext: IPreDeploymentContext) {

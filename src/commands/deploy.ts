@@ -12,6 +12,7 @@ import Listr from "listr";
 interface Input extends GlobalInput, DeploymentGlobalInput {
     "ignore-approval": boolean
     "fail-no-changes": boolean
+    "disable-changes-dump": boolean
 }
 
 interface TaskContext {
@@ -24,6 +25,11 @@ module.exports = {
     description: 'Deploy the project',
     aliases: ['d'],
     builder: (yargs) => {
+        yargs.options('disable-changes-dump', {
+            describe: 'Disable changes dump',
+            type: "boolean",
+            boolean: true
+        });
         yargs.options('fail-no-changes', {
             describe: 'Fail on no changes',
             type: "boolean",
@@ -83,7 +89,8 @@ module.exports = {
             }
         }
 
-        ConsoleMessage.message(JSON.stringify(ctx.deploymentSummary, null, 2))
+        if (!args["disable-changes-dump"])
+            ConsoleMessage.message(JSON.stringify(ctx.deploymentSummary, null, 2))
 
         /**
          * MANUAL-APPROVAL

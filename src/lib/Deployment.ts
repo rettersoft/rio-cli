@@ -9,22 +9,27 @@ import path from "path";
 import process from "process";
 import {PROJECT_CLASSES_FOLDER, PROJECT_MODEL_FILE_EXTENSION, PROJECT_MODELS_FOLDER} from "../config";
 
-enum IDeploymentObjectItemStatus {
+export enum DeploymentObjectItemStatus {
     EDITED = 'EDITED',
     DELETED = 'DELETED',
     CREATED = 'CREATED',
     NONE = 'NONE',
+
+    ONGOING = 'ONGOING',
+    FINISHED = 'FINISHED',
+    FAILED = 'FAILED',
+    STARTED = 'STARTED',
 }
 
-enum IDeploymentObjectItemType {
+export enum DeploymentObjectItemType {
     MODEL = 'MODEL',
     CLASS = 'CLASS',
     CLASS_FILE = 'CLASS_FILE',
 }
 
 export interface IDeploymentOperationItem {
-    status: IDeploymentObjectItemStatus
-    type: IDeploymentObjectItemType
+    status: DeploymentObjectItemStatus
+    type: DeploymentObjectItemType
     oldContent?: string
     newContent?: string
     path: string // if type eq MODEL and CLASS, it has one path. if type eq CLASS_FILE, it has multiple path with '/' separator
@@ -62,7 +67,7 @@ export class Deployment {
             ...deploymentSummary.classDeploymentsSummary.classDeploymentsSummary.createdItems,
             ...deploymentSummary.classDeploymentsSummary.classDeploymentsSummary.deletedItems,
         ]) {
-            if (item.status !== IDeploymentObjectItemStatus.NONE) return true
+            if (item.status !== DeploymentObjectItemStatus.NONE) return true
         }
 
         for (const className of Object.keys(deploymentSummary.classDeploymentsSummary.classesFileChanges)) {
@@ -91,36 +96,43 @@ export class Deployment {
             ConsoleMessage.deploymentMessage(item, DeploymentMessageStatus.STARTED)
             try {
                 switch (item.type) {
-                    case IDeploymentObjectItemType.MODEL:
+                    case DeploymentObjectItemType.MODEL:
                         switch (item.status) {
-                            case IDeploymentObjectItemStatus.DELETED:
+                            case DeploymentObjectItemStatus.DELETED:
                                 await api.upsertModel(item.path)
                                 break
-                            case IDeploymentObjectItemStatus.EDITED:
-                            case IDeploymentObjectItemStatus.CREATED:
+                            case DeploymentObjectItemStatus.EDITED:
+                            case DeploymentObjectItemStatus.CREATED:
                                 if (!item.newContent) {
                                     CustomError.throwError('new content not found')
                                 } else {
                                     await api.upsertModel(item.path, JSON.parse(item.newContent))
                                 }
                                 break
+                            case DeploymentObjectItemStatus.NONE:
+                                if (!item.oldContent) {
+                                    CustomError.throwError('old content not found')
+                                } else {
+                                    await api.upsertModel(item.path, JSON.parse(item.oldContent))
+                                }
+                                break
                             default:
                                 break
                         }
                         break
-                    case IDeploymentObjectItemType.CLASS:
+                    case DeploymentObjectItemType.CLASS:
                         switch (item.status) {
-                            case IDeploymentObjectItemStatus.DELETED:
+                            case DeploymentObjectItemStatus.DELETED:
                                 // IGNORED
                                 break
-                            case IDeploymentObjectItemStatus.CREATED:
+                            case DeploymentObjectItemStatus.CREATED:
                                 await api.createClass(item.path, "")
                                 break
                             default:
                                 break
                         }
                         break
-                    case IDeploymentObjectItemType.CLASS_FILE:
+                    case DeploymentObjectItemType.CLASS_FILE:
                         // IGNORE
                         break
                     default:
@@ -143,7 +155,7 @@ export class Deployment {
                 ...deploymentSummary.classDeploymentsSummary.classDeploymentsSummary.createdItems,
                 ...deploymentSummary.classDeploymentsSummary.classDeploymentsSummary.noneItems,
             ].find(item => item.path === className)
-            if (!currentClassDeploymentItem || currentClassDeploymentItem.status === IDeploymentObjectItemStatus.DELETED) continue
+            if (!currentClassDeploymentItem || currentClassDeploymentItem.status === DeploymentObjectItemStatus.DELETED) continue
 
 
             const preparedData: ISaveClassFilesInput[] = []
@@ -156,32 +168,34 @@ export class Deployment {
             for (const item of changedFileDeployments) {
                 ConsoleMessage.deploymentMessage(item, DeploymentMessageStatus.SAVING)
                 switch (item.status) {
-                    case IDeploymentObjectItemStatus.CREATED:
+                    case DeploymentObjectItemStatus.CREATED:
                         preparedData.push({
                             status: 'ADDED',
                             content: gzipSync(Buffer.from(item.newContent!)).toString('base64'),
                             name: item.path.split('/').pop()!
                         })
                         break
-                    case IDeploymentObjectItemStatus.EDITED:
+                    case DeploymentObjectItemStatus.EDITED:
                         preparedData.push({
                             status: 'EDITED',
                             content: gzipSync(Buffer.from(item.newContent!)).toString('base64'),
                             name: item.path.split('/').pop()!
                         })
                         break
-                    case IDeploymentObjectItemStatus.DELETED:
+                    case DeploymentObjectItemStatus.DELETED:
                         preparedData.push({
                             status: 'DELETED',
-                            name: item.path.split('/').pop()!
+                            name: item.path.split('/').pop()!,
+                            content: ''
                         })
                         break
-                    case IDeploymentObjectItemStatus.NONE:
+                    case DeploymentObjectItemStatus.NONE:
                         // force save
                         if (force) {
                             preparedData.push({
                                 status: 'EDITED',
-                                name: item.path.split('/').pop()!
+                                name: item.path.split('/').pop()!,
+                                content: gzipSync(Buffer.from(item.oldContent!)).toString('base64'),
                             })
                         }
                         break
@@ -238,8 +252,8 @@ export class Deployment {
             if (!localModels[modelName]) {
                 acc.push({
                     path: modelName,
-                    type: IDeploymentObjectItemType.MODEL,
-                    status: IDeploymentObjectItemStatus.DELETED,
+                    type: DeploymentObjectItemType.MODEL,
+                    status: DeploymentObjectItemStatus.DELETED,
                     oldContent: JSON.stringify(remoteModels[modelName])
                 })
             }
@@ -250,8 +264,8 @@ export class Deployment {
             if (!remoteModels[modelName]) {
                 acc.push({
                     path: modelName,
-                    type: IDeploymentObjectItemType.MODEL,
-                    status: IDeploymentObjectItemStatus.CREATED,
+                    type: DeploymentObjectItemType.MODEL,
+                    status: DeploymentObjectItemStatus.CREATED,
                     newContent: JSON.stringify(localModels[modelName])
                 })
             }
@@ -266,16 +280,16 @@ export class Deployment {
                 if (JSON.stringify(localModels[modelName]) !== JSON.stringify(remoteModels[modelName])) {
                     edit.push({
                         path: modelName,
-                        type: IDeploymentObjectItemType.MODEL,
-                        status: IDeploymentObjectItemStatus.EDITED,
+                        type: DeploymentObjectItemType.MODEL,
+                        status: DeploymentObjectItemStatus.EDITED,
                         oldContent: JSON.stringify(remoteModels[modelName]),
                         newContent: JSON.stringify(localModels[modelName])
                     })
                 } else {
                     none.push({
                         path: modelName,
-                        type: IDeploymentObjectItemType.MODEL,
-                        status: IDeploymentObjectItemStatus.NONE,
+                        type: DeploymentObjectItemType.MODEL,
+                        status: DeploymentObjectItemStatus.NONE,
                         oldContent: JSON.stringify(remoteModels[modelName])
                     })
                 }
@@ -335,8 +349,8 @@ export class Deployment {
         Object.keys(remoteClasses).forEach(className => {
             if (!localClasses[className]) classDeleted.push({
                 path: className,
-                type: IDeploymentObjectItemType.CLASS,
-                status: IDeploymentObjectItemStatus.DELETED
+                type: DeploymentObjectItemType.CLASS,
+                status: DeploymentObjectItemStatus.DELETED
             })
             Object.keys(remoteClasses[className]).forEach(fileName => {
                 if (!localClasses[className] || !localClasses[className][fileName]) {
@@ -350,8 +364,8 @@ export class Deployment {
                     }
                     classesFileChanges[className].fileDeleted.push({
                         path: [className, fileName].join('/'),
-                        type: IDeploymentObjectItemType.CLASS_FILE,
-                        status: IDeploymentObjectItemStatus.DELETED,
+                        type: DeploymentObjectItemType.CLASS_FILE,
+                        status: DeploymentObjectItemStatus.DELETED,
                         oldContent: remoteClasses[className][fileName]
                     })
 
@@ -364,14 +378,14 @@ export class Deployment {
             if (!remoteClasses[className]) {
                 classCreated.push({
                     path: className,
-                    type: IDeploymentObjectItemType.CLASS,
-                    status: IDeploymentObjectItemStatus.CREATED
+                    type: DeploymentObjectItemType.CLASS,
+                    status: DeploymentObjectItemStatus.CREATED
                 })
             } else {
                 classNone.push({
                     path: className,
-                    type: IDeploymentObjectItemType.CLASS,
-                    status: IDeploymentObjectItemStatus.NONE
+                    type: DeploymentObjectItemType.CLASS,
+                    status: DeploymentObjectItemStatus.NONE
                 })
             }
             Object.keys(localClasses[className]).forEach(fileName => {
@@ -386,24 +400,24 @@ export class Deployment {
                 if (!remoteClasses[className] || !remoteClasses[className][fileName]) {
                     classesFileChanges[className].fileCreated.push({
                         path: [className, fileName].join('/'),
-                        type: IDeploymentObjectItemType.CLASS_FILE,
-                        status: IDeploymentObjectItemStatus.CREATED,
+                        type: DeploymentObjectItemType.CLASS_FILE,
+                        status: DeploymentObjectItemStatus.CREATED,
                         newContent: localClasses[className][fileName]
                     })
                 } else {
                     if (localClasses[className][fileName] !== remoteClasses[className][fileName]) {
                         classesFileChanges[className].fileEdited.push({
                             path: [className, fileName].join('/'),
-                            type: IDeploymentObjectItemType.CLASS_FILE,
-                            status: IDeploymentObjectItemStatus.EDITED,
+                            type: DeploymentObjectItemType.CLASS_FILE,
+                            status: DeploymentObjectItemStatus.EDITED,
                             oldContent: remoteClasses[className][fileName],
                             newContent: localClasses[className][fileName]
                         })
                     } else {
                         classesFileChanges[className].fileNone.push({
                             path: [className, fileName].join('/'),
-                            type: IDeploymentObjectItemType.CLASS_FILE,
-                            status: IDeploymentObjectItemStatus.NONE,
+                            type: DeploymentObjectItemType.CLASS_FILE,
+                            status: DeploymentObjectItemStatus.NONE,
                             oldContent: remoteClasses[className][fileName]
                         })
                     }

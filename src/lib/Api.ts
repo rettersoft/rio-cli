@@ -2,8 +2,8 @@ import {RetterRootClasses, RetterRootMethods, RetterSdk} from "./RetterSdk";
 import {IProjectDetail} from "../Interfaces/IProjectDetail";
 import {Project} from "./Project";
 import {gunzipSync} from "zlib";
-import {ConsoleMessage} from "./ConsoleMessage";
-import chalk from "chalk";
+import {ConsoleMessage, DeploymentMessageStatus} from "./ConsoleMessage";
+import {DeploymentObjectItemStatus, DeploymentObjectItemType} from "./Deployment";
 
 
 export interface RemoteClassFileItem {
@@ -105,25 +105,39 @@ export class Api implements IApi {
                 if (event.deployment) {
                     switch (event.deployment.status) {
                         case "failed":
-                            ConsoleMessage.message(chalk.redBright('- CLASS_DEPLOYMENT_FAILED::' + className,
-                                chalk.bold.gray(event.deployment.statusMessage)))
+                            ConsoleMessage.deploymentMessage({
+                                type: DeploymentObjectItemType.CLASS,
+                                status: DeploymentObjectItemStatus.FAILED,
+                                path: className
+                            }, DeploymentMessageStatus.FAILED)
                             reject(event.deployment.statusMessage)
                             break
                         case "finished":
-                            ConsoleMessage.message(chalk.greenBright('- CLASS_DEPLOYMENT_FINISHED::' + className,
-                                chalk.bold.gray(event.deployment.statusMessage)))
+                            ConsoleMessage.deploymentMessage({
+                                type: DeploymentObjectItemType.CLASS,
+                                status: DeploymentObjectItemStatus.FINISHED,
+                                path: className
+                            }, DeploymentMessageStatus.SUCCEED)
                             resolve(true)
                             break
                         case "started":
-                            ConsoleMessage.message(chalk.greenBright('- CLASS_DEPLOYMENT_STARTED::' + className,
-                                chalk.bold.gray(event.deployment.statusMessage)))
+                            ConsoleMessage.deploymentMessage({
+                                type: DeploymentObjectItemType.CLASS,
+                                status: DeploymentObjectItemStatus.STARTED,
+                                path: className
+                            }, DeploymentMessageStatus.STARTED)
+                            break
                         case "ongoing":
-                            ConsoleMessage.message(chalk.greenBright('- CLASS_DEPLOYMENT_ONGOING::' + className,
-                                chalk.bold.gray(event.deployment.statusMessage)))
+                            ConsoleMessage.deploymentMessage({
+                                type: DeploymentObjectItemType.CLASS,
+                                status: DeploymentObjectItemStatus.ONGOING,
+                                path: className
+                            }, DeploymentMessageStatus.DEPLOYING)
                             break
                         default:
                             break
                     }
+                    ConsoleMessage.customDeploymentMessage(event.deployment.statusMessage)
                 }
             })
         }))
