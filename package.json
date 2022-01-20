@@ -22,8 +22,8 @@
     "link": "npm run build && npm link"
   },
   "dependencies": {
-    "@retter/rio-generator": "1.0.9",
-    "@retter/sdk": "0.2.22",
+    "@retter/rio-generator": "1.0.10",
+    "@retter/sdk": "0.2.27",
     "adm-zip": "0.5.9",
     "axios": "0.24.0",
     "chalk": "4.1.2",
