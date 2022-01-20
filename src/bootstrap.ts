@@ -23,9 +23,12 @@ function cleaner() {
     /**
      * Remove config folder
      */
+    /*
     if (fs.existsSync(RIO_CLI_CONFIG_PATH)) {
         fs.rmdirSync(RIO_CLI_CONFIG_PATH, {recursive: true})
     }
+
+     */
 }
 
 
