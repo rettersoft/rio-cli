@@ -5,7 +5,13 @@ import {Tmp} from "../lib/Tmp";
 import {FileExtra} from "../lib/FileExtra";
 import path from "path";
 import {ProjectManager} from "../lib/ProjectManager";
-import {PROJECT_GENERATED_DOCS_FOLDER, PROJECT_RIO_CLASS_FILE} from "../config";
+import {
+    PROJECT_DOCUMENTATION_NAME,
+    PROJECT_GENERATED_DOCS_FOLDER,
+    PROJECT_PACKAGE_JSON_FILE,
+    PROJECT_README_FILE,
+    PROJECT_RIO_CLASS_FILE
+} from "../config";
 import {execSync, spawn} from "child_process";
 import Listr from "listr";
 import fs from "fs";
@@ -13,10 +19,10 @@ import fs from "fs";
 interface Input extends GlobalInput {
     out: string
     open: boolean
+    "include-version": boolean
 }
 
 interface TaskContext {
-
 }
 
 module.exports = {
@@ -29,6 +35,12 @@ module.exports = {
             describe: 'Docs output folder',
             default: PROJECT_GENERATED_DOCS_FOLDER,
             type: 'string'
+        })
+        yargs.options('include-version', {
+            describe: 'Include version',
+            default: false,
+            boolean: true,
+            type: 'boolean'
         })
         yargs.options('open', {
             describe: 'Open docs after generate operation',
@@ -48,7 +60,7 @@ module.exports = {
                     return new Listr([
                         {
                             title: "Preparing Files",
-                            task: async (ctx) => {
+                            task: async (ctx: TaskContext) => {
                                 const tsConfig = {
                                     "compilerOptions": {
                                         "lib": ["ES2015", "dom"],
@@ -60,16 +72,37 @@ module.exports = {
                                         "downlevelIteration": true
                                     },
                                     "typedocOptions": {
-                                        "entryPoints": ["rio.ts"],
+                                        "entryPoints": [PROJECT_RIO_CLASS_FILE],
                                         "out": PROJECT_GENERATED_DOCS_FOLDER
                                     }
                                 }
 
+                                // get project name and version from package.json
+                                let projectPackageJson;
+                                const projectPackageJsonPath = path.join(process.cwd(), PROJECT_PACKAGE_JSON_FILE)
+                                if (fs.existsSync(projectPackageJsonPath)) {
+                                    try {
+                                        projectPackageJson = JSON.parse(fs.readFileSync(projectPackageJsonPath).toString('utf-8'))
+                                    } catch (e) {
+                                    }
+                                }
+
+                                //copy readme.md if exist
+                                let localReadmeMdPath = "none"
+                                const readmeMdPath = path.join(process.cwd(), PROJECT_README_FILE)
+                                if (fs.existsSync(readmeMdPath)) {
+                                    localReadmeMdPath = path.join(compileTmp, PROJECT_README_FILE)
+                                    FileExtra.copySync(path.join(process.cwd(), PROJECT_README_FILE), path.join(compileTmp, PROJECT_README_FILE))
+                                }
+
                                 const packageJson = {
-                                    "name": "docs",
-                                    "version": "0.0.1",
+                                    "name": projectPackageJson && projectPackageJson.name ? projectPackageJson.name : PROJECT_DOCUMENTATION_NAME,
+                                    "version": projectPackageJson && projectPackageJson.version ? projectPackageJson.version : "0.0.1",
                                     "scripts": {
-                                        "td": "typedoc"
+                                        "td": "typedoc " + [
+                                            "--hideGenerator",
+                                            args["include-version"] ? '--includeVersion' : undefined,
+                                            `--readme ${localReadmeMdPath}`].filter(Boolean).join(' ')
                                     },
                                     "dependencies": {
                                         "@retter/rdk": "^1.0.7",
@@ -91,7 +124,7 @@ module.exports = {
                         },
                         {
                             title: "Loading Dependencies",
-                            task: (ctx) => {
+                            task: (ctx: TaskContext) => {
                                 return new Promise((resolve, reject) => {
                                     const npmInstall = spawn("npm",
                                         ["install", "--no-warnings"], {
@@ -109,18 +142,19 @@ module.exports = {
                         },
                         {
                             title: "Rendering",
-                            task: async (ctx) => {
+                            task: async (ctx: TaskContext) => {
                                 return new Promise((resolve, reject) => {
-                                    const npmInstall = spawn("npm",
-                                        ["run", "td"], {
-                                            stdio: "ignore",
+                                    const typedoc = spawn("npm",
+                                        ["run", "td"],
+                                        {
+                                            stdio: 'ignore',
                                             cwd: compileTmp
                                         })
-                                    npmInstall.on("close", () => {
+                                    typedoc.on("close", () => {
                                         resolve(true)
                                     })
-                                    npmInstall.on("error", (err) => {
-                                        console.error(err)
+                                    typedoc.on("error", (err) => {
+                                        console.log(err)
                                         reject(false)
                                     })
                                 })
@@ -143,10 +177,10 @@ module.exports = {
                 execSync('open ' + path.join(outputDir, 'index.html'))
             }
 
-            //Tmp.clearUniqueTmpPath(compileTmp)
+            Tmp.clearUniqueTmpPath(compileTmp)
         } catch (e) {
             if (compileTmp) {
-                //Tmp.clearUniqueTmpPath(compileTmp)
+                Tmp.clearUniqueTmpPath(compileTmp)
             }
             throw e
         }
