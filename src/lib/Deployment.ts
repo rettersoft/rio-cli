@@ -99,7 +99,8 @@ export class Deployment {
                     case DeploymentObjectItemType.MODEL:
                         switch (item.status) {
                             case DeploymentObjectItemStatus.DELETED:
-                                await api.upsertModel(item.path)
+                                // IGNORED
+                                // await api.upsertModel(item.path)
                                 break
                             case DeploymentObjectItemStatus.EDITED:
                             case DeploymentObjectItemStatus.CREATED:
