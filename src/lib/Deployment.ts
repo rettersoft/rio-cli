@@ -53,7 +53,7 @@ export interface IFileChangesByClassName {
 
 export type IClassesDeploymentSummary = Omit<IDeploymentSummary, 'editedItems'>
 
-interface IProjectModels {
+export interface IProjectModels {
     [modelName: string]: object
 }
 

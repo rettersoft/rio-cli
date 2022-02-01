@@ -4,7 +4,13 @@ import path from "path";
 import {PROJECT_CLASSES_FOLDER, PROJECT_RIO_CLASS_FILE} from "../config";
 import {IClassContents, Project} from "./Project";
 import {Api} from "./Api";
-import {Deployment, IClassesDeploymentSummary, IDeploymentSummary, IFileChangesByClassName} from "./Deployment";
+import {
+    Deployment,
+    IClassesDeploymentSummary,
+    IDeploymentSummary,
+    IFileChangesByClassName,
+    IProjectModels
+} from "./Deployment";
 
 export interface IPreDeploymentContext {
     profile: string
@@ -28,13 +34,13 @@ export class ProjectManager {
         await ProjectManager.generateAndSaveRioFiles()
 
         const localModelContents = Project.getModelFileContents()
-        const localModels = Object.keys(localModelContents).reduce<{ [modelName: string]: object }>((acc, modelName) => {
+        let localModels: IProjectModels = Object.keys(localModelContents).reduce<{ [modelName: string]: object }>((acc, modelName) => {
             acc[modelName] = JSON.parse(localModelContents[modelName])
             return acc
         }, {})
         const localClasses = Project.getLocalClassContents(classes)
 
-        const remoteModels = project.detail.modelDefinitions
+        let remoteModels = project.detail.modelDefinitions
         let remoteClasses = await project.detail.classes.reduce<Promise<IClassContents>>(async (acc, classItem) => {
             const className = classItem.classId
             const clonedAcc = await acc
@@ -46,11 +52,35 @@ export class ProjectManager {
             return clonedAcc
         }, Promise.resolve<IClassContents>({}))
 
+
         //filter selected classes if defined
         if (classes && classes.length) {
+            let selectedModels: string[] = []
             remoteClasses = classes.reduce<IClassContents>((acc, className) => {
+                const template = Project.getLocalClassTemplate(className)
+                if (template.methods) {
+                    template.methods.forEach(m => {
+                        if (m.inputModel) selectedModels.push(m.inputModel)
+                        if (m.outputModel) selectedModels.push(m.outputModel)
+                        if (m.errorModel) selectedModels.push(m.errorModel)
+                    })
+                }
                 if (remoteClasses[className]) {
                     acc[className] = remoteClasses[className]
+                }
+                return acc
+            }, {})
+
+            // filter models
+            localModels = Object.keys(localModels).reduce<IProjectModels>((acc, modelName) => {
+                if (selectedModels.includes(modelName)) {
+                    acc[modelName] = localModels[modelName]
+                }
+                return acc
+            }, {})
+            remoteModels = Object.keys(remoteModels).reduce<IProjectModels>((acc, modelName) => {
+                if (selectedModels.includes(modelName)) {
+                    acc[modelName] = remoteModels[modelName]
                 }
                 return acc
             }, {})

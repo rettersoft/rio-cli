@@ -9,6 +9,8 @@ import {
 import path from "path";
 import {FileExtra} from "./FileExtra";
 import * as process from "process";
+import YAML from "yaml"
+import {IProjectTemplate} from "../Interfaces/IProjectTemplate";
 
 export interface IProjectRioConfig {
     projectId: string
@@ -19,6 +21,11 @@ export interface IClassContents {
 }
 
 export class Project {
+
+    static getLocalClassTemplate(className: string): IProjectTemplate {
+        const template = Project.readClassFile(className, PROJECT_CLASS_TEMPLATE_FILE)
+        return YAML.parse(template)
+    }
 
     static getLocalClassContents(classes?: string[]) {
         return (classes || Project.listClassNames()).reduce<IClassContents>(
