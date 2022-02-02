@@ -6,6 +6,7 @@ import {Deployment} from "../lib/Deployment";
 import afterCommand from "./AfterCommand";
 import {CommandModule} from "yargs";
 import Listr from "listr";
+import {RIO_CLI_PROJECT_ID_KEY} from "../config";
 
 interface Input extends GlobalInput, DeploymentGlobalInput {
 
@@ -20,6 +21,10 @@ module.exports = {
     aliases: ['pd'],
     description: 'Show deployment changes',
     builder: yargs => {
+        yargs.options('project-id', {
+            describe: 'Project id for deployment',
+            type: "string"
+        });
         yargs.options('classes', {
             describe: 'Filtered classes for deployment',
             type: "array"
@@ -33,6 +38,7 @@ module.exports = {
         return yargs
     },
     handler: async (args) => {
+        process.env[RIO_CLI_PROJECT_ID_KEY] = args["project-id"]
 
         if (args.classes) {
             ConsoleMessage.table([

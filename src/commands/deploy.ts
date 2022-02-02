@@ -8,6 +8,7 @@ import {Deployment} from "../lib/Deployment";
 import afterCommand from "./AfterCommand";
 import {CommandModule} from "yargs";
 import Listr from "listr";
+import {RIO_CLI_PROJECT_ID_KEY} from "../config";
 
 interface Input extends GlobalInput, DeploymentGlobalInput {
     "ignore-approval": boolean
@@ -25,6 +26,10 @@ module.exports = {
     description: 'Deploy the project',
     aliases: ['d'],
     builder: (yargs) => {
+        yargs.options('project-id', {
+            describe: 'Project id for deployment',
+            type: "string"
+        });
         yargs.options('disable-changes-dump', {
             describe: 'Disable changes dump',
             type: "boolean",
@@ -55,6 +60,8 @@ module.exports = {
     },
     handler: async (args) => {
         if (args.force) ConsoleMessage.message(chalk.blueBright.bold('FORCED'))
+
+        process.env[RIO_CLI_PROJECT_ID_KEY] = args["project-id"]
 
         const preTasks = new Listr([
             {

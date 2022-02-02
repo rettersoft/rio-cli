@@ -4,7 +4,8 @@ import {
     PROJECT_CLASSES_FOLDER,
     PROJECT_MODEL_FILE_EXTENSION,
     PROJECT_MODELS_FOLDER,
-    PROJECT_RIO_CONFIG
+    PROJECT_RIO_CONFIG,
+    RIO_CLI_PROJECT_ID_KEY
 } from "../config";
 import path from "path";
 import {FileExtra} from "./FileExtra";
@@ -36,8 +37,21 @@ export class Project {
     }
 
     static getProjectRioConfig(): IProjectRioConfig {
-        const projectRioConfigContent = FileExtra.getFileContextOrFail(path.join(process.cwd(), PROJECT_RIO_CONFIG))
-        return JSON.parse(projectRioConfigContent.toString('utf-8'))
+        const envProjectId = process.env[RIO_CLI_PROJECT_ID_KEY]
+        let projectConfig: IProjectRioConfig
+        try {
+            const projectRioConfigContent = FileExtra.getFileContextOrFail(path.join(process.cwd(), PROJECT_RIO_CONFIG))
+            projectConfig = JSON.parse(projectRioConfigContent.toString('utf-8'))
+            if (envProjectId) {
+                projectConfig.projectId = envProjectId
+            }
+        } catch (e) {
+            if (!envProjectId) throw new Error('Project id is required')
+            projectConfig = {
+                projectId: envProjectId
+            }
+        }
+        return projectConfig
     }
 
     static getModelFileContents(exclude: string[] = []) {
