@@ -37,7 +37,7 @@ export class Project {
     }
 
     static getProjectRioConfig(): IProjectRioConfig {
-        const envProjectId = process.env[RIO_CLI_PROJECT_ID_KEY]
+        const envProjectId = !process.env[RIO_CLI_PROJECT_ID_KEY] || process.env[RIO_CLI_PROJECT_ID_KEY] === 'undefined' ? undefined : process.env[RIO_CLI_PROJECT_ID_KEY]
         let projectConfig: IProjectRioConfig
         try {
             const projectRioConfigContent = FileExtra.getFileContextOrFail(path.join(process.cwd(), PROJECT_RIO_CONFIG))
