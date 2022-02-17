@@ -311,4 +311,6 @@ Desktop.ini
 *.vspx
 *.sap
 
+**/package-lock.json
+
 # End of https://www.toptal.com/developers/gitignore/api/node,jetbrains+all,openframeworks+visualstudio

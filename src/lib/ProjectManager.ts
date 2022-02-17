@@ -52,7 +52,6 @@ export class ProjectManager {
             return clonedAcc
         }, Promise.resolve<IClassContents>({}))
 
-
         //filter selected classes if defined
         if (classes && classes.length) {
             let selectedModels: string[] = []
@@ -60,9 +59,19 @@ export class ProjectManager {
                 const template = Project.getLocalClassTemplate(className)
                 if (template.methods) {
                     template.methods.forEach(m => {
-                        if (m.inputModel) selectedModels.push(m.inputModel)
-                        if (m.outputModel) selectedModels.push(m.outputModel)
-                        if (m.errorModel) selectedModels.push(m.errorModel)
+                        if (m.inputModel) {
+                            selectedModels.push(m.inputModel)
+                            Project.getModelDefs(m.inputModel).forEach(d => selectedModels.push(d))
+                        }
+                        if (m.outputModel) {
+                            selectedModels.push(m.outputModel)
+                            Project.getModelDefs(m.outputModel).forEach(d => selectedModels.push(d))
+                        }
+                        if (m.errorModel) {
+                            selectedModels.push(m.errorModel)
+                            Project.getModelDefs(m.errorModel).forEach(d => selectedModels.push(d))
+                        }
+
                     })
                 }
                 if (remoteClasses[className]) {
@@ -70,6 +79,9 @@ export class ProjectManager {
                 }
                 return acc
             }, {})
+
+            //uniq models
+            selectedModels = Array.from(new Set(selectedModels))
 
             // filter models
             localModels = Object.keys(localModels).reduce<IProjectModels>((acc, modelName) => {

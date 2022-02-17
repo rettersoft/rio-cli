@@ -74,8 +74,8 @@ export class Project {
 
     static listModelNames() {
         const modelsFolder = fs.readdirSync(PROJECT_MODELS_FOLDER, {withFileTypes: true})
-        const modelFiles = modelsFolder.filter(l => l.isFile() && l.name.endsWith('.json'))
-        return modelFiles.map(file => file.name.replace('.json', ''))
+        const modelFiles = modelsFolder.filter(l => l.isFile() && l.name.endsWith(PROJECT_MODEL_FILE_EXTENSION))
+        return modelFiles.map(file => file.name.replace(PROJECT_MODEL_FILE_EXTENSION, ''))
     }
 
     static listClassFileNames(className: string) {
@@ -100,5 +100,18 @@ export class Project {
 
     static readModelFile(modelName: string) {
         return FileExtra.getFileContextOrFail(path.join(process.cwd(), PROJECT_MODELS_FOLDER, `${modelName + PROJECT_MODEL_FILE_EXTENSION}`)).toString('utf-8')
+    }
+
+    static getModelDefs(modelName: string): string[] {
+        const modelContent = Project.readModelFile(modelName)
+        const models = Array.from(new Set(modelContent.match(/("#\/\$defs\/)[A-Za-z0-9_-].*(")/g) || []))
+            .map(r => r.replace(/"/g, '').replace('#/$defs/', ''))
+        if (models.length < 1) {
+            return []
+        } else {
+            return models.concat(models.map(m => {
+                return Project.getModelDefs(m)
+            }).join())
+        }
     }
 }
