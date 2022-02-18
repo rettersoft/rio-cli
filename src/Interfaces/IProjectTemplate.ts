@@ -6,4 +6,6 @@ interface IProjectTemplateMethod {
 
 export interface IProjectTemplate {
     methods?: IProjectTemplateMethod[]
+    init: IProjectTemplateMethod
+    get: IProjectTemplateMethod
 }

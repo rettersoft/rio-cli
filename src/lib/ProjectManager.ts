@@ -74,6 +74,14 @@ export class ProjectManager {
 
                     })
                 }
+                if (template.init && template.init.inputModel) {
+                    selectedModels.push(template.init.inputModel)
+                    Project.getModelDefs(template.init.inputModel).forEach(d => selectedModels.push(d))
+                }
+                if (template.get && template.get.inputModel) {
+                    selectedModels.push(template.get.inputModel)
+                    Project.getModelDefs(template.get.inputModel).forEach(d => selectedModels.push(d))
+                }
                 if (remoteClasses[className]) {
                     acc[className] = remoteClasses[className]
                 }
