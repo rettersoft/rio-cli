@@ -5,7 +5,7 @@ Rio Command Line Tool
 ### Installation
 
 ```shell
-> npm i -g @rettersoft/rio-cli
+> npm i -g @retter/rio-cli
 ```
 
 ### Before Starting
