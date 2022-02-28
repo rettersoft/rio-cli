@@ -5,7 +5,7 @@ import fs, {existsSync} from "fs";
 
 export class Tmp {
     static getUniqueTmpPath() {
-        const _path = path.join(RIO_CLI_CONFIG_PATH, RIO_CLI_TEMP_FOLDER, process.geteuid().toString())
+        const _path = path.join(RIO_CLI_CONFIG_PATH, RIO_CLI_TEMP_FOLDER, Date.now().toString())
         if (existsSync(_path)) {
             throw new Error('Temporary path already exist. Please remove .tmp folder and try again.')
         }
