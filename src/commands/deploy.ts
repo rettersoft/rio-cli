@@ -13,7 +13,7 @@ import {RIO_CLI_PROJECT_ID_KEY} from "../config";
 interface Input extends GlobalInput, DeploymentGlobalInput {
     "ignore-approval": boolean
     "fail-no-changes": boolean
-    "disable-changes-dump": boolean
+    "verbose": boolean
 }
 
 interface TaskContext {
@@ -30,10 +30,10 @@ module.exports = {
             describe: 'Project id for deployment',
             type: "string"
         });
-        yargs.options('disable-changes-dump', {
-            describe: 'Disable changes dump',
+        yargs.options('verbose', {
+            describe: 'Show change-set',
             type: "boolean",
-            boolean: true
+            boolean: false
         });
         yargs.options('fail-no-changes', {
             describe: 'Fail on no changes',
@@ -96,7 +96,7 @@ module.exports = {
             }
         }
 
-        if (!args["disable-changes-dump"])
+        if (args["verbose"])
             ConsoleMessage.message(JSON.stringify(ctx.deploymentSummary, null, 2))
 
         /**
