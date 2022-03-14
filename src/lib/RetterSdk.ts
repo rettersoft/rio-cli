@@ -17,6 +17,7 @@ export enum RetterRootMethods {
     createClass = 'createClass',
     saveClassFiles = 'save',
     deployClass = 'deploy',
+    upsertDependency = 'upsertDependency'
 }
 
 export class RetterSdk {

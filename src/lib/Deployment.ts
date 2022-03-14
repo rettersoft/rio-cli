@@ -7,7 +7,9 @@ import {gzipSync} from "zlib";
 import {Ignore} from "./Ignore";
 import path from "path";
 import process from "process";
-import {PROJECT_CLASSES_FOLDER, PROJECT_MODEL_FILE_EXTENSION, PROJECT_MODELS_FOLDER} from "../config";
+import {PROJECT_MODEL_FILE_EXTENSION, PROJECT_MODELS_FOLDER} from "../config";
+import {Dependencies, IDependencyContent, IRemoteDependencyContent} from "./Dependencies";
+import axios from "axios";
 
 export enum DeploymentObjectItemStatus {
     EDITED = 'EDITED',
@@ -22,6 +24,7 @@ export enum DeploymentObjectItemStatus {
 }
 
 export enum DeploymentObjectItemType {
+    DEPENDENCY = 'DEPENDENCY',
     MODEL = 'MODEL',
     CLASS = 'CLASS',
     CLASS_FILE = 'CLASS_FILE',
@@ -92,6 +95,9 @@ export class Deployment {
             ...(force ? deploymentSummary.modelDeploymentsSummary.noneItems : []),
             ...deploymentSummary.classDeploymentsSummary.classDeploymentsSummary.createdItems,
             ...deploymentSummary.classDeploymentsSummary.classDeploymentsSummary.deletedItems,
+            ...deploymentSummary.dependencyDeploymentsSummary.createdItems,
+            ...deploymentSummary.dependencyDeploymentsSummary.editedItems,
+            ...deploymentSummary.dependencyDeploymentsSummary.deletedItems,
         ]) {
             ConsoleMessage.deploymentMessage(item, DeploymentMessageStatus.STARTED)
             try {
@@ -135,6 +141,28 @@ export class Deployment {
                         break
                     case DeploymentObjectItemType.CLASS_FILE:
                         // IGNORE
+                        break
+                    case DeploymentObjectItemType.DEPENDENCY:
+                        switch (item.status) {
+                            case DeploymentObjectItemStatus.DELETED:
+                                // IGNORED
+                                break
+                            case DeploymentObjectItemStatus.CREATED:
+                            case DeploymentObjectItemStatus.EDITED:
+                                if (!item.newContent) throw new Error('Dependency new content not found' + item.path)
+                                const url = await api.upsertDependency({
+                                    dependencyName: item.path,
+                                    hash: Dependencies.hashDependencyContent(item.newContent)
+                                })
+                                await axios.put(url, item.newContent, {
+                                    headers: {
+                                        'Content-Type': 'application/zip',
+                                    }
+                                })
+                                break
+                            default:
+                                break
+                        }
                         break
                     default:
                         CustomError.throwError('Unsupported deployment item type')
@@ -434,6 +462,57 @@ export class Deployment {
                 noneItems: classNone
             },
             classesFileChanges
+        }
+
+    }
+
+    static getDependencyDeploymentsContext(localDependencies: IDependencyContent[], remoteDependencies: IRemoteDependencyContent[]): IDeploymentSummary {
+
+        const editedItems: IDeploymentOperationItem[] = []
+        const deletedItems: IDeploymentOperationItem[] = []
+        const createdItems: IDeploymentOperationItem[] = []
+        const noneItems: IDeploymentOperationItem[] = []
+
+        remoteDependencies.forEach(rd => {
+            if (!localDependencies.find(ld => ld.dependencyName === rd.dependencyName)) {
+                deletedItems.push({
+                    path: rd.dependencyName,
+                    status: DeploymentObjectItemStatus.DELETED,
+                    type: DeploymentObjectItemType.DEPENDENCY
+                })
+            }
+        })
+
+        localDependencies.forEach(ld => {
+            const remoteModel = remoteDependencies.find(rd => rd.dependencyName === ld.dependencyName)
+            if (!remoteModel) {
+                createdItems.push({
+                    path: ld.dependencyName,
+                    status: DeploymentObjectItemStatus.CREATED,
+                    type: DeploymentObjectItemType.DEPENDENCY,
+                    newContent: ld.zip.toString('base64')
+                })
+            } else if (remoteModel.hash !== ld.hash) {
+                editedItems.push({
+                    path: ld.dependencyName,
+                    status: DeploymentObjectItemStatus.EDITED,
+                    type: DeploymentObjectItemType.DEPENDENCY,
+                    newContent: ld.zip.toString('base64')
+                })
+            } else {
+                noneItems.push({
+                    path: ld.dependencyName,
+                    status: DeploymentObjectItemStatus.NONE,
+                    type: DeploymentObjectItemType.DEPENDENCY
+                })
+            }
+        })
+
+        return {
+            editedItems,
+            deletedItems,
+            createdItems,
+            noneItems
         }
 
     }

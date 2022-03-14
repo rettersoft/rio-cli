@@ -4,6 +4,8 @@ import {Project} from "./Project";
 import {gunzipSync} from "zlib";
 import {ConsoleMessage, DeploymentMessageStatus} from "./ConsoleMessage";
 import {DeploymentObjectItemStatus, DeploymentObjectItemType} from "./Deployment";
+import {IDependencyContent, IRemoteDependencyContent} from "./Dependencies";
+import {Omit} from "yargs";
 
 
 export interface RemoteClassFileItem {
@@ -32,6 +34,10 @@ interface IApi {
     saveClassFiles(className: string, input: ISaveClassFilesInput[]): Promise<void>
 
     deployClass(className: string, force: boolean): Promise<void>
+
+    getRemoteDependencies(): Promise<IRemoteDependencyContent[]>
+
+    upsertDependency(dependencySummary: Omit<IDependencyContent, 'zip'>): Promise<string>
 }
 
 export class Api implements IApi {
@@ -205,6 +211,42 @@ export class Api implements IApi {
                 content: gunzipSync(Buffer.from(item.content, 'base64')).toString('utf-8'),
             }
         })
+    }
+
+    async getRemoteDependencies(): Promise<IRemoteDependencyContent[]> {
+        const projectRioConfig = Project.getProjectRioConfig()
+        const projectInstance = await RetterSdk.getCloudObject(await RetterSdk.getRootRetterSdkByAdminProfile(this.profile), {
+            useLocal: true,
+            classId: RetterRootClasses.Project,
+            instanceId: projectRioConfig.projectId,
+        })
+        const state = await projectInstance.getState()
+        if (!state.data.public.layers) return []
+
+        const layers = Object.keys(state.data.public.layers)
+        return layers.map(l => {
+            return {
+                dependencyName: l,
+                hash: state.data.public.layers[l].hash || ""
+            }
+        })
+    }
+
+    async upsertDependency(dependencySummary: Omit<IDependencyContent, 'zip'>): Promise<string> {
+        const projectRioConfig = Project.getProjectRioConfig()
+        const projectInstance = await RetterSdk.getCloudObject(await RetterSdk.getRootRetterSdkByAdminProfile(this.profile), {
+            useLocal: true,
+            classId: RetterRootClasses.Project,
+            instanceId: projectRioConfig.projectId,
+        })
+        const result = await RetterSdk.callMethod(projectInstance, {
+            method: RetterRootMethods.upsertDependency,
+            body: {
+                dependencyName: dependencySummary.dependencyName,
+                hash: dependencySummary.hash
+            }
+        })
+        return result.url
     }
 
 }

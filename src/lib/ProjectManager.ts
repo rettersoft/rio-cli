@@ -11,6 +11,7 @@ import {
     IFileChangesByClassName,
     IProjectModels
 } from "./Deployment";
+import {Dependencies, IDependencyContent} from "./Dependencies";
 
 export interface IPreDeploymentContext {
     profile: string
@@ -18,7 +19,8 @@ export interface IPreDeploymentContext {
         classDeploymentsSummary: IClassesDeploymentSummary,
         classesFileChanges: IFileChangesByClassName
     },
-    modelDeploymentsSummary: IDeploymentSummary
+    modelDeploymentsSummary: IDeploymentSummary,
+    dependencyDeploymentsSummary: IDeploymentSummary
 }
 
 export class ProjectManager {
@@ -106,13 +108,28 @@ export class ProjectManager {
             }, {})
         }
 
+        const dependencies = Dependencies.getDependenciesWithContents()
+        const listedDependencies = Dependencies.getListedDependencies(Object.keys(localClasses))
+        const localDependencies: IDependencyContent[] = []
+        const remoteDependencies = await api.getRemoteDependencies()
+
+        for (const listedDependency of listedDependencies) {
+            const dependency = dependencies.find(d => d.dependencyName === listedDependency)
+            if (dependency) {
+                localDependencies.push(dependency)
+            }
+        }
+
+
         const modelDeploymentsSummary = Deployment.getModelDeploymentsContext(localModels, remoteModels)
         const classDeploymentsSummary = Deployment.getClassDeploymentsContext(localClasses, remoteClasses)
+        const dependencyDeploymentsSummary = Deployment.getDependencyDeploymentsContext(localDependencies, remoteDependencies)
 
         return {
             profile,
             classDeploymentsSummary,
             modelDeploymentsSummary,
+            dependencyDeploymentsSummary
         }
     }
 

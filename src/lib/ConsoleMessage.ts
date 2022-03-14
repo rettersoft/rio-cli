@@ -188,7 +188,37 @@ export class ConsoleMessage {
                         ...{oldContent: item.oldContent ? item.oldContent.substr(0, charLimit) + '...' : undefined}
                     }
                 }),
-            }
+            },
+            dependencyDeploymentsSummary: {
+                editedItems: preDeploymentContext.dependencyDeploymentsSummary.editedItems.map(item => {
+                    return {
+                        ...item,
+                        ...{newContent: item.newContent ? item.newContent.substr(0, charLimit) + '...' : undefined},
+                        ...{oldContent: item.oldContent ? item.oldContent.substr(0, charLimit) + '...' : undefined}
+                    }
+                }),
+                deletedItems: preDeploymentContext.dependencyDeploymentsSummary.deletedItems.map(item => {
+                    return {
+                        ...item,
+                        ...{newContent: item.newContent ? item.newContent.substr(0, charLimit) + '...' : undefined},
+                        ...{oldContent: item.oldContent ? item.oldContent.substr(0, charLimit) + '...' : undefined}
+                    }
+                }),
+                createdItems: preDeploymentContext.dependencyDeploymentsSummary.createdItems.map(item => {
+                    return {
+                        ...item,
+                        ...{newContent: item.newContent ? item.newContent.substr(0, charLimit) + '...' : undefined},
+                        ...{oldContent: item.oldContent ? item.oldContent.substr(0, charLimit) + '...' : undefined}
+                    }
+                }),
+                noneItems: preDeploymentContext.dependencyDeploymentsSummary.noneItems.map(item => {
+                    return {
+                        ...item,
+                        ...{newContent: item.newContent ? item.newContent.substr(0, charLimit) + '...' : undefined},
+                        ...{oldContent: item.oldContent ? item.oldContent.substr(0, charLimit) + '...' : undefined}
+                    }
+                }),
+            },
         }
         console.log(JSON.stringify(newPreDeploymentContext, null, 2))
     }
