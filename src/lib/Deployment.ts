@@ -168,25 +168,26 @@ export class Deployment {
             ]
             for (const item of changedFileDeployments) {
                 ConsoleMessage.deploymentMessage(item, DeploymentMessageStatus.SAVING)
+                const classFileName = item.path.replace(path.join(className, path.sep).toString(), '')
                 switch (item.status) {
                     case DeploymentObjectItemStatus.CREATED:
                         preparedData.push({
                             status: 'ADDED',
                             content: gzipSync(Buffer.from(item.newContent!)).toString('base64'),
-                            name: item.path.split('/').pop()!
+                            name: classFileName
                         })
                         break
                     case DeploymentObjectItemStatus.EDITED:
                         preparedData.push({
                             status: 'EDITED',
                             content: gzipSync(Buffer.from(item.newContent!)).toString('base64'),
-                            name: item.path.split('/').pop()!
+                            name: classFileName
                         })
                         break
                     case DeploymentObjectItemStatus.DELETED:
                         preparedData.push({
                             status: 'DELETED',
-                            name: item.path.split('/').pop()!,
+                            name: classFileName,
                             content: ''
                         })
                         break
@@ -316,7 +317,7 @@ export class Deployment {
         localClasses = Object.keys(localClasses).reduce<IClassContents>((acc, localClassName) => {
             acc[localClassName] = Object.keys(localClasses[localClassName]).reduce<{ [fileName: string]: string }>((subAcc, localClassFileName) => {
                 if (!Ignore.isIgnored(
-                    path.relative(process.cwd(), path.join(PROJECT_CLASSES_FOLDER, localClassName, localClassFileName))
+                    path.relative(process.cwd(), localClassFileName)
                 )) {
                     subAcc[localClassFileName] = localClasses[localClassName][localClassFileName]
                 }
@@ -331,7 +332,7 @@ export class Deployment {
         remoteClasses = Object.keys(remoteClasses).reduce<IClassContents>((acc, remoteClassName) => {
             acc[remoteClassName] = Object.keys(remoteClasses[remoteClassName]).reduce<{ [fileName: string]: string }>((subAcc, remoteClassFileName) => {
                 if (!Ignore.isIgnored(
-                    path.relative(process.cwd(), path.join(PROJECT_CLASSES_FOLDER, remoteClassName, remoteClassFileName))
+                    path.relative(process.cwd(), remoteClassFileName)
                 )) {
                     subAcc[remoteClassFileName] = remoteClasses[remoteClassName][remoteClassFileName]
                 }

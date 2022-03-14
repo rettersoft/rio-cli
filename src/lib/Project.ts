@@ -63,11 +63,9 @@ export class Project {
         }, {})
     }
 
-    static getClassFileContents(className: string, exclude: string[] = []) {
-        return Project.listClassFileNames(className).reduce<{ [fileName: string]: string }>((acc, fileName) => {
-            if (!exclude.includes(fileName)) {
-                acc[fileName] = Project.readClassFile(className, fileName)
-            }
+    static getClassFileContents(className: string) {
+        return Project.listAllClassFileKeys(className).reduce<{ [fileName: string]: string }>((acc, fileKey) => {
+            acc[fileKey] = Project.readClassFile(className, fileKey)
             return acc
         }, {})
     }
@@ -78,10 +76,9 @@ export class Project {
         return modelFiles.map(file => file.name.replace(PROJECT_MODEL_FILE_EXTENSION, ''))
     }
 
-    static listClassFileNames(className: string) {
-        const classFolder = fs.readdirSync(path.join(PROJECT_CLASSES_FOLDER, className), {withFileTypes: true})
-        const classesFolderDirectories = classFolder.filter(l => l.isFile())
-        return classesFolderDirectories.map(dir => dir.name)
+    static listAllClassFileKeys(className: string) {
+        const keys = FileExtra.getAllFiles(path.join(PROJECT_CLASSES_FOLDER, className))
+        return keys.map(k => k.replace(path.join(PROJECT_CLASSES_FOLDER, className, path.sep).toString(), ''))
     }
 
     static listClassNames() {
@@ -90,8 +87,11 @@ export class Project {
         return classesFolderDirectories.map(dir => dir.name)
     }
 
-    static readClassFile(className: string, fileName: string) {
-        return FileExtra.getFileContextOrFail(path.join(process.cwd(), PROJECT_CLASSES_FOLDER, className, fileName)).toString('utf-8')
+    static readClassFile(className: string, fileKey: string) {
+        if (!FileExtra.isClassFile(className, fileKey)) {
+            throw new Error(`${className}, ${fileKey} is not a class file`)
+        }
+        return FileExtra.getFileContextOrFail(path.join(process.cwd(), PROJECT_CLASSES_FOLDER, className, fileKey)).toString('utf-8')
     }
 
     static readClassTemplateString(className: string) {
