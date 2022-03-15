@@ -20,15 +20,6 @@ export interface IRemoteDependencyContent {
 
 export class Dependencies {
 
-    static hashDependencyContent(content: string | Buffer) {
-        if (typeof content === 'string') {
-            return crypto.createHash('sha256').update(Buffer.from(content, 'base64')).digest('hex')
-        } else {
-            return crypto.createHash('sha256').update(content).digest('hex')
-        }
-
-    }
-
     static getListedDependencies(classNames: string[]) {
         let classDependencies: string[] = []
 
@@ -46,8 +37,7 @@ export class Dependencies {
             const zip = this.zipDependency(dependencyName)
             return {
                 dependencyName,
-                zip,
-                hash: this.hashDependencyContent(zip)
+                ...zip
             }
         })
     }
@@ -69,6 +59,16 @@ export class Dependencies {
         FileExtra.copySync(path.join(process.cwd(), RIO_CLI_DEPENDENCIES_FOLDER, dependencyName), dest)
         zip.addLocalFolder(path.join(tempFolder, dependencyName))
         Tmp.clearUniqueTmpPath(tempFolder)
-        return zip.toBuffer()
+        let nameHash = '';
+        let dataHash = ''
+        _.sortBy(zip.getEntries(), 'entryName').map(e => {
+            nameHash += e.entryName
+            dataHash += e.getCompressedData().toString('hex')
+        })
+
+        return {
+            zip: zip.toBuffer(),
+            hash: crypto.createHash('sha256').update(nameHash + dataHash).digest('hex')
+        }
     }
 }

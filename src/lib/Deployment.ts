@@ -8,7 +8,7 @@ import {Ignore} from "./Ignore";
 import path from "path";
 import process from "process";
 import {PROJECT_MODEL_FILE_EXTENSION, PROJECT_MODELS_FOLDER} from "../config";
-import {Dependencies, IDependencyContent, IRemoteDependencyContent} from "./Dependencies";
+import {IDependencyContent, IRemoteDependencyContent} from "./Dependencies";
 import axios from "axios";
 
 export enum DeploymentObjectItemStatus {
@@ -36,6 +36,7 @@ export interface IDeploymentOperationItem {
     oldContent?: string
     newContent?: string
     path: string // if type eq MODEL and CLASS, it has one path. if type eq CLASS_FILE, it has multiple path with '/' separator
+    hash?: string
 }
 
 export interface IDeploymentSummary {
@@ -150,13 +151,14 @@ export class Deployment {
                             case DeploymentObjectItemStatus.CREATED:
                             case DeploymentObjectItemStatus.EDITED:
                                 if (!item.newContent) throw new Error('Dependency new content not found' + item.path)
+                                if (!item.hash) throw new Error('Dependency hash not found' + item.path)
                                 const url = await api.upsertDependency(item.path)
                                 await axios.put(url, Buffer.from(item.newContent, 'base64'), {
                                     headers: {
                                         'Content-Type': 'application/zip',
                                     }
                                 })
-                                await api.commitUpsertDependency(item.path, Dependencies.hashDependencyContent(item.newContent))
+                                await api.commitUpsertDependency(item.path, item.hash)
                                 break
                             default:
                                 break
@@ -488,20 +490,23 @@ export class Deployment {
                     path: ld.dependencyName,
                     status: DeploymentObjectItemStatus.CREATED,
                     type: DeploymentObjectItemType.DEPENDENCY,
-                    newContent: ld.zip.toString('base64')
+                    newContent: ld.zip.toString('base64'),
+                    hash: ld.hash
                 })
             } else if (remoteModel.hash !== ld.hash) {
                 editedItems.push({
                     path: ld.dependencyName,
                     status: DeploymentObjectItemStatus.EDITED,
                     type: DeploymentObjectItemType.DEPENDENCY,
-                    newContent: ld.zip.toString('base64')
+                    newContent: ld.zip.toString('base64'),
+                    hash: ld.hash
                 })
             } else {
                 noneItems.push({
                     path: ld.dependencyName,
                     status: DeploymentObjectItemStatus.NONE,
-                    type: DeploymentObjectItemType.DEPENDENCY
+                    type: DeploymentObjectItemType.DEPENDENCY,
+                    hash: ld.hash
                 })
             }
         })
