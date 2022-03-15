@@ -23,8 +23,13 @@ import chalk from "chalk";
         .demandCommand()
         .fail((msg, err, yargs) => {
             console.log('\n')
-            console.error(chalk.redBright.bold(err.name))
-            console.error(chalk.redBright(err.message))
+            if(msg){
+                console.log(msg)
+            }
+            if(err){
+                console.error(chalk.redBright.bold(err.name))
+                console.error(chalk.redBright(err.message))
+            }
             process.exit(1)
         })
         .showHelpOnFail(false)

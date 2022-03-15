@@ -105,7 +105,7 @@ module.exports = {
                                             `--readme ${localReadmeMdPath}`].filter(Boolean).join(' ')
                                     },
                                     "dependencies": {
-                                        "@retter/rdk": "^1.0.7",
+                                        "@retter/rdk": "^1.1.1",
                                         "@types/node": "^17.0.9",
                                         "typedoc": "^0.22.11",
                                         "typescript": "^4.3.5"
@@ -134,8 +134,8 @@ module.exports = {
                                     npmInstall.on("close", () => {
                                         resolve(true)
                                     })
-                                    npmInstall.on("error", () => {
-                                        reject(false)
+                                    npmInstall.on("error", (e) => {
+                                        reject(e)
                                     })
                                 })
                             }
@@ -154,8 +154,7 @@ module.exports = {
                                         resolve(true)
                                     })
                                     typedoc.on("error", (err) => {
-                                        console.log(err)
-                                        reject(false)
+                                        reject(err)
                                     })
                                 })
                             }
@@ -177,7 +176,7 @@ module.exports = {
                 execSync('open ' + path.join(outputDir, 'index.html'))
             }
 
-            Tmp.clearUniqueTmpPath(compileTmp)
+            //Tmp.clearUniqueTmpPath(compileTmp)
         } catch (e) {
             if (compileTmp) {
                 Tmp.clearUniqueTmpPath(compileTmp)

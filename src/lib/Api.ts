@@ -174,10 +174,18 @@ export class Api implements IApi {
                     alias
                 }
             })
+        let state;
+        try {
+            state = (await projectInstance.getState()).data
+        } catch (e) {
+            throw new Error('Project state error')
+        }
+        if (!state) throw new Error('Project state not found')
+
 
         return {
             projectId: projectInstance.instanceId,
-            detail: (await projectInstance.getState()).data?.public as any
+            detail: state.public as any
         }
     }
 

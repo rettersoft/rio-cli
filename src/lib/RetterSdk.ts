@@ -35,19 +35,23 @@ export class RetterSdk {
     }
 
     static async getRootRetterSdkByAdminProfile(profile: string): Promise<Retter> {
-        if (this.retterRootSdk) return this.retterRootSdk
-        const sdk = Retter.getInstance({
-            projectId: RIO_CLI_ROOT_PROJECT_ID,
-            region: RIO_CLI_STAGE === 'PROD' ? RetterRegion.euWest1 : RetterRegion.euWest1Beta,
-            platform: RIO_CLI_PLATFORM,
-            logLevel: 'silent'
-        })
+        try {
+            if (this.retterRootSdk) return this.retterRootSdk
+            const sdk = Retter.getInstance({
+                projectId: RIO_CLI_ROOT_PROJECT_ID,
+                region: RIO_CLI_STAGE === 'PROD' ? RetterRegion.euWest1 : RetterRegion.euWest1Beta,
+                platform: RIO_CLI_PLATFORM,
+                logLevel: 'silent'
+            })
 
-        const customAuth = await Auth.getRootAdminCustomToken(profile)
-        await sdk.authenticateWithCustomToken(customAuth.customToken)
+            const customAuth = await Auth.getRootAdminCustomToken(profile)
+            await sdk.authenticateWithCustomToken(customAuth.customToken)
 
-        this.retterRootSdk = sdk
-        return sdk
+            this.retterRootSdk = sdk
+            return sdk
+        } catch (e) {
+            throw new Error('Authentication error')
+        }
     }
 
     static async getCloudObject(sdk: Retter, config: RetterCloudObjectConfig) {
