@@ -176,7 +176,7 @@ module.exports = {
                 execSync('open ' + path.join(outputDir, 'index.html'))
             }
 
-            //Tmp.clearUniqueTmpPath(compileTmp)
+            Tmp.clearUniqueTmpPath(compileTmp)
         } catch (e) {
             if (compileTmp) {
                 Tmp.clearUniqueTmpPath(compileTmp)

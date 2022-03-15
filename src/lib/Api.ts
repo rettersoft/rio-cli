@@ -38,6 +38,8 @@ interface IApi {
     getRemoteDependencies(): Promise<IRemoteDependencyContent[]>
 
     upsertDependency(dependencySummary: Omit<IDependencyContent, 'zip'>): Promise<string>
+
+    commitUpsertDependency(dependencyName: string): Promise<void>
 }
 
 export class Api implements IApi {
@@ -252,6 +254,23 @@ export class Api implements IApi {
             body: {
                 dependencyName: dependencySummary.dependencyName,
                 hash: dependencySummary.hash
+            }
+        })
+        return result.url
+    }
+
+    async commitUpsertDependency(dependencyName: string): Promise<void> {
+        const projectRioConfig = Project.getProjectRioConfig()
+        const projectInstance = await RetterSdk.getCloudObject(await RetterSdk.getRootRetterSdkByAdminProfile(this.profile), {
+            useLocal: true,
+            classId: RetterRootClasses.Project,
+            instanceId: projectRioConfig.projectId,
+        })
+        const result = await RetterSdk.callMethod(projectInstance, {
+            method: RetterRootMethods.upsertDependency,
+            body: {
+                dependencyName,
+                commit: true
             }
         })
         return result.url

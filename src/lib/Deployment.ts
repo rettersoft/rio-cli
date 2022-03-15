@@ -159,6 +159,7 @@ export class Deployment {
                                         'Content-Type': 'application/zip',
                                     }
                                 })
+                                await api.commitUpsertDependency(item.path)
                                 break
                             default:
                                 break

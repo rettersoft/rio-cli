@@ -65,9 +65,9 @@ export class Dependencies {
     static zipDependency(dependencyName: string) {
         const zip = new AdmZip()
         const tempFolder = Tmp.getUniqueTmpPath()
-        const dest = path.join(tempFolder, dependencyName, 'nodejs')
+        const dest = path.join(tempFolder, dependencyName, 'nodejs', 'node_modules', dependencyName)
         FileExtra.copySync(path.join(process.cwd(), RIO_CLI_DEPENDENCIES_FOLDER, dependencyName), dest)
-        zip.addLocalFolder(dest)
+        zip.addLocalFolder(path.join(tempFolder, dependencyName))
         Tmp.clearUniqueTmpPath(tempFolder)
         return zip.toBuffer()
     }
