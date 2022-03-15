@@ -154,7 +154,7 @@ export class Deployment {
                                     dependencyName: item.path,
                                     hash: Dependencies.hashDependencyContent(item.newContent)
                                 })
-                                await axios.put(url, item.newContent, {
+                                await axios.put(url, Buffer.from(item.newContent, 'base64'), {
                                     headers: {
                                         'Content-Type': 'application/zip',
                                     }
