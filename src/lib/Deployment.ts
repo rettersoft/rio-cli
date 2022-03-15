@@ -150,16 +150,13 @@ export class Deployment {
                             case DeploymentObjectItemStatus.CREATED:
                             case DeploymentObjectItemStatus.EDITED:
                                 if (!item.newContent) throw new Error('Dependency new content not found' + item.path)
-                                const url = await api.upsertDependency({
-                                    dependencyName: item.path,
-                                    hash: Dependencies.hashDependencyContent(item.newContent)
-                                })
+                                const url = await api.upsertDependency(item.path)
                                 await axios.put(url, Buffer.from(item.newContent, 'base64'), {
                                     headers: {
                                         'Content-Type': 'application/zip',
                                     }
                                 })
-                                await api.commitUpsertDependency(item.path)
+                                await api.commitUpsertDependency(item.path, Dependencies.hashDependencyContent(item.newContent))
                                 break
                             default:
                                 break

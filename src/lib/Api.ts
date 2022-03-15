@@ -4,8 +4,7 @@ import {Project} from "./Project";
 import {gunzipSync} from "zlib";
 import {ConsoleMessage, DeploymentMessageStatus} from "./ConsoleMessage";
 import {DeploymentObjectItemStatus, DeploymentObjectItemType} from "./Deployment";
-import {IDependencyContent, IRemoteDependencyContent} from "./Dependencies";
-import {Omit} from "yargs";
+import {IRemoteDependencyContent} from "./Dependencies";
 
 
 export interface RemoteClassFileItem {
@@ -37,9 +36,9 @@ interface IApi {
 
     getRemoteDependencies(): Promise<IRemoteDependencyContent[]>
 
-    upsertDependency(dependencySummary: Omit<IDependencyContent, 'zip'>): Promise<string>
+    upsertDependency(dependencyName: string): Promise<string>
 
-    commitUpsertDependency(dependencyName: string): Promise<void>
+    commitUpsertDependency(dependencyName: string, hash: string): Promise<void>
 }
 
 export class Api implements IApi {
@@ -242,7 +241,7 @@ export class Api implements IApi {
         })
     }
 
-    async upsertDependency(dependencySummary: Omit<IDependencyContent, 'zip'>): Promise<string> {
+    async upsertDependency(dependencyName: string): Promise<string> {
         const projectRioConfig = Project.getProjectRioConfig()
         const projectInstance = await RetterSdk.getCloudObject(await RetterSdk.getRootRetterSdkByAdminProfile(this.profile), {
             useLocal: true,
@@ -252,14 +251,13 @@ export class Api implements IApi {
         const result = await RetterSdk.callMethod(projectInstance, {
             method: RetterRootMethods.upsertDependency,
             body: {
-                dependencyName: dependencySummary.dependencyName,
-                hash: dependencySummary.hash
+                dependencyName
             }
         })
         return result.url
     }
 
-    async commitUpsertDependency(dependencyName: string): Promise<void> {
+    async commitUpsertDependency(dependencyName: string, hash: string): Promise<void> {
         const projectRioConfig = Project.getProjectRioConfig()
         const projectInstance = await RetterSdk.getCloudObject(await RetterSdk.getRootRetterSdkByAdminProfile(this.profile), {
             useLocal: true,
@@ -270,7 +268,8 @@ export class Api implements IApi {
             method: RetterRootMethods.upsertDependency,
             body: {
                 dependencyName,
-                commit: true
+                commit: true,
+                hash
             }
         })
         return result.url
