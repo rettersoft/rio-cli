@@ -25,6 +25,8 @@ export interface IPreDeploymentContext {
 
 export class ProjectManager {
 
+    static models: string[] =  ['inputModel', 'outputModel', 'errorModel',  'queryStringModel']
+
     static async preDeployment(profile: string, classes?: string[]): Promise<IPreDeploymentContext> {
         if (classes && !Array.isArray(classes)) throw new Error('invalid classes input')
 
@@ -61,28 +63,33 @@ export class ProjectManager {
                 const template = Project.getLocalClassTemplate(className)
                 if (template.methods) {
                     template.methods.forEach(m => {
-                        if (m.inputModel) {
-                            selectedModels.push(m.inputModel)
-                            Project.getModelDefs(m.inputModel).forEach(d => selectedModels.push(d))
-                        }
-                        if (m.outputModel) {
-                            selectedModels.push(m.outputModel)
-                            Project.getModelDefs(m.outputModel).forEach(d => selectedModels.push(d))
-                        }
-                        if (m.errorModel) {
-                            selectedModels.push(m.errorModel)
-                            Project.getModelDefs(m.errorModel).forEach(d => selectedModels.push(d))
-                        }
 
+                        ProjectManager.models.forEach((model: string) => {
+                            if (Object.prototype.hasOwnProperty.call(m, model)) {
+                                const modelName: string = (m as any)[model]
+                                selectedModels.push(modelName)
+                                Project.getModelDefs(modelName).forEach(d => selectedModels.push(d))
+                            }
+                        })
                     })
                 }
-                if (template.init && template.init.inputModel) {
-                    selectedModels.push(template.init.inputModel)
-                    Project.getModelDefs(template.init.inputModel).forEach(d => selectedModels.push(d))
+                if (template.init) {
+                    ProjectManager.models.forEach((model: string) => {
+                        if (Object.prototype.hasOwnProperty.call(template.init, model)) {
+                            const modelName: string = (template.init as any)[model]
+                            selectedModels.push(modelName)
+                            Project.getModelDefs(modelName).forEach(d => selectedModels.push(d))
+                        }
+                    })
                 }
-                if (template.get && template.get.inputModel) {
-                    selectedModels.push(template.get.inputModel)
-                    Project.getModelDefs(template.get.inputModel).forEach(d => selectedModels.push(d))
+                if (template.get) {
+                    ProjectManager.models.forEach((model: string) => {
+                        if (Object.prototype.hasOwnProperty.call(template.get, model)) {
+                            const modelName: string = (template.get as any)[model]
+                            selectedModels.push(modelName)
+                            Project.getModelDefs(modelName).forEach(d => selectedModels.push(d))
+                        }
+                    })
                 }
                 if (remoteClasses[className]) {
                     acc[className] = remoteClasses[className]
