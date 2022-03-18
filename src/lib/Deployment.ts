@@ -134,7 +134,7 @@ export class Deployment {
                                 // IGNORED
                                 break
                             case DeploymentObjectItemStatus.CREATED:
-                                await api.createClass(item.path, "EMPTY")
+                                await api.createClass(item.path, "")
                                 break
                             default:
                                 break
