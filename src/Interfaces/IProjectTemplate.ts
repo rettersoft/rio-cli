@@ -2,6 +2,7 @@ interface IProjectTemplateMethod {
     inputModel?: string
     outputModel?: string
     errorModel?: string
+    queryStringModel?: string
 }
 
 export interface IProjectTemplate {
