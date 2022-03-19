@@ -78,7 +78,8 @@ export class Project {
 
     static listAllClassFileKeys(className: string) {
         const keys = FileExtra.getAllFiles(path.join(PROJECT_CLASSES_FOLDER, className))
-        return keys.map(k => k.replace(path.join(PROJECT_CLASSES_FOLDER, className, path.sep).toString(), ''))
+        return keys.map(k => k.replace(path.join(PROJECT_CLASSES_FOLDER, className, path.sep).toString(), '')
+            .replace(new RegExp(path.sep, 'g'), '/'))
     }
 
     static listClassNames() {
