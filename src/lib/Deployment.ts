@@ -196,7 +196,7 @@ export class Deployment {
             ]
             for (const item of changedFileDeployments) {
                 ConsoleMessage.deploymentMessage(item, DeploymentMessageStatus.SAVING)
-                const classFileName = item.path.replace(path.join(className, '/').toString(), '')
+                const classFileName = item.path.replace(className + '/', '')
                 switch (item.status) {
                     case DeploymentObjectItemStatus.CREATED:
                         preparedData.push({
