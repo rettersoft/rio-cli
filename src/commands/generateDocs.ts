@@ -20,6 +20,7 @@ interface Input extends GlobalInput {
     out: string
     open: boolean
     "include-version": boolean
+    "rio-file-path"?: string
 }
 
 interface TaskContext {
@@ -46,6 +47,10 @@ module.exports = {
             describe: 'Open docs after generate operation',
             default: false,
             type: 'boolean'
+        })
+        yargs.options('rio-file-path', {
+            describe: 'rio file absolute path',
+            type: 'string'
         })
         return yargs
     },
@@ -114,8 +119,13 @@ module.exports = {
 
                                 fs.mkdirSync(path.join(compileTmp, PROJECT_GENERATED_DOCS_FOLDER))
 
-                                await FileExtra.writeFile(path.join(compileTmp, PROJECT_RIO_CLASS_FILE),
-                                    (await ProjectManager.generateRioFile()))
+                                if (args["rio-file-path"] && args["rio-file-path"] !== "") {
+                                    fs.copyFileSync(args["rio-file-path"], path.join(compileTmp, PROJECT_RIO_CLASS_FILE))
+                                } else {
+                                    await FileExtra.writeFile(path.join(compileTmp, PROJECT_RIO_CLASS_FILE),
+                                        (await ProjectManager.generateRioFile()))
+                                }
+
 
                                 await FileExtra.writeFile(path.join(compileTmp, "tsconfig.json"), JSON.stringify(tsConfig))
 
