@@ -105,9 +105,9 @@ module.exports = {
                                             `--readme ${localReadmeMdPath}`].filter(Boolean).join(' ')
                                     },
                                     "dependencies": {
-                                        "@retter/rdk": "^1.1.1",
+                                        "@retter/rdk": "^1.1.11",
                                         "@types/node": "^17.0.9",
-                                        "typedoc": "^0.22.11",
+                                        "typedoc": "^0.22.13",
                                         "typescript": "^4.3.5"
                                     }
                                 }
