@@ -339,9 +339,6 @@ export class Deployment {
         classesFileChanges: IFileChangesByClassName
     } {
 
-        console.log('localClasses',localClasses)
-        console.log('remoteClasses',remoteClasses)
-
         /**
          * IGNORE LOCAL FILES
          */
