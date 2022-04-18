@@ -224,7 +224,7 @@ export class Deployment {
                         if (force) {
                             preparedData.push({
                                 status: 'EDITED',
-                                name: item.path.split('/').pop()!,
+                                name: classFileName,
                                 content: gzipSync(Buffer.from(item.oldContent!)).toString('base64'),
                             })
                         }
@@ -339,6 +339,9 @@ export class Deployment {
         classesFileChanges: IFileChangesByClassName
     } {
 
+        console.log('localClasses',localClasses)
+        console.log('remoteClasses',remoteClasses)
+
         /**
          * IGNORE LOCAL FILES
          */
@@ -383,7 +386,7 @@ export class Deployment {
                 status: DeploymentObjectItemStatus.DELETED
             })
             Object.keys(remoteClasses[className]).forEach(fileName => {
-                if (!localClasses[className] || !localClasses[className][fileName]) {
+                if (!localClasses[className] || localClasses[className][fileName] === undefined) {
                     if (!classesFileChanges[className]) {
                         classesFileChanges[className] = {
                             fileNone: [],
@@ -427,7 +430,7 @@ export class Deployment {
                         fileDeleted: []
                     }
                 }
-                if (!remoteClasses[className] || !remoteClasses[className][fileName]) {
+                if (!remoteClasses[className] || remoteClasses[className][fileName] === undefined) {
                     classesFileChanges[className].fileCreated.push({
                         path: [className, fileName].join('/'),
                         type: DeploymentObjectItemType.CLASS_FILE,
