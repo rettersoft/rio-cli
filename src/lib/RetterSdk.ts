@@ -50,7 +50,8 @@ export class RetterSdk {
             this.retterRootSdk = sdk
             return sdk
         } catch (e) {
-            throw new Error('Authentication error (' + e.toString() + ')')
+            const customMessage = e.response && e.response.data ? (typeof e.response.data === "object" ? JSON.stringify(e.response.data) : e.response.data) : ''
+            throw new Error('Authentication error (' + e.toString() + ') :: ' + customMessage)
         }
     }
 
