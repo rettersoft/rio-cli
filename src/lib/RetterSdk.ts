@@ -50,8 +50,7 @@ export class RetterSdk {
             this.retterRootSdk = sdk
             return sdk
         } catch (e) {
-            console.error(e)
-            throw new Error('Authentication error')
+            throw new Error('Authentication error (' + e.toString() + ')')
         }
     }
 
