@@ -89,11 +89,45 @@ export class Deployment {
     static async deploy(deploymentSummary: IPreDeploymentContext, force: boolean) {
         const api = Api.getInstance(deploymentSummary.profile)
 
+        const modelWorkers: Array<Promise<any>> = []
+
         for (const item of [
             ...deploymentSummary.modelDeploymentsSummary.createdItems,
             ...deploymentSummary.modelDeploymentsSummary.editedItems,
             ...deploymentSummary.modelDeploymentsSummary.deletedItems,
-            ...(force ? deploymentSummary.modelDeploymentsSummary.noneItems : []),
+            ...(force ? deploymentSummary.modelDeploymentsSummary.noneItems : [])
+        ]) {
+            ConsoleMessage.deploymentMessage(item, DeploymentMessageStatus.STARTED)
+            if (item.type === DeploymentObjectItemType.MODEL) {
+                switch (item.status) {
+                    case DeploymentObjectItemStatus.DELETED:
+                        // IGNORED
+                        // await api.upsertModel(item.path)
+                        break
+                    case DeploymentObjectItemStatus.EDITED:
+                    case DeploymentObjectItemStatus.CREATED:
+                        if (!item.newContent) {
+                            CustomError.throwError('new content not found')
+                        } else {
+                            modelWorkers.push(api.upsertModel(item.path, JSON.parse(item.newContent)))
+                        }
+                        break
+                    case DeploymentObjectItemStatus.NONE:
+                        if (!item.oldContent) {
+                            CustomError.throwError('old content not found')
+                        } else {
+                            modelWorkers.push(api.upsertModel(item.path, JSON.parse(item.oldContent)))
+                        }
+                        break
+                    default:
+                        break
+                }
+            }
+        }
+
+        await Promise.all(modelWorkers)
+
+        for (const item of [
             ...deploymentSummary.classDeploymentsSummary.classDeploymentsSummary.createdItems,
             ...deploymentSummary.classDeploymentsSummary.classDeploymentsSummary.deletedItems,
             ...deploymentSummary.dependencyDeploymentsSummary.createdItems,
@@ -103,31 +137,6 @@ export class Deployment {
             ConsoleMessage.deploymentMessage(item, DeploymentMessageStatus.STARTED)
             try {
                 switch (item.type) {
-                    case DeploymentObjectItemType.MODEL:
-                        switch (item.status) {
-                            case DeploymentObjectItemStatus.DELETED:
-                                // IGNORED
-                                // await api.upsertModel(item.path)
-                                break
-                            case DeploymentObjectItemStatus.EDITED:
-                            case DeploymentObjectItemStatus.CREATED:
-                                if (!item.newContent) {
-                                    CustomError.throwError('new content not found')
-                                } else {
-                                    await api.upsertModel(item.path, JSON.parse(item.newContent))
-                                }
-                                break
-                            case DeploymentObjectItemStatus.NONE:
-                                if (!item.oldContent) {
-                                    CustomError.throwError('old content not found')
-                                } else {
-                                    await api.upsertModel(item.path, JSON.parse(item.oldContent))
-                                }
-                                break
-                            default:
-                                break
-                        }
-                        break
                     case DeploymentObjectItemType.CLASS:
                         switch (item.status) {
                             case DeploymentObjectItemStatus.DELETED:
