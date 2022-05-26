@@ -1,5 +1,5 @@
 import Retter, {RetterRegion} from "@retter/sdk";
-import {RIO_CLI_PLATFORM, RIO_CLI_ROOT_DOMAIN, RIO_CLI_ROOT_PROJECT_ID, RIO_CLI_STAGE} from "../config";
+import {RIO_CLI_PLATFORM, RIO_CLI_ROOT_DOMAIN, RIO_CLI_ROOT_PROJECT_ID, RIO_CLI_STAGE, RIO_CLI_URL} from "../config";
 import {Auth} from "./Auth";
 import {RetterCloudObject, RetterCloudObjectCall, RetterCloudObjectConfig} from "@retter/sdk/dist/types";
 
@@ -25,13 +25,18 @@ export class RetterSdk {
     private static retterRootSdk: Retter
 
     static prepareRootUrlByKeyValue(classId: string, methodName: string, options: { key: string, value: string }) {
-        let url = RIO_CLI_ROOT_DOMAIN
-        if (RIO_CLI_STAGE === 'PROD') {
-            url = `${RIO_CLI_ROOT_PROJECT_ID}.api.${url}`
+        let url
+        if (RIO_CLI_URL) {
+            url = RIO_CLI_URL
         } else {
-            url = `${RIO_CLI_ROOT_PROJECT_ID}.test-api.${url}`
+            url = RIO_CLI_ROOT_DOMAIN
+            if (RIO_CLI_STAGE === 'PROD') {
+                url = `${RIO_CLI_ROOT_PROJECT_ID}.api.${url}`
+            } else {
+                url = `${RIO_CLI_ROOT_PROJECT_ID}.test-api.${url}`
+            }
         }
-        return `https://${url}/CALL/${classId}/${methodName}/${options.key}!${options.value}`
+        return `https://${url}/${RIO_CLI_ROOT_PROJECT_ID}/CALL/${classId}/${methodName}/${options.key}!${options.value}`
     }
 
     static async getRootRetterSdkByAdminProfile(profile: string): Promise<Retter> {
@@ -39,6 +44,7 @@ export class RetterSdk {
             if (this.retterRootSdk) return this.retterRootSdk
             const sdk = Retter.getInstance({
                 projectId: RIO_CLI_ROOT_PROJECT_ID,
+                url: RIO_CLI_URL,
                 region: RIO_CLI_STAGE === 'PROD' ? RetterRegion.euWest1 : RetterRegion.euWest1Beta,
                 platform: RIO_CLI_PLATFORM,
                 logLevel: 'silent'

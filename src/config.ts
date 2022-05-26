@@ -2,7 +2,8 @@ import path from 'path';
 import os from 'os';
 
 export const RIO_CLI_ROOT_PROJECT_ID = 'root'
-export const RIO_CLI_ROOT_DOMAIN = 'rtbs.io'
+export const RIO_CLI_ROOT_DOMAIN = 'retter.io'
+export const RIO_CLI_URL = process.env.RIO_CLI_URL
 export const RIO_CLI_STAGE = (process.env.RIO_CLI_STAGE && process.env.RIO_CLI_STAGE === 'TEST') ? 'TEST' : 'PROD'
 export const RIO_CLI_CONFIG_PATH = path.join(os.homedir(), '.rio-cli')
 export const RIO_CLI_CONFIG_FILE_NAME = 'rio'
