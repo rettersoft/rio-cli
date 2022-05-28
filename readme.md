@@ -5,7 +5,7 @@ Rio Command Line Tool
 ### Installation
 
 ```shell
-> npm i -g @retter/rio-cli
+npm i -g @retter/rio-cli
 ```
 
 ### Before Starting
@@ -23,8 +23,8 @@ You should set the admin profile using above credentials by ```rio set-profile``
 #### Example:
 
 ```shell
-> rio set-profile --profile-name PROFILE_NAME --secret-id SECRET_ID --secret-key SECRET_KEY
-> rio list-profiles
+rio set-profile --profile-name PROFILE_NAME --secret-id SECRET_ID --secret-key SECRET_KEY
+rio list-profiles
 ```
 
 ### Project Initialization
@@ -34,7 +34,7 @@ You should set the admin profile using above credentials by ```rio set-profile``
 Create a new project
 
 ```shell
-> rio init PROJECT_ALIAS
+rio init PROJECT_ALIAS
 ```
 
 ``rio generate``
@@ -42,17 +42,17 @@ Create a new project
 Create the rio file for each of classes
 
 ```shell
-> rio generate
+rio generate
 ```
 
 #### Example:
 
 ```shell
-> rio init TEST
-> cd TEST
-> rio generate # optional
-> rio pre-deploy # optional
-> rio deploy
+rio init TEST
+cd TEST
+rio generate # optional
+rio pre-deploy # optional
+rio deploy
 ```
 
 ### Project Pre-Deployment
@@ -60,11 +60,11 @@ Create the rio file for each of classes
 This step does not make any changes. Just only detects changes
 
 ```shell
-> rio pre-deploy
+rio pre-deploy
 ```
 
 ### Project Deployment
 
 ```shell
-> rio deploy
+rio deploy
 ```
