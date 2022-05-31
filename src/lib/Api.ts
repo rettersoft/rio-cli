@@ -28,6 +28,8 @@ interface IApi {
 
     upsertModel(modelName: string, modelDefinition?: object): Promise<void>
 
+    upsertModels(models: {modelName: string, modelDefinition?: object}[]): Promise<void>
+
     createClass(className: string, templateId?: string): Promise<void>
 
     saveClassFiles(className: string, input: ISaveClassFilesInput[]): Promise<void>
@@ -163,6 +165,22 @@ export class Api implements IApi {
             body: {
                 modelName,
                 modelDefinition
+            }
+        })
+    }
+
+    async upsertModels(models: {modelName: string, modelDefinition?: object}[]): Promise<void> {
+        const projectRioConfig = Project.getProjectRioConfig()
+        const projectInstance = await RetterSdk.getCloudObject(await RetterSdk.getRootRetterSdkByAdminProfile(this.profile),
+            {
+                useLocal: true,
+                classId: RetterRootClasses.Project,
+                instanceId: projectRioConfig.projectId,
+            })
+        await RetterSdk.callMethod(projectInstance, {
+            method: RetterRootMethods.upsertModels,
+            body: {
+                models
             }
         })
     }

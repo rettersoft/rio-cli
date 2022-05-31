@@ -89,11 +89,60 @@ export class Deployment {
     static async deploy(deploymentSummary: IPreDeploymentContext, force: boolean) {
         const api = Api.getInstance(deploymentSummary.profile)
 
+        const models = []
+        const modelItems = []
+
         for (const item of [
             ...deploymentSummary.modelDeploymentsSummary.createdItems,
             ...deploymentSummary.modelDeploymentsSummary.editedItems,
             ...deploymentSummary.modelDeploymentsSummary.deletedItems,
-            ...(force ? deploymentSummary.modelDeploymentsSummary.noneItems : []),
+            ...(force ? deploymentSummary.modelDeploymentsSummary.noneItems : [])]) {
+            if (item.type === DeploymentObjectItemType.MODEL) {
+                ConsoleMessage.deploymentMessage(item, DeploymentMessageStatus.STARTED)
+                switch (item.status) {
+                    case DeploymentObjectItemStatus.DELETED:
+                        // IGNORED
+                        // await api.upsertModel(item.path)
+                        break
+                    case DeploymentObjectItemStatus.EDITED:
+                    case DeploymentObjectItemStatus.CREATED:
+                        if (!item.newContent) {
+                            CustomError.throwError('new content not found')
+                        } else {
+                            //await api.upsertModel(item.path, JSON.parse(item.newContent))
+                            models.push({
+                                modelName: item.path,
+                                modelDefinition: JSON.parse(item.newContent)
+                            })
+                            modelItems.push(item)
+                        }
+                        break
+                    case DeploymentObjectItemStatus.NONE:
+                        if (!item.oldContent) {
+                            CustomError.throwError('old content not found')
+                        } else {
+                            //await api.upsertModel(item.path, JSON.parse(item.oldContent))
+                            models.push({
+                                modelName: item.path,
+                                modelDefinition: JSON.parse(item.oldContent)
+                            })
+                            modelItems.push(item)
+                        }
+                        break
+                    default:
+                        break
+                }
+            }
+        }
+
+
+        await api.upsertModels(models)
+
+        for (const item of modelItems) {
+            ConsoleMessage.deploymentMessage(item, DeploymentMessageStatus.SAVED)
+        }
+
+        for (const item of [
             ...deploymentSummary.classDeploymentsSummary.classDeploymentsSummary.createdItems,
             ...deploymentSummary.classDeploymentsSummary.classDeploymentsSummary.deletedItems,
             ...deploymentSummary.dependencyDeploymentsSummary.createdItems,

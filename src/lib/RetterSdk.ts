@@ -14,6 +14,7 @@ export enum RetterRootMethods {
     generateAdminCustomToken = 'generateCustomTokenForRioCLI',
     getClassFiles = 'getFiles',
     upsertModel = 'upsertModel',
+    upsertModels = 'upsertModels',
     createClass = 'createClass',
     saveClassFiles = 'save',
     deployClass = 'deploy',
