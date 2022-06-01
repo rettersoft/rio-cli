@@ -65,6 +65,12 @@ module.exports = {
 
         const preTasks = new Listr([
             {
+                title: 'Build',
+                task: async (ctx: TaskContext) => {
+                    await Project.build()
+                }
+            },
+            {
                 title: 'Prepare',
                 task: () => {
                     return new Listr([

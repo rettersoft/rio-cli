@@ -7,6 +7,7 @@ import afterCommand from "./AfterCommand";
 import {CommandModule} from "yargs";
 import Listr from "listr";
 import {RIO_CLI_PROJECT_ID_KEY} from "../config";
+import {Project} from "../lib/Project";
 
 interface Input extends GlobalInput, DeploymentGlobalInput {
 
@@ -50,6 +51,12 @@ module.exports = {
         }
 
         const tasks = new Listr([
+            {
+                title: 'Build',
+                task: async (ctx: TaskContext) => {
+                    await Project.build()
+                }
+            },
             {
                 title: 'Pre-Deployment',
                 task: async (ctx: TaskContext) => {

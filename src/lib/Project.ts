@@ -5,6 +5,8 @@ import {
     PROJECT_MODEL_FILE_EXTENSION,
     PROJECT_MODELS_FOLDER,
     PROJECT_RIO_CONFIG,
+    RIO_CLI_DEPENDENCIES_FOLDER,
+    RIO_CLI_OUTPUT_DIR,
     RIO_CLI_PROJECT_ID_KEY
 } from "../config";
 import path from "path";
@@ -12,6 +14,9 @@ import {FileExtra} from "./FileExtra";
 import * as process from "process";
 import YAML from "yaml"
 import {IProjectTemplate} from "../Interfaces/IProjectTemplate";
+import {Tmp} from "./Tmp";
+import {spawn} from "child_process";
+import {Dependencies} from "./Dependencies";
 
 export interface IProjectRioConfig {
     projectId: string
@@ -114,5 +119,104 @@ export class Project {
                 return Project.getModelDefs(m)
             }).join())
         }
+    }
+
+    static async build() {
+        const buildTmp = Tmp.getUniqueTmpPath()
+        const dependenciesPath = path.join(process.cwd(), 'dependencies')
+
+        if (fs.existsSync(dependenciesPath)) {
+            const dependencyNames = Dependencies.getAllLocalDependencyNames()
+
+            if (dependencyNames.length < 1) {
+                return true
+            }
+
+            const tsConfig = {
+                "compilerOptions": {
+                    "baseUrl": ".",
+                    "lib": ["ES2017", "dom"],
+                    "module": "commonjs",
+                    "target": "es5",
+                    "sourceMap": false,
+                    "esModuleInterop": true,
+                    "moduleResolution": "node",
+                    "skipLibCheck": true,
+                    "downlevelIteration": true,
+                    "resolveJsonModule": true,
+                    "experimentalDecorators": true,
+                    "emitDecoratorMetadata": true,
+                    "strictNullChecks": true,
+                    "removeComments": true,
+                    "rootDir": "dependencies/",
+                    "types": ["node"],
+                    "outDir": "dist",
+                    "typeRoots": ["node_modules/@types"]
+                },
+                "exclude": ["**/node_modules/*", "**/dist/**", "test/*", "classes/**/node_modules/**", "classes/CDH/**"]
+            }
+
+            const packageJson = {
+                "name": "project",
+                "version": "0.0.1",
+                "scripts": {
+                    "build": "tsc -b"
+                },
+                "dependencies": {
+                    "@retter/rdk": "^1.1.15",
+                    "@types/node": "^17.0.9",
+                    "typedoc": "^0.22.13",
+                    "typescript": "^4.3.5"
+                }
+            }
+
+            await FileExtra.writeFile(path.join(buildTmp, "tsconfig.json"), JSON.stringify(tsConfig))
+
+            await FileExtra.writeFile(path.join(buildTmp, "package.json"), JSON.stringify(packageJson))
+
+            await FileExtra.copySync(path.join(process.cwd(), 'dependencies'), path.join(buildTmp, 'dependencies'))
+
+            const npmInstall = () => {
+                return new Promise((resolve, reject) => {
+                    const npmInstall = spawn("npm",
+                        ["install", "--no-warnings"], {
+                            stdio: "ignore",
+                            cwd: path.join(buildTmp)
+                        })
+                    npmInstall.on("close", () => {
+                        resolve(true)
+                    })
+                    npmInstall.on("error", (e) => {
+                        reject(e)
+                    })
+                })
+            }
+
+            const npmBuild = () => {
+                return new Promise((resolve, reject) => {
+                    const typedoc = spawn("npm",
+                        ["run", "build"],
+                        {
+                            stdio: 'ignore',
+                            cwd: buildTmp
+                        })
+                    typedoc.on("close", () => {
+                        resolve(true)
+                    })
+                    typedoc.on("error", (err) => {
+                        reject(err)
+                    })
+                })
+            }
+
+            await npmInstall()
+            await npmBuild()
+
+            await FileExtra.copySync(path.join(buildTmp, 'dist'), path.join(process.cwd(), RIO_CLI_OUTPUT_DIR, RIO_CLI_DEPENDENCIES_FOLDER))
+
+            Tmp.clearUniqueTmpPath(buildTmp)
+
+        }
+
     }
 }
