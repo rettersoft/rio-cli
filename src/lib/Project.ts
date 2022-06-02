@@ -181,8 +181,8 @@ export class Project {
                 const npmInstall = (cwd?: string) => {
                     return new Promise((resolve, reject) => {
                         const npmInstall = spawn("npm",
-                            ["install", "--no-warnings"], {
-                                stdio: "ignore",
+                            ["install", "--loglevel=error", "--no-progress", "--no-fund"], {
+                                stdio: "inherit",
                                 cwd: cwd ? cwd : path.join(buildTmp)
                             })
                         npmInstall.on("close", () => {
@@ -191,13 +191,21 @@ export class Project {
                         npmInstall.on("error", (e) => {
                             reject(e)
                         })
+                        npmInstall.on("exit", (code, signal) => {
+                                if (code !== 0) {
+                                    reject('npm i error :: ' + cwd)
+                                } else {
+                                    resolve(true)
+                                }
+                            }
+                        )
                     })
                 }
 
                 for (const dependencyName of dependencyNames) {
-                    const subPackageJsonPath = path.join(dependenciesPath, dependencyName, "package.json")
+                    const subPackageJsonPath = path.join(buildTmp, RIO_CLI_DEPENDENCIES_FOLDER, dependencyName, "package.json")
                     if (fs.existsSync(subPackageJsonPath)) {
-                        await npmInstall(path.join(dependenciesPath, dependencyName))
+                        await npmInstall(path.join(buildTmp, RIO_CLI_DEPENDENCIES_FOLDER, dependencyName))
                     }
                 }
 
@@ -232,9 +240,9 @@ export class Project {
                 await FileExtra.copySync(path.join(buildTmp, 'dist'), path.join(process.cwd(), RIO_CLI_OUTPUT_DIR, RIO_CLI_DEPENDENCIES_FOLDER))
 
             }
-            Tmp.clearUniqueTmpPath(buildTmp)
+            //Tmp.clearUniqueTmpPath(buildTmp)
         } catch (e) {
-            Tmp.clearUniqueTmpPath(buildTmp)
+            //Tmp.clearUniqueTmpPath(buildTmp)
             throw e
         }
 
