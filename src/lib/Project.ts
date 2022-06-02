@@ -123,99 +123,119 @@ export class Project {
 
     static async build() {
         const buildTmp = Tmp.getUniqueTmpPath()
-        const dependenciesPath = path.join(process.cwd(), 'dependencies')
 
-        if (fs.existsSync(dependenciesPath)) {
-            const dependencyNames = Dependencies.getAllLocalDependencyNames()
+        try {
+            const dependenciesPath = path.join(process.cwd(), 'dependencies')
 
-            if (dependencyNames.length < 1) {
-                return true
-            }
+            if (fs.existsSync(dependenciesPath)) {
+                const dependencyNames = Dependencies.getAllLocalDependencyNames()
 
-            const tsConfig = {
-                "compilerOptions": {
-                    "baseUrl": ".",
-                    "lib": ["ES2017", "dom"],
-                    "module": "commonjs",
-                    "target": "es5",
-                    "sourceMap": false,
-                    "esModuleInterop": true,
-                    "moduleResolution": "node",
-                    "skipLibCheck": true,
-                    "downlevelIteration": true,
-                    "resolveJsonModule": true,
-                    "experimentalDecorators": true,
-                    "emitDecoratorMetadata": true,
-                    "strictNullChecks": true,
-                    "removeComments": true,
-                    "rootDir": "dependencies/",
-                    "types": ["node"],
-                    "outDir": "dist",
-                    "typeRoots": ["node_modules/@types"]
-                },
-                "exclude": ["**/node_modules/*", "**/dist/**", "test/*", "classes/**/node_modules/**", "classes/CDH/**"]
-            }
-
-            const packageJson = {
-                "name": "project",
-                "version": "0.0.1",
-                "scripts": {
-                    "build": "tsc -b"
-                },
-                "dependencies": {
-                    "@retter/rdk": "^1.1.15",
-                    "@types/node": "^17.0.9",
-                    "typedoc": "^0.22.13",
-                    "typescript": "^4.3.5"
+                if (dependencyNames.length < 1) {
+                    return true
                 }
-            }
 
-            await FileExtra.writeFile(path.join(buildTmp, "tsconfig.json"), JSON.stringify(tsConfig))
+                const tsConfig = {
+                    "compilerOptions": {
+                        "baseUrl": ".",
+                        "lib": ["ES2017", "dom"],
+                        "module": "commonjs",
+                        "target": "es5",
+                        "sourceMap": false,
+                        "esModuleInterop": true,
+                        "moduleResolution": "node",
+                        "skipLibCheck": true,
+                        "downlevelIteration": true,
+                        "resolveJsonModule": true,
+                        "experimentalDecorators": true,
+                        "emitDecoratorMetadata": true,
+                        "strictNullChecks": true,
+                        "removeComments": true,
+                        "rootDir": "dependencies/",
+                        "types": ["node"],
+                        "outDir": "dist",
+                        "typeRoots": ["node_modules/@types"]
+                    },
+                    "exclude": ["**/node_modules/*", "**/dist/**", "test/*", "classes/**/node_modules/**", "classes/CDH/**"]
+                }
 
-            await FileExtra.writeFile(path.join(buildTmp, "package.json"), JSON.stringify(packageJson))
+                const packageJson = {
+                    "name": "project",
+                    "version": "0.0.1",
+                    "scripts": {
+                        "build": "tsc -b"
+                    },
+                    "dependencies": {
+                        "@retter/rdk": "^1.1.15",
+                        "@types/node": "^17.0.9",
+                        "typedoc": "^0.22.13",
+                        "typescript": "^4.3.5"
+                    }
+                }
 
-            await FileExtra.copySync(path.join(process.cwd(), 'dependencies'), path.join(buildTmp, 'dependencies'))
+                await FileExtra.writeFile(path.join(buildTmp, "tsconfig.json"), JSON.stringify(tsConfig))
 
-            const npmInstall = () => {
-                return new Promise((resolve, reject) => {
-                    const npmInstall = spawn("npm",
-                        ["install", "--no-warnings"], {
-                            stdio: "ignore",
-                            cwd: path.join(buildTmp)
+                await FileExtra.writeFile(path.join(buildTmp, "package.json"), JSON.stringify(packageJson))
+
+                await FileExtra.copySync(path.join(process.cwd(), 'dependencies'), path.join(buildTmp, 'dependencies'))
+
+                const npmInstall = (cwd?: string) => {
+                    return new Promise((resolve, reject) => {
+                        const npmInstall = spawn("npm",
+                            ["install", "--no-warnings"], {
+                                stdio: "ignore",
+                                cwd: cwd ? cwd : path.join(buildTmp)
+                            })
+                        npmInstall.on("close", () => {
+                            resolve(true)
                         })
-                    npmInstall.on("close", () => {
-                        resolve(true)
-                    })
-                    npmInstall.on("error", (e) => {
-                        reject(e)
-                    })
-                })
-            }
-
-            const npmBuild = () => {
-                return new Promise((resolve, reject) => {
-                    const typedoc = spawn("npm",
-                        ["run", "build"],
-                        {
-                            stdio: 'ignore',
-                            cwd: buildTmp
+                        npmInstall.on("error", (e) => {
+                            reject(e)
                         })
-                    typedoc.on("close", () => {
-                        resolve(true)
                     })
-                    typedoc.on("error", (err) => {
-                        reject(err)
+                }
+
+                for (const dependencyName of dependencyNames) {
+                    const subPackageJsonPath = path.join(dependenciesPath, dependencyName, "package.json")
+                    if (fs.existsSync(subPackageJsonPath)) {
+                        await npmInstall(path.join(dependenciesPath, dependencyName))
+                    }
+                }
+
+                const npmBuild = () => {
+                    return new Promise((resolve, reject) => {
+                        const buildCommand = spawn("npm",
+                            ["run", "build", "--silent"],
+                            {
+                                stdio: 'inherit',
+                                cwd: buildTmp
+                            })
+                        buildCommand.on("close", () => {
+                            resolve(true)
+                        })
+                        buildCommand.on("error", (err) => {
+                            reject(err)
+                        })
+                        buildCommand.on("exit", (code, signal) => {
+                                if (code !== 0) {
+                                    reject('tsc build error')
+                                } else {
+                                    resolve(true)
+                                }
+                            }
+                        )
                     })
-                })
+                }
+
+                await npmInstall()
+                await npmBuild()
+
+                await FileExtra.copySync(path.join(buildTmp, 'dist'), path.join(process.cwd(), RIO_CLI_OUTPUT_DIR, RIO_CLI_DEPENDENCIES_FOLDER))
+
             }
-
-            await npmInstall()
-            await npmBuild()
-
-            await FileExtra.copySync(path.join(buildTmp, 'dist'), path.join(process.cwd(), RIO_CLI_OUTPUT_DIR, RIO_CLI_DEPENDENCIES_FOLDER))
-
             Tmp.clearUniqueTmpPath(buildTmp)
-
+        } catch (e) {
+            Tmp.clearUniqueTmpPath(buildTmp)
+            throw e
         }
 
     }
