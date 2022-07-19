@@ -1,0 +1,9 @@
+{
+  "properties": {
+    "ModelB": {
+      "description": "Test ModelB",
+      "type": "string"
+    }
+  },
+  "type": "object"
+}

@@ -22,6 +22,7 @@ export const RIO_CLI_SECRET_KEY = process.env.RIO_CLI_SECRET_KEY
 export const PROJECT_RIO_CLASS_FILE = 'rio.ts'
 export const PROJECT_CLASSES_FOLDER = 'classes'
 export const PROJECT_MODELS_FOLDER = 'models'
+export const PROJECT_MODEL_NAME_SEP = ':'
 export const PROJECT_MODEL_FILE_EXTENSION = '.json'
 export const PROJECT_CLASS_TEMPLATE_FILE = 'template.yml'
 export const PROJECT_RIO_CONFIG = 'rio.json'

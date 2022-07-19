@@ -2,7 +2,7 @@ import fs from "fs";
 import {
     PROJECT_CLASS_TEMPLATE_FILE,
     PROJECT_CLASSES_FOLDER,
-    PROJECT_MODEL_FILE_EXTENSION,
+    PROJECT_MODEL_FILE_EXTENSION, PROJECT_MODEL_NAME_SEP,
     PROJECT_MODELS_FOLDER,
     PROJECT_RIO_CONFIG,
     RIO_CLI_DEPENDENCIES_FOLDER,
@@ -75,10 +75,18 @@ export class Project {
         }, {})
     }
 
-    static listModelNames() {
-        const modelsFolder = fs.readdirSync(PROJECT_MODELS_FOLDER, {withFileTypes: true})
-        const modelFiles = modelsFolder.filter(l => l.isFile() && l.name.endsWith(PROJECT_MODEL_FILE_EXTENSION))
-        return modelFiles.map(file => file.name.replace(PROJECT_MODEL_FILE_EXTENSION, ''))
+    static listModelNames(folder: string = PROJECT_MODELS_FOLDER, previousData: string[] = []): string[] {
+        const modelsFolder = fs.readdirSync(folder, {withFileTypes: true})
+        modelsFolder.forEach(l => {
+            if (l.isDirectory()) {
+                previousData = Project.listModelNames(path.join(folder, l.name), previousData)
+            } else if (l.isFile()) {
+                const prefix = folder === PROJECT_MODELS_FOLDER ? '' : folder.replace(
+                    PROJECT_MODELS_FOLDER + path.sep, '').replace(new RegExp(path.sep, 'g'), PROJECT_MODEL_NAME_SEP) + PROJECT_MODEL_NAME_SEP
+                previousData.push(prefix + l.name.replace(PROJECT_MODEL_FILE_EXTENSION, ''))
+            }
+        })
+        return previousData
     }
 
     static listAllClassFileKeys(className: string) {
@@ -105,6 +113,9 @@ export class Project {
     }
 
     static readModelFile(modelName: string) {
+        if(modelName.includes(PROJECT_MODEL_NAME_SEP)){
+            modelName = modelName.replace(new RegExp(PROJECT_MODEL_NAME_SEP, 'g'), path.sep)
+        }
         return FileExtra.getFileContextOrFail(path.join(process.cwd(), PROJECT_MODELS_FOLDER, `${modelName + PROJECT_MODEL_FILE_EXTENSION}`)).toString('utf-8')
     }
 
