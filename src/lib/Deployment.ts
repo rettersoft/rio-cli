@@ -205,7 +205,9 @@ export class Deployment {
                                 await axios.put(url, Buffer.from(item.newContent, 'base64'), {
                                     headers: {
                                         'Content-Type': 'application/zip',
-                                    }
+                                    },
+                                    maxBodyLength: 104857600, //100mb
+                                    maxContentLength: 104857600, //100mb
                                 })
                                 await api.commitUpsertDependency(item.path, item.hash)
                                 break
