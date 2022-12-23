@@ -49,9 +49,9 @@ module.exports = {
     });
     yargs.options("force", {
       describe: "Force the deployment \n Example: rio deploy --force",
-      boolean: true,
-      default: false,
-      type: "boolean",
+      default: 0,
+      number: true,
+      type: "number",
     });
     yargs.options("parallel", {
       describe: "Parallel deployment \n Example: rio deploy --parallel",

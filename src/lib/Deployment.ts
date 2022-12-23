@@ -10,6 +10,7 @@ import process from "process";
 import { PROJECT_MODEL_FILE_EXTENSION, PROJECT_MODELS_FOLDER } from "../config";
 import { IDependencyContent, IRemoteDependencyContent } from "./Dependencies";
 import axios from "axios";
+import { chunk } from "lodash";
 
 export enum DeploymentObjectItemStatus {
   EDITED = "EDITED",
@@ -97,7 +98,7 @@ export class Deployment {
   static async deploy(
     deploymentSummary: IPreDeploymentContext,
     force: boolean,
-    parallel?: boolean
+    parallel?: number
   ) {
     const api = Api.getInstance(deploymentSummary.profile);
 
@@ -335,7 +336,7 @@ export class Deployment {
             className,
             preparedData,
             deploymentSummary,
-            parallel
+            force
           )
         );
         continue;
@@ -363,7 +364,12 @@ export class Deployment {
     }
 
     // Parallel deployment of classes
-    await Promise.all(parallelWorkers);
+    if (parallel) {
+      const chunks = chunk(parallelWorkers, parallel);
+      for (const chunk of chunks) {
+        await Promise.all(chunk);
+      }
+    }
   }
 
   static getModelDeploymentsContext(

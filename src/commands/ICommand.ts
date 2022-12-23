@@ -5,6 +5,6 @@ export interface GlobalInput {
 export interface DeploymentGlobalInput {
   classes?: string[];
   force: boolean;
-  parallel: boolean;
+  parallel: number;
   "project-id": string;
 }
