@@ -1,14 +1,13 @@
 import jwt from "jsonwebtoken";
 import axios from "axios";
-import {CliConfig} from "./CliConfig";
+import {CliConfig, IRIOCliConfigProfileItemData} from "./CliConfig";
 import {RetterRootClasses, RetterRootMethods, RetterSdk} from "./RetterSdk";
 import {RIO_CLI_ROOT_PROJECT_ID} from "../config";
 
 
 export class Auth {
 
-    static async getRootAdminCustomToken(profile: string) {
-        const config = CliConfig.getAdminConfig(profile)
+    static async getRootAdminCustomToken(config: IRIOCliConfigProfileItemData) {
         const token = jwt.sign({
             projectId: RIO_CLI_ROOT_PROJECT_ID,
             secretId: config.secretId,
@@ -21,7 +20,7 @@ export class Auth {
                 value: config.secretId
             }
             const result = await axios({
-                url: RetterSdk.prepareRootUrlByKeyValue(RetterRootClasses.User, RetterRootMethods.generateAdminCustomToken, byKeyValue),
+                url: RetterSdk.prepareRootUrlByKeyValue(RetterRootClasses.User, RetterRootMethods.generateAdminCustomToken, byKeyValue, config.domain),
                 method: 'post',
                 data: {
                     "idToken": token

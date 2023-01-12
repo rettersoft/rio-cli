@@ -12,6 +12,7 @@ export interface IRIOCliConfigProfileItemData {
     secretId: string;
     secretKey: string;
     noAuthDump: boolean;
+    domain?: string;
 }
 
 export interface IRIOCliConfig {
@@ -21,6 +22,7 @@ export interface IRIOCliConfig {
 export interface AdminProfileSummary {
     name: string
     secretId: string
+    domain?: string
 }
 
 export class CliConfig {
@@ -48,16 +50,18 @@ export class CliConfig {
             return {
                 name: key,
                 secretId: config.profiles[key].secretId,
+                domain: config.profiles[key].domain
             }
         })
     }
 
-    static upsertAdminProfile(props: { profileName: string, secretId: string, secretKey: string, noAuthDump: boolean }) {
+    static upsertAdminProfile(props: { profileName: string, secretId: string, secretKey: string, noAuthDump: boolean, domain?: string }) {
         const {
             profileName,
             secretId,
             secretKey,
-            noAuthDump
+            noAuthDump,
+            domain
         } = props
         if (!profileName || !secretId || !secretKey || noAuthDump === undefined)
             throw new Error('profile name, secret id and secret key are required')
@@ -67,7 +71,8 @@ export class CliConfig {
             cliConfig.profiles[profileName] = {
                 secretId,
                 secretKey,
-                noAuthDump
+                noAuthDump,
+                domain
             }
         } else {
             cliConfig = {
@@ -75,7 +80,8 @@ export class CliConfig {
                     [profileName]: {
                         secretKey,
                         secretId,
-                        noAuthDump
+                        noAuthDump,
+                        domain
                     }
                 }
             }
@@ -89,7 +95,7 @@ export class CliConfig {
             return {
                 noAuthDump: false,
                 secretKey: RIO_CLI_SECRET_KEY,
-                secretId: RIO_CLI_SECRET_ID
+                secretId: RIO_CLI_SECRET_ID,
             }
         }
         const profile = this.getCliConfig().profiles[profileName]
