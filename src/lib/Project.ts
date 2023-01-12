@@ -54,13 +54,41 @@ export class Project {
         return projectConfig
     }
 
-    static getModelFileContents(exclude: string[] = []) {
-        return Project.listModelNames().reduce<{ [modelName: string]: string }>((acc, modelName) => {
-            if (!exclude.includes(modelName)) {
-                acc[modelName] = Project.readModelFile(modelName)
-            }
-            return acc
-        }, {})
+    static getModelFolderContents(modelsPath: string, exclude: string[]): Record<string, any> {
+        const modelContents: Record<string, any> = {}
+
+        if (!fs.lstatSync(modelsPath).isDirectory()) return modelContents
+            
+        const models = fs.readdirSync(modelsPath, { withFileTypes: true })
+            
+        for (const model of models) {
+            if (!model.isFile()) continue
+
+            const modelName = model.name.replace(PROJECT_MODEL_FILE_EXTENSION, '')
+            if (exclude.includes(modelName)) continue
+
+            const content: string = FileExtra.getFileContextOrFail(path.join(modelsPath, model.name)).toString('utf-8')
+            modelContents[modelName] = JSON.parse(content)
+        }
+        return modelContents
+    }
+
+
+    static getModelsContents(exclude: string[] = []): Record<string, any> {
+        // HANDLE -> ./models
+        const modelsPath = path.join(process.cwd(), PROJECT_MODELS_FOLDER)
+        let models: Record<string, any> = Project.getModelFolderContents(modelsPath, exclude)
+        
+        // HANDLE -> ./classes/**/models
+        for (const className of Project.listClassNames()) {
+            
+            const modelsPath = path.join(process.cwd(), PROJECT_CLASSES_FOLDER, className, PROJECT_MODELS_FOLDER)
+            if (!fs.existsSync(modelsPath) || !fs.lstatSync(modelsPath).isDirectory()) continue
+
+            models = {...models, ...Project.getModelFolderContents(modelsPath, exclude)}
+        }
+
+        return models
     }
 
     static getClassFileContents(className: string) {
@@ -68,12 +96,6 @@ export class Project {
             acc[fileKey] = Project.readClassFile(className, fileKey)
             return acc
         }, {})
-    }
-
-    static listModelNames() {
-        const modelsFolder = fs.readdirSync(PROJECT_MODELS_FOLDER, {withFileTypes: true})
-        const modelFiles = modelsFolder.filter(l => l.isFile() && l.name.endsWith(PROJECT_MODEL_FILE_EXTENSION))
-        return modelFiles.map(file => file.name.replace(PROJECT_MODEL_FILE_EXTENSION, ''))
     }
 
     static listAllClassFileKeys(className: string) {
@@ -97,22 +119,5 @@ export class Project {
 
     static readClassTemplateString(className: string) {
         return FileExtra.getFileContextOrFail(path.join(process.cwd(), PROJECT_CLASSES_FOLDER, className, PROJECT_CLASS_TEMPLATE_FILE)).toString('utf-8')
-    }
-
-    static readModelFile(modelName: string) {
-        return FileExtra.getFileContextOrFail(path.join(process.cwd(), PROJECT_MODELS_FOLDER, `${modelName + PROJECT_MODEL_FILE_EXTENSION}`)).toString('utf-8')
-    }
-
-    static getModelDefs(modelName: string): string[] {
-        const modelContent = Project.readModelFile(modelName)
-        const models = Array.from(new Set(modelContent.match(/("#\/\$defs\/)[A-Za-z0-9_-].*(")/g) || []))
-            .map(r => r.replace(/"/g, '').replace('#/$defs/', ''))
-        if (models.length < 1) {
-            return []
-        } else {
-            return models.concat(models.map(m => {
-                return Project.getModelDefs(m)
-            }).join())
-        }
     }
 }

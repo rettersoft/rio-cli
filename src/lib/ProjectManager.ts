@@ -37,11 +37,7 @@ export class ProjectManager {
         // generate new rio files
         await ProjectManager.generateAndSaveRioFiles()
 
-        const localModelContents = Project.getModelFileContents()
-        let localModels: IProjectModels = Object.keys(localModelContents).reduce<{ [modelName: string]: object }>((acc, modelName) => {
-            acc[modelName] = JSON.parse(localModelContents[modelName])
-            return acc
-        }, {})
+        let localModels: IProjectModels = Project.getModelsContents()
         const localClasses = Project.getLocalClassContents(classes)
 
         let remoteModels = project.detail.modelDefinitions
@@ -63,12 +59,10 @@ export class ProjectManager {
                 const template = Project.getLocalClassTemplate(className)
                 if (template.methods) {
                     template.methods.forEach(m => {
-
                         ProjectManager.models.forEach((model: string) => {
                             if (Object.prototype.hasOwnProperty.call(m, model)) {
                                 const modelName: string = (m as any)[model]
                                 selectedModels.push(modelName)
-                                Project.getModelDefs(modelName).forEach(d => selectedModels.push(d))
                             }
                         })
                     })
@@ -78,7 +72,6 @@ export class ProjectManager {
                         if (Object.prototype.hasOwnProperty.call(template.init, model)) {
                             const modelName: string = (template.init as any)[model]
                             selectedModels.push(modelName)
-                            Project.getModelDefs(modelName).forEach(d => selectedModels.push(d))
                         }
                     })
                 }
@@ -87,7 +80,6 @@ export class ProjectManager {
                         if (Object.prototype.hasOwnProperty.call(template.get, model)) {
                             const modelName: string = (template.get as any)[model]
                             selectedModels.push(modelName)
-                            Project.getModelDefs(modelName).forEach(d => selectedModels.push(d))
                         }
                     })
                 }
@@ -156,10 +148,7 @@ export class ProjectManager {
                 acc[className] = Project.readClassTemplateString(className)
                 return acc
             }, {}),
-            models: Project.listModelNames().reduce<{ [modelName: string]: string }>((acc, modelName) => {
-                acc[modelName] = JSON.parse(Project.readModelFile(modelName))
-                return acc
-            }, {})
+            models: Project.getModelsContents()
         })
     }
 
