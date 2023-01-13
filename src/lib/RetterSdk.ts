@@ -28,14 +28,12 @@ export class RetterSdk {
 
     static prepareRootUrlByKeyValue(classId: string, methodName: string, options: { key: string, value: string }, domain?: string) {
         let url
-        
-        if (domain) // GET URL FROM PROFILE
-        {
-            url = domain
-        }
-        else if (RIO_CLI_URL) { // GET URL FROM ENV
+    
+        if (RIO_CLI_URL) { 
             url = RIO_CLI_URL
-        } else { // GET DEFAULT URL
+        } else if (domain) {
+            url = domain
+        }else {
             url = RIO_CLI_ROOT_DOMAIN
             if (RIO_CLI_STAGE === 'PROD') {
                 url = `${RIO_CLI_ROOT_PROJECT_ID}.api.${url}`
