@@ -66,6 +66,8 @@ module.exports = {
     return yargs;
   },
   handler: async (args) => {
+    const start = Date.now();
+    
     if (args.force) ConsoleMessage.message(chalk.blueBright.bold("FORCED"));
 
     process.env[RIO_CLI_PROJECT_ID_KEY] = args["project-id"];
@@ -131,7 +133,8 @@ module.exports = {
       )}`
     );
     await Deployment.deploy(ctx.deploymentSummary, args.force, args.parallel);
-    ConsoleMessage.message(chalk.greenBright("DEPLOYMENT DONE"));
+    const finish = (Date.now() - start) / 1000
+    ConsoleMessage.message(chalk.greenBright(`DEPLOYMENT FINISHED in ${finish} seconds`));
 
     afterCommand();
   },
