@@ -31,7 +31,7 @@ export class FileExtra {
         const files = fs.readdirSync(dirPath, {withFileTypes: true})
 
         for (const file of files) {
-            if (file.isDirectory() && !["models", "node_modules"].includes(file.name)) {
+            if (file.isDirectory() && !["models", "node_modules", "__tests__"].includes(file.name)) {
                 this.getAllFiles(path.join(dirPath, file.name), fileKeys)
             } else if (file.isFile()) {
                 fileKeys.push(path.join(dirPath, file.name).toString())

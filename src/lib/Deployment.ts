@@ -112,7 +112,7 @@ export class Deployment {
       ...(force ? deploymentSummary.modelDeploymentsSummary.noneItems : []),
     ]) {
       if (item.type === DeploymentObjectItemType.MODEL) {
-        ConsoleMessage.deploymentMessage(item, DeploymentMessageStatus.STARTED);
+        // ConsoleMessage.deploymentMessage(item, DeploymentMessageStatus.STARTED);
         switch (item.status) {
           case DeploymentObjectItemStatus.DELETED:
             // IGNORED
@@ -164,34 +164,9 @@ export class Deployment {
       ...deploymentSummary.dependencyDeploymentsSummary.editedItems,
       ...deploymentSummary.dependencyDeploymentsSummary.deletedItems,
     ]) {
-      ConsoleMessage.deploymentMessage(item, DeploymentMessageStatus.STARTED);
+      // ConsoleMessage.deploymentMessage(item, DeploymentMessageStatus.STARTED);
       try {
         switch (item.type) {
-          case DeploymentObjectItemType.MODEL:
-            switch (item.status) {
-              case DeploymentObjectItemStatus.DELETED:
-                // IGNORED
-                // await api.upsertModel(item.path)
-                break;
-              case DeploymentObjectItemStatus.EDITED:
-              case DeploymentObjectItemStatus.CREATED:
-                if (!item.newContent) {
-                  CustomError.throwError("new content not found");
-                } else {
-                  await api.upsertModel(item.path, JSON.parse(item.newContent));
-                }
-                break;
-              case DeploymentObjectItemStatus.NONE:
-                if (!item.oldContent) {
-                  CustomError.throwError("old content not found");
-                } else {
-                  await api.upsertModel(item.path, JSON.parse(item.oldContent));
-                }
-                break;
-              default:
-                break;
-            }
-            break;
           case DeploymentObjectItemType.CLASS:
             switch (item.status) {
               case DeploymentObjectItemStatus.DELETED:
@@ -244,8 +219,6 @@ export class Deployment {
         throw e;
       }
     }
-
-    const parallelWorkers: Promise<any>[] = [];
 
     for (const className of Object.keys(
       deploymentSummary.classDeploymentsSummary.classesFileChanges
@@ -330,18 +303,6 @@ export class Deployment {
         }
       }
 
-      if (parallel) {
-        parallelWorkers.push(
-          api.saveAndDeployClass(
-            className,
-            preparedData,
-            deploymentSummary,
-            force
-          )
-        );
-        continue;
-      }
-
       if (preparedData.length) {
         await api.saveClassFiles(className, preparedData);
       }
@@ -360,14 +321,6 @@ export class Deployment {
           currentClassDeploymentItem,
           DeploymentMessageStatus.DEPLOYED
         );
-      }
-    }
-
-    // Parallel deployment of classes
-    if (parallel) {
-      const chunks = chunk(parallelWorkers, parallel);
-      for (const chunk of chunks) {
-        await Promise.all(chunk);
       }
     }
   }

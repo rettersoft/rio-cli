@@ -37,7 +37,7 @@ export class ProjectManager {
 
         let localModels: IProjectModels = Project.getModelsContents()
         const localClasses = Project.getLocalClassContents(classes)
-
+        
         let remoteModels = { ...publicState.modelDefinitions, ...privateState.modelDefinitions }
         let remoteClasses = await (publicState.classes).reduce(async (acc: any, classItem: any) => {
             const className = classItem.classId
