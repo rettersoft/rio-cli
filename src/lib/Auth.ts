@@ -35,7 +35,7 @@ export class Auth {
                     tokenData: token
                 }
             }
-        } catch (e) {
+        } catch (e: any) {
             throw new Error(e.toString())
         }
     }

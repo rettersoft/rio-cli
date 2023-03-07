@@ -68,7 +68,6 @@ module.exports = {
 
     process.env[RIO_CLI_PROJECT_ID_KEY] = args["project-id"];
 
-
     const config = Project.getProjectRioConfig()
     const api = await Api.createAPI(args.profile, config.projectId)
         
