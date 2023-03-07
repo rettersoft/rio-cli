@@ -62,11 +62,12 @@ module.exports = {
     return yargs;
   },
   handler: async (args) => {
+    const start = Date.now()
+    
     if (args.force) ConsoleMessage.message(chalk.blueBright.bold("FORCED"));
 
     process.env[RIO_CLI_PROJECT_ID_KEY] = args["project-id"];
 
-    const start = Date.now()
 
     const config = Project.getProjectRioConfig()
     const api = await Api.createAPI(args.profile, config.projectId)
