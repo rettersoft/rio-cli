@@ -26,13 +26,13 @@ export class RetterSdk {
 
     private static retterRootSdk: Retter
 
-    static prepareRootUrlByKeyValue(classId: string, methodName: string, options: { key: string, value: string }, domain?: string) {
+    static prepareRootUrlByKeyValue(classId: string, methodName: string, options: { key: string, value: string }, endpoint?: string) {
         let url
     
         if (RIO_CLI_URL) { 
             url = RIO_CLI_URL
-        } else if (domain) {
-            url = domain
+        } else if (endpoint) {
+            url = endpoint
         }else {
             url = RIO_CLI_ROOT_DOMAIN
             if (RIO_CLI_STAGE === 'PROD') {
@@ -51,7 +51,7 @@ export class RetterSdk {
 
             const sdk = Retter.getInstance({
                 projectId: RIO_CLI_ROOT_PROJECT_ID,
-                url: config.domain || RIO_CLI_URL,
+                url: config.endpoint || RIO_CLI_URL,
                 region: RIO_CLI_STAGE === 'PROD' ? RetterRegion.euWest1 : RetterRegion.euWest1Beta,
                 platform: RIO_CLI_PLATFORM,
                 logLevel: 'silent'

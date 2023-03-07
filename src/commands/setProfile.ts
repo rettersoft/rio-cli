@@ -12,7 +12,7 @@ interface Input extends GlobalInput {
     "secret-id": string,
     "secret-key": string,
     "no-auth-dump": boolean,
-    "domain": string
+    "endpoint": string
 }
 
 interface TaskContext {
@@ -23,7 +23,7 @@ module.exports = {
     command: 'set-profile',
     aliases: ['sp'],
     description: `Upsert admin profile in local storage
-    Usage: rio set-profile --profile-name PROFILE_NAME --secret-id SECRET_ID --secret-key SECRET_KEY --domain RIO_DOMAIN
+    Usage: rio set-profile --profile-name PROFILE_NAME --secret-id SECRET_ID --secret-key SECRET_KEY --endpoint RIO_DOMAIN
     `,
     builder: yargs => {
         yargs.options('profile-name', {
@@ -34,7 +34,7 @@ module.exports = {
         yargs.options('secret-id', {describe: 'Secret Id', type: 'string', demandOption: true})
         yargs.options('secret-key', {describe: 'Secret Key', type: 'string', demandOption: true})
         yargs.options('no-auth-dump', {describe: 'Close authentication info', type: "boolean", default: false})
-        yargs.options('domain', { describe: 'URL to target rio console', type: 'string' })
+        yargs.options('endpoint', { describe: 'URL to target rio console', type: 'string' })
         return yargs
     },
     handler: async (args) => {
@@ -48,7 +48,7 @@ module.exports = {
                         secretKey: args["secret-key"],
                         profileName: args["profile-name"],
                         noAuthDump: args["no-auth-dump"],
-                        domain: args["domain"]
+                        endpoint: args["endpoint"]
                     })
                 }
             }

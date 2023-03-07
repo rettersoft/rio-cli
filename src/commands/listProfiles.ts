@@ -32,9 +32,9 @@ module.exports = {
         const ctx: TaskContext = await tasks.run()
 
         ConsoleMessage.table([
-            ["Profile Name", "Secret", "Domain"],
+            ["Profile Name", "Secret", "EndPoint"],
             ...ctx.profiles.map(item => {
-                return [chalk.whiteBright(item.name), chalk.gray(item.secretId),chalk.gray(item.domain || 'Not Configured')]
+                return [chalk.whiteBright(item.name), chalk.gray(item.secretId),chalk.gray(item.endpoint || 'Not Configured')]
             })
         ], 'Profiles')
 

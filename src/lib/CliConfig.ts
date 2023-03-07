@@ -12,7 +12,7 @@ export interface IRIOCliConfigProfileItemData {
     secretId: string;
     secretKey: string;
     noAuthDump: boolean;
-    domain?: string;
+    endpoint?: string;
 }
 
 export interface IRIOCliConfig {
@@ -22,7 +22,7 @@ export interface IRIOCliConfig {
 export interface AdminProfileSummary {
     name: string
     secretId: string
-    domain?: string
+    endpoint?: string
 }
 
 export class CliConfig {
@@ -50,18 +50,18 @@ export class CliConfig {
             return {
                 name: key,
                 secretId: config.profiles[key].secretId,
-                domain: config.profiles[key].domain
+                endpoint: config.profiles[key].endpoint
             }
         })
     }
 
-    static upsertAdminProfile(props: { profileName: string, secretId: string, secretKey: string, noAuthDump: boolean, domain?: string }) {
+    static upsertAdminProfile(props: { profileName: string, secretId: string, secretKey: string, noAuthDump: boolean, endpoint?: string }) {
         const {
             profileName,
             secretId,
             secretKey,
             noAuthDump,
-            domain
+            endpoint
         } = props
         if (!profileName || !secretId || !secretKey || noAuthDump === undefined)
             throw new Error('profile name, secret id and secret key are required')
@@ -72,7 +72,7 @@ export class CliConfig {
                 secretId,
                 secretKey,
                 noAuthDump,
-                domain
+                endpoint
             }
         } else {
             cliConfig = {
@@ -81,7 +81,7 @@ export class CliConfig {
                         secretKey,
                         secretId,
                         noAuthDump,
-                        domain
+                        endpoint
                     }
                 }
             }

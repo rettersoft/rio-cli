@@ -107,6 +107,12 @@ export class ProjectManager {
             }, {})
         }
 
+        const tsDependencies = Dependencies.checkDependenciesFileTypes() 
+
+        if (tsDependencies) {
+            throw new Error(`In this version of CLI. We cannot accept TypeScript dependencies at the moment. Please make sure to include JavaScript files in your dependencies folder instead. Thank you for your understanding.`)
+        }
+
         const dependencies = Dependencies.getDependenciesWithContents()
         const listedDependencies = Dependencies.getListedDependencies(Object.keys(localClasses))
         const localDependencies: IDependencyContent[] = []

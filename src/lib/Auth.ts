@@ -20,7 +20,7 @@ export class Auth {
                 value: config.secretId
             }
             const result = await axios({
-                url: RetterSdk.prepareRootUrlByKeyValue(RetterRootClasses.User, RetterRootMethods.generateAdminCustomToken, byKeyValue, config.domain),
+                url: RetterSdk.prepareRootUrlByKeyValue(RetterRootClasses.User, RetterRootMethods.generateAdminCustomToken, byKeyValue, config.endpoint),
                 method: 'post',
                 data: {
                     "idToken": token

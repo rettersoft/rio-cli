@@ -7,6 +7,8 @@ import {Tmp} from "./Tmp";
 import * as crypto from "crypto";
 import {Project} from "./Project";
 import _ from "lodash";
+import { ConsoleMessage } from "./ConsoleMessage";
+import chalk from "chalk";
 
 export interface IDependencyContent extends IRemoteDependencyContent {
     zip: Buffer
@@ -32,8 +34,23 @@ export class Dependencies {
         return _.uniq(classDependencies)
     }
 
+    static checkDependenciesFileTypes(): boolean {
+        const dependencies = fs.readdirSync(path.join(process.cwd(), RIO_CLI_DEPENDENCIES_FOLDER), { withFileTypes: true })
+
+        for (const name of dependencies) {
+            if (!name.isDirectory()) continue
+            
+            const dependencyPath = path.join(process.cwd(), RIO_CLI_DEPENDENCIES_FOLDER, name.name)
+
+            const files = fs.readdirSync(dependencyPath, { withFileTypes: true })
+
+            return files.some((file) => file.name === "tsconfig.json")
+        }
+        return false
+    }
+
     static getDependenciesWithContents(): IDependencyContent[] {
-        return this.getAllLocalDependencyNames().map(dependencyName => {
+        return this.getAllLocalDependencyNames().map((dependencyName: string) => {
             const zip = this.zipDependency(dependencyName)
             return {
                 dependencyName,
@@ -59,7 +76,7 @@ export class Dependencies {
         FileExtra.copySync(path.join(process.cwd(), RIO_CLI_DEPENDENCIES_FOLDER, dependencyName), dest)
         zip.addLocalFolder(path.join(tempFolder, dependencyName))
         Tmp.clearUniqueTmpPath(tempFolder)
-        let nameHash = '';
+        let nameHash = ''
         let dataHash = ''
         _.sortBy(zip.getEntries(), 'entryName').map(e => {
             nameHash += e.entryName
