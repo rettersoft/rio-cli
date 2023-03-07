@@ -29,6 +29,7 @@ export class ProjectManager {
     static async preDeployment(api: Api, classes?: string[]): Promise<IPreDeploymentContext> {
         if (classes && !Array.isArray(classes)) throw new Error('invalid classes input')
 
+        const privateState = (await api.getProjectState()).private
         const publicState = (await api.getProjectState()).public
 
         // generate new rio files
@@ -37,7 +38,7 @@ export class ProjectManager {
         let localModels: IProjectModels = Project.getModelsContents()
         const localClasses = Project.getLocalClassContents(classes)
 
-        let remoteModels = publicState.modelDefinitions
+        let remoteModels = { ...publicState.modelDefinitions, ...privateState.modelDefinitions }
         let remoteClasses = await (publicState.classes).reduce(async (acc: any, classItem: any) => {
             const className = classItem.classId
             const clonedAcc = await acc
@@ -122,6 +123,8 @@ export class ProjectManager {
             }
         }
 
+        console.log('localModels', Object.keys(localModels).length)
+        console.log('remoteModels', Object.keys(remoteModels).length)
 
         const modelDeploymentsSummary = Deployment.getModelDeploymentsContext(localModels, remoteModels)
         const classDeploymentsSummary = Deployment.getClassDeploymentsContext(localClasses, remoteClasses)

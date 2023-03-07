@@ -72,6 +72,9 @@ module.exports = {
     const api = await Api.createAPI(args.profile, config.projectId)
         
     const deploymentSummary = await ProjectManager.preDeployment(api, args.classes)
+
+    const pre_finish = (Date.now() - start) / 1000
+    ConsoleMessage.message(chalk.greenBright(`PRE-DEPLOYMENT FINISHED in ${pre_finish} seconds`));
     
     if (!args.force && !Deployment.isChanged(deploymentSummary)) {
       if (args["fail-no-changes"]) {
