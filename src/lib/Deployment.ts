@@ -96,12 +96,12 @@ export class Deployment {
   }
 
   static async deploy(
+    api: Api,
     deploymentSummary: IPreDeploymentContext,
     force: boolean,
     parallel?: number
   ) {
-    const api = Api.getInstance(deploymentSummary.profile);
-
+   
     const models = [];
     const modelItems = [];
 

@@ -9,6 +9,8 @@ import afterCommand from "./AfterCommand";
 import { CommandModule } from "yargs";
 import Listr from "listr";
 import { RIO_CLI_PROJECT_ID_KEY } from "../config";
+import { stat } from "fs";
+import { Api } from "../lib/Api";
 
 interface Input extends GlobalInput, DeploymentGlobalInput {
   "ignore-approval": boolean;
@@ -53,12 +55,6 @@ module.exports = {
       number: true,
       type: "number",
     });
-    yargs.options("parallel", {
-      describe: "Parallel deployment \n Example: rio deploy --parallel",
-      boolean: true,
-      default: false,
-      type: "boolean",
-    });
     yargs.options("classes", {
       describe: "Filtered classes for deployment",
       type: "array",
@@ -70,34 +66,14 @@ module.exports = {
 
     process.env[RIO_CLI_PROJECT_ID_KEY] = args["project-id"];
 
-    const preTasks = new Listr([
-      {
-        title: "Prepare",
-        task: () => {
-          return new Listr([
-            {
-              title: "Getting Config",
-              task: async (ctx: TaskContext) => {
-                ctx.config = Project.getProjectRioConfig();
-              },
-            },
-            {
-              title: "Preparing Deployment Summary",
-              task: async (ctx: TaskContext) => {
-                ctx.deploymentSummary = await ProjectManager.preDeployment(
-                  args.profile,
-                  args.classes
-                );
-              },
-            },
-          ]);
-        },
-      },
-    ]);
+    const start = Date.now()
 
-    const ctx: TaskContext = await preTasks.run();
-
-    if (!args.force && !Deployment.isChanged(ctx.deploymentSummary)) {
+    const config = Project.getProjectRioConfig()
+    const api = await Api.createAPI(args.profile, config.projectId)
+        
+    const deploymentSummary = await ProjectManager.preDeployment(api, args.classes)
+    
+    if (!args.force && !Deployment.isChanged(deploymentSummary)) {
       if (args["fail-no-changes"]) {
         throw new Error("No Changes");
       } else {
@@ -107,7 +83,7 @@ module.exports = {
     }
 
     if (args["verbose"])
-      ConsoleMessage.message(JSON.stringify(ctx.deploymentSummary, null, 2));
+      ConsoleMessage.message(JSON.stringify(deploymentSummary, null, 2));
 
     /**
      * MANUAL-APPROVAL
@@ -126,13 +102,14 @@ module.exports = {
     }
 
     ConsoleMessage.message(
-      `${chalk.greenBright.bold(ctx.config.projectId)} ${chalk.green(
+      `${chalk.greenBright.bold(config.projectId)} ${chalk.green(
         "DEPLOYMENT STARTED"
       )}`
     );
-    await Deployment.deploy(ctx.deploymentSummary, args.force, args.parallel);
-    ConsoleMessage.message(chalk.greenBright("DEPLOYMENT DONE"));
+    await Deployment.deploy(api, deploymentSummary, args.force);
+    const finish = (Date.now() - start) / 1000
+    ConsoleMessage.message(chalk.greenBright(`DEPLOYMENT FINISHED in ${finish} seconds`));
 
-    afterCommand();
+    afterCommand()
   },
 } as CommandModule<Input, Input>;

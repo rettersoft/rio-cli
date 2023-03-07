@@ -99,7 +99,6 @@ export class ConsoleMessage {
     static preDeployLog(preDeploymentContext: IPreDeploymentContext) {
         const charLimit = 20
         const newPreDeploymentContext: IPreDeploymentContext = {
-            profile: preDeploymentContext.profile,
             classDeploymentsSummary: {
                 classDeploymentsSummary: {
                     deletedItems: preDeploymentContext.classDeploymentsSummary.classDeploymentsSummary.deletedItems.map(item => {

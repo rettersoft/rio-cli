@@ -44,42 +44,42 @@ module.exports = {
             CustomError.throwError(`[${chalk.redBright(args["alias"])}] folder already exist`)
         }
 
-        const tasks = new Listr([
-            {
-                title: 'Project Initialization',
-                task: () => {
-                    return new Listr([
-                        {
-                            title: `[${chalk.greenBright.bold(args["alias"])}] Creating`,
-                            task: async (ctx: TaskContext) => {
-                                ctx.project = await Api.getInstance(args.profile).createNewProject(args["alias"])
-                            }
-                        },
-                        {
-                            title: `[${chalk.greenBright.bold(args["alias"])}] Preparing Folders`,
-                            task: async (ctx: TaskContext) => {
-                                // mkdir and chdir to project folder
-                                fs.mkdirSync(args["alias"])
-                                process.chdir(args["alias"])
-                            }
-                        },
-                        {
-                            title: `[${chalk.greenBright.bold(args["alias"])}] Cloning Template`,
-                            task: async (ctx: TaskContext) => {
-                                await Repo.downloadAndExtractGitRepo(ctx.project.projectId, args.template)
-                            }
-                        }
-                    ])
-                }
-            }
-        ])
+        // const tasks = new Listr([
+        //     {
+        //         title: 'Project Initialization',
+        //         task: () => {
+        //             return new Listr([
+        //                 {
+        //                     title: `[${chalk.greenBright.bold(args["alias"])}] Creating`,
+        //                     task: async (ctx: TaskContext) => {
+        //                         ctx.project = await Api.getInstance(args.profile).createNewProject(args["alias"])
+        //                     }
+        //                 },
+        //                 {
+        //                     title: `[${chalk.greenBright.bold(args["alias"])}] Preparing Folders`,
+        //                     task: async (ctx: TaskContext) => {
+        //                         // mkdir and chdir to project folder
+        //                         fs.mkdirSync(args["alias"])
+        //                         process.chdir(args["alias"])
+        //                     }
+        //                 },
+        //                 {
+        //                     title: `[${chalk.greenBright.bold(args["alias"])}] Cloning Template`,
+        //                     task: async (ctx: TaskContext) => {
+        //                         await Repo.downloadAndExtractGitRepo(ctx.project.projectId, args.template)
+        //                     }
+        //                 }
+        //             ])
+        //         }
+        //     }
+        // ])
 
-        const ctx: TaskContext = await tasks.run()
+        // const ctx: TaskContext = await tasks.run()
 
-        ConsoleMessage.table([
-            ["Project Id", "Alias"],
-            [chalk.greenBright.bold(ctx.project.projectId), chalk.whiteBright.bold(ctx.project.detail.alias)]
-        ], "Project")
+        // ConsoleMessage.table([
+        //     ["Project Id", "Alias"],
+        //     [chalk.greenBright.bold(ctx.project.projectId), chalk.whiteBright.bold(ctx.project.detail.alias)]
+        // ], "Project")
 
         afterCommand()
     }

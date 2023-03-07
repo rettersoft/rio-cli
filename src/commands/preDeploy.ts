@@ -40,30 +40,30 @@ module.exports = {
     handler: async (args) => {
         process.env[RIO_CLI_PROJECT_ID_KEY] = args["project-id"]
 
-        if (args.classes) {
-            ConsoleMessage.table([
-                [chalk.blueBright("Selected Classes")],
-                ...args.classes.map(c => {
-                    return [c]
-                })
-            ])
-        }
+        // if (args.classes) {
+        //     ConsoleMessage.table([
+        //         [chalk.blueBright("Selected Classes")],
+        //         ...args.classes.map(c => {
+        //             return [c]
+        //         })
+        //     ])
+        // }
 
-        const tasks = new Listr([
-            {
-                title: 'Pre-Deployment',
-                task: async (ctx: TaskContext) => {
-                    ctx.deploymentSummary = await ProjectManager.preDeployment(args.profile, args.classes)
-                }
-            }
-        ])
+        // const tasks = new Listr([
+        //     {
+        //         title: 'Pre-Deployment',
+        //         task: async (ctx: TaskContext) => {
+        //             ctx.deploymentSummary = await ProjectManager.preDeployment(args.profile, args.classes)
+        //         }
+        //     }
+        // ])
 
-        const ctx: TaskContext = await tasks.run()
+        // const ctx: TaskContext = await tasks.run()
 
-        if (args.force || Deployment.isChanged(ctx.deploymentSummary))
-            ConsoleMessage.preDeployLog(ctx.deploymentSummary)
-        else
-            ConsoleMessage.message(chalk.gray.bold('NO_CHANGES'))
+        // if (args.force || Deployment.isChanged(ctx.deploymentSummary))
+        //     ConsoleMessage.preDeployLog(ctx.deploymentSummary)
+        // else
+        //     ConsoleMessage.message(chalk.gray.bold('NO_CHANGES'))
 
         afterCommand()
     }

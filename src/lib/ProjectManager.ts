@@ -14,7 +14,6 @@ import {
 import {Dependencies, IDependencyContent} from "./Dependencies";
 
 export interface IPreDeploymentContext {
-    profile: string
     classDeploymentsSummary: {
         classDeploymentsSummary: IClassesDeploymentSummary,
         classesFileChanges: IFileChangesByClassName
@@ -27,12 +26,10 @@ export class ProjectManager {
 
     static models: string[] =  ['inputModel', 'outputModel', 'errorModel',  'queryStringModel']
 
-    static async preDeployment(profile: string, classes?: string[]): Promise<IPreDeploymentContext> {
+    static async preDeployment(api: Api, classes?: string[]): Promise<IPreDeploymentContext> {
         if (classes && !Array.isArray(classes)) throw new Error('invalid classes input')
 
-        const api = Api.getInstance(profile)
-        const projectRioConfig = Project.getProjectRioConfig()
-        const project = await api.getProject(projectRioConfig.projectId)
+        const publicState = (await api.getProjectState()).public
 
         // generate new rio files
         await ProjectManager.generateAndSaveRioFiles()
@@ -40,11 +37,11 @@ export class ProjectManager {
         let localModels: IProjectModels = Project.getModelsContents()
         const localClasses = Project.getLocalClassContents(classes)
 
-        let remoteModels = project.detail.modelDefinitions
-        let remoteClasses = await project.detail.classes.reduce<Promise<IClassContents>>(async (acc, classItem) => {
+        let remoteModels = publicState.modelDefinitions
+        let remoteClasses = await (publicState.classes).reduce(async (acc: any, classItem: any) => {
             const className = classItem.classId
             const clonedAcc = await acc
-            clonedAcc[className] = (await api.getRemoteClassFiles(projectRioConfig.projectId, className))
+            clonedAcc[className] = (await api.getRemoteClassFiles(className))
                 .reduce<{ [fileName: string]: string }>((acc, fileItem) => {
                     acc[fileItem.name] = fileItem.content
                     return acc
@@ -131,7 +128,6 @@ export class ProjectManager {
         const dependencyDeploymentsSummary = Deployment.getDependencyDeploymentsContext(localDependencies, remoteDependencies)
 
         return {
-            profile,
             classDeploymentsSummary,
             modelDeploymentsSummary,
             dependencyDeploymentsSummary

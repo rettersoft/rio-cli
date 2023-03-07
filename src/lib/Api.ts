@@ -10,6 +10,7 @@ import {
 } from "./Deployment";
 import { IRemoteDependencyContent } from "./Dependencies";
 import { IPreDeploymentContext } from "./ProjectManager";
+import Retter, { RetterCloudObject, RetterCloudObjectState } from "@retter/sdk";
 
 export interface RemoteClassFileItem {
   name: string;
@@ -23,371 +24,294 @@ export interface ISaveClassFilesInput {
   status: "EDITED" | "DELETED" | "ADDED";
 }
 
-interface IApi {
-  createNewProject(
-    alias: string
-  ): Promise<{ projectId: string; detail: IProjectDetail }>;
+// interface IApi {
+//   createNewProject(
+//     alias: string
+//   ): Promise<{ projectId: string; detail: IProjectDetail }>;
 
-  getProject(projectId: string): Promise<{ detail: IProjectDetail }>;
+//   getProject(projectId: string): Promise<{ detail: IProjectDetail }>;
 
-  getRemoteClassFiles(
-    projectId: string,
-    className: string
-  ): Promise<RemoteClassFileItem[]>;
+//   getRemoteClassFiles(
+//     projectId: string,
+//     className: string
+//   ): Promise<RemoteClassFileItem[]>;
 
-  upsertModel(modelName: string, modelDefinition?: object): Promise<void>;
+//   upsertModel(modelName: string, modelDefinition?: object): Promise<void>;
 
-  upsertModels(
-    models: { modelName: string; modelDefinition?: object }[]
-  ): Promise<void>;
+//   upsertModels(
+//     models: { modelName: string; modelDefinition?: object }[]
+//   ): Promise<void>;
 
-  createClass(className: string, templateId?: string): Promise<void>;
+//   createClass(className: string, templateId?: string): Promise<void>;
 
-  saveClassFiles(
-    className: string,
-    input: ISaveClassFilesInput[]
-  ): Promise<void>;
+//   saveClassFiles(
+//     className: string,
+//     input: ISaveClassFilesInput[]
+//   ): Promise<void>;
 
-  deployClass(className: string, force: boolean): Promise<void>;
+//   deployClass(className: string, force: boolean): Promise<void>;
 
-  saveAndDeployClass(
-    className: string,
-    input: ISaveClassFilesInput[],
-    deploymentStatus: IPreDeploymentContext,
-    force: boolean
-  ): Promise<void>;
+//   saveAndDeployClass(
+//     className: string,
+//     input: ISaveClassFilesInput[],
+//     deploymentStatus: IPreDeploymentContext,
+//     force: boolean
+//   ): Promise<void>;
 
-  getRemoteDependencies(): Promise<IRemoteDependencyContent[]>;
+//   getRemoteDependencies(): Promise<IRemoteDependencyContent[]>;
 
-  upsertDependency(dependencyName: string): Promise<string>;
+//   upsertDependency(dependencyName: string): Promise<string>;
 
-  commitUpsertDependency(dependencyName: string, hash: string): Promise<void>;
-}
+//   commitUpsertDependency(dependencyName: string, hash: string): Promise<void>;
+// }
 
-export class Api implements IApi {
-  private static instance: IApi;
-  private readonly profile: string;
+export class Api {
+  private retter: Retter
+  private projectInstance: RetterCloudObject
+  private projectState: any
+  private classInstances: { [key: string]: RetterCloudObject } = {}
+  
+  // ***********************
+  // *  CONSTRUCTOR
+  // ***********************
 
-  constructor(profile: string) {
-    this.profile = profile;
+  constructor(retter: Retter, projectInstance: RetterCloudObject) {
+    this.retter = retter
+    this.projectInstance = projectInstance
   }
 
-  static getInstance(profile: string): IApi {
-    if (this.instance) return Api.instance;
-    Api.instance = <IApi>(<unknown>new Api(profile));
-    return Api.instance;
+  static async createAPI(profile: string, projectId: string) {
+    // Use await to perform async operations
+    const retter = await RetterSdk.getRootRetterSdkByAdminProfile(profile)
+    const projectInstance = await RetterSdk.getCloudObject(retter, {
+      useLocal: true,
+      classId: RetterRootClasses.Project,
+      instanceId: projectId,
+    })
+
+    return new Api(retter, projectInstance)
+  }
+
+  // ***********************
+  // *  CONSTRUCTOR
+  // ***********************
+
+  async getClassInstance(className: string): Promise<RetterCloudObject> {
+    if (this.classInstances[className]) {
+      return this.classInstances[className]
+    }
+    
+    this.classInstances[className] = await RetterSdk.getCloudObject(
+      this.retter,
+      {
+        useLocal: true,
+        classId: RetterRootClasses.RetterClass,
+        instanceId: `${this.projectInstance.instanceId}_${className}`,
+      }
+    )
+    return this.classInstances[className]
   }
 
   async createClass(className: string, templateId?: string): Promise<void> {
-    const projectRioConfig = Project.getProjectRioConfig();
-    const projectInstance = await RetterSdk.getCloudObject(
-      await RetterSdk.getRootRetterSdkByAdminProfile(this.profile),
-      {
-        useLocal: true,
-        classId: RetterRootClasses.Project,
-        instanceId: projectRioConfig.projectId,
-      }
-    );
-    await RetterSdk.callMethod(projectInstance, {
+    await RetterSdk.callMethod(this.projectInstance, {
       method: RetterRootMethods.createClass,
       body: {
         classId: className,
       },
-    });
+    })
   }
 
-  async saveClassFiles(
-    className: string,
-    input: ISaveClassFilesInput[]
-  ): Promise<void> {
-    const projectRioConfig = Project.getProjectRioConfig();
-    const classInstance = await RetterSdk.getCloudObject(
-      await RetterSdk.getRootRetterSdkByAdminProfile(this.profile),
-      {
-        useLocal: true,
-        classId: RetterRootClasses.RetterClass,
-        instanceId: `${projectRioConfig.projectId}_${className}`,
-      }
-    );
-
+  async saveClassFiles(className: string, input: ISaveClassFilesInput[]): Promise<void> {
+    const classInstance = await this.getClassInstance(className)
     await RetterSdk.callMethod(classInstance, {
       method: RetterRootMethods.saveClassFiles,
       body: {
         files: input,
       },
-    });
+    })
   }
 
-  async saveAndDeployClass(
-    className: string,
-    input: ISaveClassFilesInput[],
-    deploymentStatus: IPreDeploymentContext,
-    force: boolean
-  ): Promise<void> {
+  async saveAndDeployClass(className: string, input: ISaveClassFilesInput[], deploymentStatus: IPreDeploymentContext, force: boolean): Promise<void> {
     if (input.length) {
-      await this.saveClassFiles(className, input);
+      await this.saveClassFiles(className, input)
     }
     if (force || Deployment.isChanged(deploymentStatus)) {
-      await this.deployClass(className, force);
+      await this.deployClass(className, force)
     }
   }
 
   async deployClass(className: string, force: boolean): Promise<void> {
-    const projectRioConfig = Project.getProjectRioConfig();
-    const classInstance = await RetterSdk.getCloudObject(
-      await RetterSdk.getRootRetterSdkByAdminProfile(this.profile),
-      {
-        useLocal: true,
-        classId: RetterRootClasses.RetterClass,
-        instanceId: `${projectRioConfig.projectId}_${className}`,
-      }
-    );
-
+    const classInstance = await this.getClassInstance(className)
     await RetterSdk.callMethod(classInstance, {
       method: RetterRootMethods.deployClass,
       body: {
         force,
       },
-    });
+    })
 
     await new Promise((resolve, reject) => {
       classInstance.state?.public?.subscribe(
         (event: {
           deployment?: {
-            status: "started" | "ongoing" | "failed" | "finished";
-            statusMessage: string;
-          };
+            status: 'started' | 'ongoing' | 'failed' | 'finished'
+            statusMessage: string
+          }
         }) => {
           if (event.deployment) {
             switch (event.deployment.status) {
-              case "failed":
+              case 'failed':
                 ConsoleMessage.deploymentMessage(
                   {
                     type: DeploymentObjectItemType.CLASS,
                     status: DeploymentObjectItemStatus.FAILED,
                     path: className,
                   },
-                  DeploymentMessageStatus.FAILED
-                );
-                reject(event.deployment.statusMessage);
-                break;
-              case "finished":
+                  DeploymentMessageStatus.FAILED,
+                )
+                reject(event.deployment.statusMessage)
+                break
+              case 'finished':
                 ConsoleMessage.deploymentMessage(
                   {
                     type: DeploymentObjectItemType.CLASS,
                     status: DeploymentObjectItemStatus.FINISHED,
                     path: className,
                   },
-                  DeploymentMessageStatus.SUCCEED
-                );
-                resolve(true);
-                break;
-              case "started":
+                  DeploymentMessageStatus.SUCCEED,
+                )
+                resolve(true)
+                break
+              case 'started':
                 ConsoleMessage.deploymentMessage(
                   {
                     type: DeploymentObjectItemType.CLASS,
                     status: DeploymentObjectItemStatus.STARTED,
                     path: className,
                   },
-                  DeploymentMessageStatus.STARTED
-                );
-                break;
-              case "ongoing":
+                  DeploymentMessageStatus.STARTED,
+                )
+                break
+              case 'ongoing':
                 ConsoleMessage.deploymentMessage(
                   {
                     type: DeploymentObjectItemType.CLASS,
                     status: DeploymentObjectItemStatus.ONGOING,
                     path: className,
                   },
-                  DeploymentMessageStatus.DEPLOYING
-                );
-                break;
+                  DeploymentMessageStatus.DEPLOYING,
+                )
+                break
               default:
-                break;
+                break
             }
-            ConsoleMessage.customDeploymentMessage(
-              event.deployment.statusMessage
-            );
+            ConsoleMessage.customDeploymentMessage(event.deployment.statusMessage)
           }
-        }
-      );
-    });
+        },
+      )
+    })
   }
 
-  async upsertModel(
-    modelName: string,
-    modelDefinition?: object
-  ): Promise<void> {
-    const projectRioConfig = Project.getProjectRioConfig();
-    const projectInstance = await RetterSdk.getCloudObject(
-      await RetterSdk.getRootRetterSdkByAdminProfile(this.profile),
-      {
-        useLocal: true,
-        classId: RetterRootClasses.Project,
-        instanceId: projectRioConfig.projectId,
-      }
-    );
-    await RetterSdk.callMethod(projectInstance, {
+  async upsertModel(modelName: string, modelDefinition?: object): Promise<void> {
+    await RetterSdk.callMethod(this.projectInstance, {
       method: RetterRootMethods.upsertModel,
       body: {
         modelName,
         modelDefinition,
       },
-    });
+    })
   }
 
-  async upsertModels(
-    models: { modelName: string; modelDefinition?: object }[]
-  ): Promise<void> {
-    const projectRioConfig = Project.getProjectRioConfig();
-    const projectInstance = await RetterSdk.getCloudObject(
-      await RetterSdk.getRootRetterSdkByAdminProfile(this.profile),
-      {
-        useLocal: true,
-        classId: RetterRootClasses.Project,
-        instanceId: projectRioConfig.projectId,
-      }
-    );
-    await RetterSdk.callMethod(projectInstance, {
+  async upsertModels(models: { modelName: string; modelDefinition?: object }[]): Promise<void> {
+    await RetterSdk.callMethod(this.projectInstance, {
       method: RetterRootMethods.upsertModels,
       body: {
         models,
       },
-    });
+    })
   }
 
-  async createNewProject(
-    alias: string
-  ): Promise<{ projectId: string; detail: IProjectDetail }> {
+  async createNewProject(alias: string): Promise<{ projectId: string; detail: IProjectDetail }> {
     const projectInstance = await RetterSdk.getCloudObject(
-      await RetterSdk.getRootRetterSdkByAdminProfile(this.profile),
-      {
-        classId: RetterRootClasses.Project,
-        body: {
-          alias,
-        },
-      }
-    );
-    let state;
+     this.retter, {
+      classId: RetterRootClasses.Project,
+      body: {
+        alias,
+      },
+    })
+
+    let state
     try {
-      state = (await projectInstance.getState()).data;
+      state = (await projectInstance.getState()).data
     } catch (e) {
-      throw new Error("Project state error");
+      throw new Error('Project state error')
     }
-    if (!state) throw new Error("Project state not found");
+    if (!state) throw new Error('Project state not found')
 
     return {
       projectId: projectInstance.instanceId,
       detail: state.public as any,
-    };
+    }
   }
 
-  async getProject(projectId: string): Promise<{ detail: IProjectDetail }> {
-    const projectInstance = await RetterSdk.getCloudObject(
-      await RetterSdk.getRootRetterSdkByAdminProfile(this.profile),
-      {
-        useLocal: true,
-        classId: RetterRootClasses.Project,
-        instanceId: projectId,
-      }
-    );
+  async getProjectState(): Promise<RetterCloudObjectState> {
+    if (!this.projectState) {
+      this.projectState = (await this.projectInstance.getState()).data
+    }
+    return this.projectState
+  }
 
+  async getProjectStatePublic(): Promise<{ detail: IProjectDetail }> {
     return {
-      detail: (await projectInstance.getState()).data.public as any,
-    };
+      detail: (await this.projectInstance.getState()).data.public as any,
+    }
   }
 
-  async getRemoteClassFiles(
-    projectId: string,
-    className: string
-  ): Promise<RemoteClassFileItem[]> {
-    const retterClassInstance = await RetterSdk.getCloudObject(
-      await RetterSdk.getRootRetterSdkByAdminProfile(this.profile),
-      {
-        useLocal: true,
-        classId: RetterRootClasses.RetterClass,
-        instanceId: `${projectId}_${className}`,
-      }
-    );
-    const response = await RetterSdk.callMethod<RemoteClassFileItem[]>(
-      retterClassInstance,
-      {
-        method: RetterRootMethods.getClassFiles,
-      }
-    );
+  async getRemoteClassFiles(className: string): Promise<RemoteClassFileItem[]> {
+    const classInstance = await this.getClassInstance(className)
+    const response = await RetterSdk.callMethod<RemoteClassFileItem[]>(classInstance, {
+      method: RetterRootMethods.getClassFiles,
+    })
 
     return response.map((item) => {
       return {
         ...item,
-        content: gunzipSync(Buffer.from(item.content, "base64")).toString(
-          "utf-8"
-        ),
-      };
-    });
+        content: gunzipSync(Buffer.from(item.content, 'base64')).toString('utf-8'),
+      }
+    })
   }
 
   async getRemoteDependencies(): Promise<IRemoteDependencyContent[]> {
-    const projectRioConfig = Project.getProjectRioConfig();
-    const projectInstance = await RetterSdk.getCloudObject(
-      await RetterSdk.getRootRetterSdkByAdminProfile(this.profile),
-      {
-        useLocal: true,
-        classId: RetterRootClasses.Project,
-        instanceId: projectRioConfig.projectId,
-      }
-    );
-    const state = await projectInstance.getState();
-    if (!state.data.public.layers) return [];
+    const state = await this.getProjectState()
+    if (!state.public.layers) return []
 
-    const layers = Object.keys(state.data.public.layers);
+    const layers = Object.keys(state.public.layers)
     return layers.map((l) => {
       return {
         dependencyName: l,
-        hash: state.data.public.layers[l].hash || "",
-      };
-    });
+        hash: state.public.layers[l].hash || '',
+      }
+    })
   }
 
   async upsertDependency(dependencyName: string): Promise<string> {
-    const projectRioConfig = Project.getProjectRioConfig();
-    const projectInstance = await RetterSdk.getCloudObject(
-      await RetterSdk.getRootRetterSdkByAdminProfile(this.profile),
-      {
-        useLocal: true,
-        classId: RetterRootClasses.Project,
-        instanceId: projectRioConfig.projectId,
-      }
-    );
-    const result = await RetterSdk.callMethod(projectInstance, {
+    const result = await RetterSdk.callMethod(this.projectInstance, {
       method: RetterRootMethods.upsertDependency,
       body: {
         dependencyName,
       },
-    });
-    return result.url;
+    })
+    return result.url
   }
 
-  async commitUpsertDependency(
-    dependencyName: string,
-    hash: string
-  ): Promise<void> {
-    const projectRioConfig = Project.getProjectRioConfig();
-    const projectInstance = await RetterSdk.getCloudObject(
-      await RetterSdk.getRootRetterSdkByAdminProfile(this.profile),
-      {
-        useLocal: true,
-        classId: RetterRootClasses.Project,
-        instanceId: projectRioConfig.projectId,
-      }
-    );
-    const result = await RetterSdk.callMethod(projectInstance, {
+  async commitUpsertDependency(dependencyName: string, hash: string): Promise<void> {
+    const result = await RetterSdk.callMethod(this.projectInstance, {
       method: RetterRootMethods.upsertDependency,
       body: {
         dependencyName,
         commit: true,
         hash,
       },
-    });
-    return result.url;
+    })
+    return result.url
   }
 }
