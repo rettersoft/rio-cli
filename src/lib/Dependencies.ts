@@ -44,7 +44,7 @@ export class Dependencies {
 
             const files = fs.readdirSync(dependencyPath, { withFileTypes: true })
 
-            return files.some((file) => file.name === "tsconfig.json")
+            return files.some((file) => file.name === "tsconfig.json" || (file.name.endsWith('.ts') && !file.name.endsWith('.d.ts')))
         }
         return false
     }
