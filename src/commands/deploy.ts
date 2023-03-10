@@ -64,16 +64,14 @@ module.exports = {
   handler: async (args) => {
     const start = Date.now()
     
-    if (args.force) ConsoleMessage.message(chalk.blueBright.bold("FORCED"));
-
     process.env[RIO_CLI_PROJECT_ID_KEY] = args["project-id"];
-
+    
     const profile_config = CliConfig.getAdminConfig(args.profile);
     const config = Project.getProjectRioConfig()
     
-    const exampleArray = [{ Profile: args.profile, 'Classes': args.classes?.toString() || 'All Classes', ProjectId: config.projectId, Endpoint: profile_config.endpoint || RIO_CLI_URL }]
+    const exampleArray = [{ Profile: args.profile, 'Classes': args.classes?.toString() || 'All Classes', ProjectId: config.projectId, Endpoint: profile_config.endpoint || RIO_CLI_URL, 'Force': args.force ? 'Yes' : 'No' }]
     ConsoleMessage.fancyTable(exampleArray, 'Deployment Configuration:')
-
+    
     console.log(chalk.yellow(`API connecting...`));
     const api = await Api.createAPI(profile_config, config.projectId)
     console.log(chalk.greenBright(`API CONNECTED ✅`));
