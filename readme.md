@@ -23,7 +23,7 @@ You should set the admin profile using above credentials by ```rio set-profile``
 #### Example:
 
 ```shell
-rio set-profile --profile-name PROFILE_NAME --secret-id SECRET_ID --secret-key SECRET_KEY
+rio set-profile --profile-name PROFILE_NAME --secret-id SECRET_ID --secret-key SECRET_KEY --endpoint RIO_ENDPOINT
 rio list-profiles
 ```
 
@@ -51,16 +51,7 @@ rio generate
 rio init TEST
 cd TEST
 rio generate # optional
-rio pre-deploy # optional
 rio deploy
-```
-
-### Project Pre-Deployment
-
-This step does not make any changes. Just only detects changes
-
-```shell
-rio pre-deploy
 ```
 
 ### Project Deployment

@@ -58,18 +58,20 @@ export class Api {
     this.profile_config = profile_config
   }
 
-  static async createAPI(projectId: string, profile_config: IRIOCliConfigProfileItemData) {
+  static async createAPI(profile_config: IRIOCliConfigProfileItemData, projectId?: string) {
     // Use await to perform async operations
     const retter = await RetterSdk.getRootRetterSdkByAdminProfile(profile_config)
 
     let projectInstance: RetterCloudObject | undefined
 
     try {
-      projectInstance = await retter.getCloudObject({
-        useLocal: true,
-        classId: RetterRootClasses.Project,
-        instanceId: projectId,
-      })
+      if (projectId) {
+        projectInstance = await retter.getCloudObject({
+          useLocal: true,
+          classId: RetterRootClasses.Project,
+          instanceId: projectId,
+        })
+      }
     } catch (error) {
       Api.handleError(error)
     }
@@ -286,6 +288,7 @@ export class Api {
         detail: state.public as any,
       }
     } catch (error) {
+      console.log("createNewProject error")
       Api.handleError(error)
       return { projectId: '', detail: {} as any }
     }

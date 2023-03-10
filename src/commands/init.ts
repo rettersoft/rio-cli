@@ -10,6 +10,9 @@ import Listr from "listr";
 import {IProjectDetail} from "../Interfaces/IProjectDetail";
 import afterCommand from "./AfterCommand";
 import {ConsoleMessage} from "../lib/ConsoleMessage";
+import { CliConfig } from "../lib/CliConfig";
+import { Project } from "../lib/Project";
+import { RIO_CLI_URL } from "../config";
 
 
 interface Input extends GlobalInput {
@@ -32,6 +35,11 @@ module.exports = {
             type: 'string',
             demandOption: true
         })
+        yargs.positional('profile', {
+            describe: 'CLI profile name',
+            type: 'string',
+            demandOption: true,
+        })
         yargs.options('template', {
             type: 'string',
             default: 'Default',
@@ -40,46 +48,37 @@ module.exports = {
         return yargs
     },
     handler: async (args) => {
+        if (!args["alias"]) {
+            CustomError.throwError(chalk.redBright('alias argument is required'))
+        }
+
         if (fs.existsSync(path.join(process.cwd(), args["alias"]))) {
             CustomError.throwError(`[${chalk.redBright(args["alias"])}] folder already exist`)
         }
 
-        // const tasks = new Listr([
-        //     {
-        //         title: 'Project Initialization',
-        //         task: () => {
-        //             return new Listr([
-        //                 {
-        //                     title: `[${chalk.greenBright.bold(args["alias"])}] Creating`,
-        //                     task: async (ctx: TaskContext) => {
-        //                         ctx.project = await Api.getInstance(args.profile).createNewProject(args["alias"])
-        //                     }
-        //                 },
-        //                 {
-        //                     title: `[${chalk.greenBright.bold(args["alias"])}] Preparing Folders`,
-        //                     task: async (ctx: TaskContext) => {
-        //                         // mkdir and chdir to project folder
-        //                         fs.mkdirSync(args["alias"])
-        //                         process.chdir(args["alias"])
-        //                     }
-        //                 },
-        //                 {
-        //                     title: `[${chalk.greenBright.bold(args["alias"])}] Cloning Template`,
-        //                     task: async (ctx: TaskContext) => {
-        //                         await Repo.downloadAndExtractGitRepo(ctx.project.projectId, args.template)
-        //                     }
-        //                 }
-        //             ])
-        //         }
-        //     }
-        // ])
+        console.log(`[${chalk.greenBright.bold(args["alias"])}] Creating`)
 
-        // const ctx: TaskContext = await tasks.run()
+        const profile_config = CliConfig.getAdminConfig(args.profile)
 
-        // ConsoleMessage.table([
-        //     ["Project Id", "Alias"],
-        //     [chalk.greenBright.bold(ctx.project.projectId), chalk.whiteBright.bold(ctx.project.detail.alias)]
-        // ], "Project")
+        const exampleArray = [{ Profile: args.profile, alias: args['alias'], Endpoint: profile_config.endpoint || RIO_CLI_URL }]
+        ConsoleMessage.fancyTable(exampleArray, 'Deployment Configuration:')
+
+        const api = await Api.createAPI(profile_config)
+        const project = await api.createNewProject(args['alias'])
+
+        console.log(`[${chalk.greenBright.bold(args["alias"])}] Preparing Folders`)
+
+        fs.mkdirSync(args["alias"])
+        process.chdir(args["alias"])
+
+        console.log(`[${chalk.greenBright.bold(args["alias"])}] Cloning Template`)
+
+        await Repo.downloadAndExtractGitRepo(project.projectId, args.template)
+
+        ConsoleMessage.table([
+            ["Project Id", "Alias"],
+            [chalk.greenBright.bold(project.projectId), chalk.whiteBright.bold(project.detail.alias)]
+        ], "Project")
 
         afterCommand()
     }

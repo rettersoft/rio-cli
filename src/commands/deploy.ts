@@ -26,23 +26,6 @@ interface TaskContext {
   deploymentSummary: IPreDeploymentContext;
 }
 
-function table(input: any) {
-  // @see https://stackoverflow.com/a/67859384
-  const ts = new Transform({ transform(chunk, enc, cb) { cb(null, chunk) } })
-  const logger = new Console({ stdout: ts })
-  logger.table(input)
-  const table = (ts.read() || '').toString()
-  let result = '';
-  for (let row of table.split(/[\r\n]+/)) {
-    let r = row.replace(/[^┬]*┬/, '┌');
-    r = r.replace(/^├─*┼/, '├');
-    r = r.replace(/│[^│]*/, '');
-    r = r.replace(/^└─*┴/, '└');
-    r = r.replace(/'/g, ' ');
-    result += chalk`{rgb(200,200,200) ${r}}\n`;
-  }
-  console.log(result);
-}
 
 module.exports = {
   command: "deploy",
@@ -93,11 +76,10 @@ module.exports = {
     const config = Project.getProjectRioConfig()
     
     const exampleArray = [{ Profile: args.profile, 'Classes': args.classes?.toString() || 'All Classes', ProjectId: config.projectId, Endpoint: profile_config.endpoint || RIO_CLI_URL }]
-    console.log(chalk`{rgb(200,200,200) Deployment Configuration:}`);
-    table(exampleArray)
+    ConsoleMessage.fancyTable(exampleArray, 'Deployment Configuration:')
 
     console.log(chalk.yellow(`API connecting...`));
-    const api = await Api.createAPI(config.projectId, profile_config)
+    const api = await Api.createAPI(profile_config, config.projectId)
     console.log(chalk.greenBright(`API CONNECTED ✅`));
     
     console.log(chalk.yellow(`PRE-DEPLOYMENT started...`));
