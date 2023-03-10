@@ -55,9 +55,9 @@ module.exports = {
     });
     yargs.options("force", {
       describe: "Force the deployment \n Example: rio deploy --force",
-      default: 0,
-      number: true,
-      type: "number",
+      default: false,
+      boolean: true,
+      type: "boolean",
     });
     yargs.options("classes", {
       describe: "Filtered classes for deployment",
