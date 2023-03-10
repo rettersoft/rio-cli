@@ -2,7 +2,7 @@ import Retter, {RetterRegion} from "@retter/sdk";
 import {RIO_CLI_PLATFORM, RIO_CLI_ROOT_DOMAIN, RIO_CLI_ROOT_PROJECT_ID, RIO_CLI_STAGE, RIO_CLI_URL} from "../config";
 import {Auth} from "./Auth";
 import {RetterCloudObject, RetterCloudObjectCall, RetterCloudObjectConfig} from "@retter/sdk/dist/types";
-import {CliConfig} from "./CliConfig";
+import {CliConfig, IRIOCliConfigProfileItemData} from "./CliConfig";
 
 
 export enum RetterRootClasses {
@@ -28,7 +28,6 @@ export class RetterSdk {
 
     static prepareRootUrlByKeyValue(classId: string, methodName: string, options: { key: string, value: string }, endpoint?: string) {
         let url
-    
         if (RIO_CLI_URL) { 
             url = RIO_CLI_URL
         } else if (endpoint) {
@@ -44,20 +43,19 @@ export class RetterSdk {
         return `https://${url}/${RIO_CLI_ROOT_PROJECT_ID}/CALL/${classId}/${methodName}/${options.key}!${options.value}`
     }
 
-    static async getRootRetterSdkByAdminProfile(profile: string): Promise<Retter> {
+    static async getRootRetterSdkByAdminProfile(profile_config: IRIOCliConfigProfileItemData): Promise<Retter> {
         try {
             if (this.retterRootSdk) return this.retterRootSdk
-            const config = CliConfig.getAdminConfig(profile)
-
+    
             const sdk = Retter.getInstance({
                 projectId: RIO_CLI_ROOT_PROJECT_ID,
-                url: config.endpoint || RIO_CLI_URL,
+                url: profile_config.endpoint || RIO_CLI_URL,
                 region: RIO_CLI_STAGE === 'PROD' ? RetterRegion.euWest1 : RetterRegion.euWest1Beta,
                 platform: RIO_CLI_PLATFORM,
                 logLevel: 'silent'
             })
 
-            const customAuth = await Auth.getRootAdminCustomToken(config)
+            const customAuth = await Auth.getRootAdminCustomToken(profile_config)
             await sdk.authenticateWithCustomToken(customAuth.customToken)
 
             this.retterRootSdk = sdk

@@ -8,9 +8,12 @@ import { Deployment } from "../lib/Deployment";
 import afterCommand from "./AfterCommand";
 import { CommandModule } from "yargs";
 import Listr from "listr";
-import { RIO_CLI_PROJECT_ID_KEY } from "../config";
+import { RIO_CLI_PROJECT_ID_KEY, RIO_CLI_URL } from "../config";
 import { stat } from "fs";
 import { Api } from "../lib/Api";
+import { Transform } from "stream";
+import { Console } from "console";
+import { CliConfig } from "../lib/CliConfig";
 
 interface Input extends GlobalInput, DeploymentGlobalInput {
   "ignore-approval": boolean;
@@ -21,6 +24,24 @@ interface Input extends GlobalInput, DeploymentGlobalInput {
 interface TaskContext {
   config: IProjectRioConfig;
   deploymentSummary: IPreDeploymentContext;
+}
+
+function table(input: any) {
+  // @see https://stackoverflow.com/a/67859384
+  const ts = new Transform({ transform(chunk, enc, cb) { cb(null, chunk) } })
+  const logger = new Console({ stdout: ts })
+  logger.table(input)
+  const table = (ts.read() || '').toString()
+  let result = '';
+  for (let row of table.split(/[\r\n]+/)) {
+    let r = row.replace(/[^┬]*┬/, '┌');
+    r = r.replace(/^├─*┼/, '├');
+    r = r.replace(/│[^│]*/, '');
+    r = r.replace(/^└─*┴/, '└');
+    r = r.replace(/'/g, ' ');
+    result += chalk`{rgb(200,200,200) ${r}}\n`;
+  }
+  console.log(result);
 }
 
 module.exports = {
@@ -68,13 +89,22 @@ module.exports = {
 
     process.env[RIO_CLI_PROJECT_ID_KEY] = args["project-id"];
 
+    const profile_config = CliConfig.getAdminConfig(args.profile);
     const config = Project.getProjectRioConfig()
-    const api = await Api.createAPI(args.profile, config.projectId)
-        
+    
+    const exampleArray = [{ Profile: args.profile, 'Classes': args.classes?.toString() || 'All Classes', ProjectId: config.projectId, Endpoint: profile_config.endpoint || RIO_CLI_URL }]
+    console.log(chalk`{rgb(200,200,200) Deployment Configuration:}`);
+    table(exampleArray)
+
+    console.log(chalk.yellow(`API connecting...`));
+    const api = await Api.createAPI(config.projectId, profile_config)
+    console.log(chalk.greenBright(`API CONNECTED ✅`));
+    
+    console.log(chalk.yellow(`PRE-DEPLOYMENT started...`));
     const deploymentSummary = await ProjectManager.preDeployment(api, args.classes)
 
     const pre_finish = (Date.now() - start) / 1000
-    ConsoleMessage.message(chalk.greenBright(`PRE-DEPLOYMENT FINISHED in ${pre_finish} seconds`));
+    console.log(chalk.greenBright(`PRE-DEPLOYMENT FINISHED ✅ ${pre_finish} seconds`));
     
     if (!args.force && !Deployment.isChanged(deploymentSummary)) {
       if (args["fail-no-changes"]) {
@@ -111,7 +141,7 @@ module.exports = {
     );
     await Deployment.deploy(api, deploymentSummary, args.force);
     const finish = (Date.now() - start) / 1000
-    ConsoleMessage.message(chalk.greenBright(`DEPLOYMENT FINISHED in ${finish} seconds`));
+    ConsoleMessage.message(chalk.greenBright(`DEPLOYMENT Finished ✅ ${finish} seconds`));
 
     afterCommand()
   },

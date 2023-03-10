@@ -123,9 +123,6 @@ export class ProjectManager {
             }
         }
 
-        console.log('localModels', Object.keys(localModels).length)
-        console.log('remoteModels', Object.keys(remoteModels).length)
-
         const modelDeploymentsSummary = Deployment.getModelDeploymentsContext(localModels, remoteModels)
         const classDeploymentsSummary = Deployment.getClassDeploymentsContext(localClasses, remoteClasses)
         const dependencyDeploymentsSummary = Deployment.getDependencyDeploymentsContext(localDependencies, remoteDependencies)
