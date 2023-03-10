@@ -7,12 +7,8 @@ import { IProjectRioConfig, Project } from "../lib/Project";
 import { Deployment } from "../lib/Deployment";
 import afterCommand from "./AfterCommand";
 import { CommandModule } from "yargs";
-import Listr from "listr";
 import { RIO_CLI_PROJECT_ID_KEY, RIO_CLI_URL } from "../config";
-import { stat } from "fs";
 import { Api } from "../lib/Api";
-import { Transform } from "stream";
-import { Console } from "console";
 import { CliConfig } from "../lib/CliConfig";
 
 interface Input extends GlobalInput, DeploymentGlobalInput {
