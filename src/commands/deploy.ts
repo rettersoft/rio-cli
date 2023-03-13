@@ -115,7 +115,7 @@ module.exports = {
         "DEPLOYMENT STARTED"
       )}`
     );
-    await Deployment.deploy(api, deploymentSummary, args.force);
+    await Deployment.deploy(api, deploymentSummary, args.force)
     const finish = (Date.now() - start) / 1000
     ConsoleMessage.message(chalk.greenBright(`DEPLOYMENT Finished ✅ ${finish} seconds`));
 

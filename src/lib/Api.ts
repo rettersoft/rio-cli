@@ -1,5 +1,5 @@
 import Retter, { RetterCloudObject, RetterCloudObjectState } from '@retter/sdk'
-import { RetterRootClasses, RetterRootMethods, RetterSdk } from './RetterSdk'
+import { RetterRootClasses, RetterRootMethods, authenticateCurrentSession, AuthenticateCurrentSessionResponse } from './Auth'
 import { IProjectDetail } from '../Interfaces/IProjectDetail'
 import { Project } from './Project'
 import { gunzipSync } from 'zlib'
@@ -47,20 +47,22 @@ export class Api {
   private projectState: any
   private classInstances: { [key: string]: RetterCloudObject } = {}
 
+  private v2: boolean
   private profile_config: IRIOCliConfigProfileItemData
   // ***********************
   // *  CONSTRUCTOR
   // ***********************
 
-  constructor(retter: Retter, projectInstance: RetterCloudObject, profile_config: any) {
+  constructor(retter: Retter, projectInstance: RetterCloudObject, profile_config: any, v2: boolean) {
     this.retter = retter
     this.projectInstance = projectInstance
     this.profile_config = profile_config
+    this.v2 = v2
   }
 
   static async createAPI(profile_config: IRIOCliConfigProfileItemData, projectId?: string) {
     // Use await to perform async operations
-    const retter = await RetterSdk.getRootRetterSdkByAdminProfile(profile_config)
+    const { retter, tokenData } = await authenticateCurrentSession(profile_config)
 
     let projectInstance: RetterCloudObject | undefined
 
@@ -76,7 +78,7 @@ export class Api {
       Api.handleError(error)
     }
 
-    return new Api(retter, projectInstance as RetterCloudObject, profile_config)
+    return new Api(retter, projectInstance as RetterCloudObject, profile_config, tokenData.claims?.v2)
   }
 
   // ***********************
