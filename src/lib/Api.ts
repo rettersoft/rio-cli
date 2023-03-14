@@ -12,6 +12,7 @@ import chalk from 'chalk'
 import { Transform } from "stream";
 import { Console } from "console";
 export interface RemoteClassFileItem {
+  classId: string
   name: string
   content: string
   _updateToken: string
@@ -87,6 +88,10 @@ export class Api {
 
   get getProfile() {
     return this.profile_config
+  }
+
+  get isV2() {
+    return this.v2
   }
 
   static handleError(error: any) {
@@ -318,6 +323,7 @@ export class Api {
       return response.data.map((item) => {
         return {
           ...item,
+          classId: className,
           content: gunzipSync(Buffer.from(item.content, 'base64')).toString('utf-8'),
         }
       })

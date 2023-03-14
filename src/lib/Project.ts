@@ -28,8 +28,8 @@ export class Project {
         return YAML.parse(template)
     }
 
-    static getLocalClassContents(classes?: string[]) {
-        return (classes || Project.listClassNames()).reduce<IClassContents>(
+    static getLocalClassContents(classes: string[]) {
+        return classes.reduce<IClassContents>(
             (acc, className) => {
                 acc[className] = Project.getClassFileContents(className)
                 return acc
@@ -74,7 +74,7 @@ export class Project {
     }
 
 
-    static getModelsContents(exclude: string[] = []): Record<string, any> {
+    static getLocalModelsContents(exclude: string[] = []): Record<string, any> {
         // HANDLE -> ./models
         const modelsPath = path.join(process.cwd(), PROJECT_MODELS_FOLDER)
         let models: Record<string, any> = Project.getModelFolderContents(modelsPath, exclude)
@@ -86,6 +86,42 @@ export class Project {
             if (!fs.existsSync(modelsPath) || !fs.lstatSync(modelsPath).isDirectory()) continue
 
             models = {...models, ...Project.getModelFolderContents(modelsPath, exclude)}
+        }
+
+        return models
+    }
+
+    static getUsedModelFolderContents(modelsPath: string, usedModels: string[]): Record<string, any> {
+        const modelContents: Record<string, any> = {}
+
+        if (!fs.lstatSync(modelsPath).isDirectory()) return modelContents
+            
+        const models = fs.readdirSync(modelsPath, { withFileTypes: true })
+            
+        for (const model of models) {
+            if (!model.isFile()) continue
+
+            const modelName = model.name.replace(PROJECT_MODEL_FILE_EXTENSION, '')
+            if (!usedModels.includes(modelName)) continue
+
+            const content: string = FileExtra.getFileContextOrFail(path.join(modelsPath, model.name)).toString('utf-8')
+            modelContents[modelName] = JSON.parse(content)
+        }
+        return modelContents
+    }
+
+    static getUsedModelsContents(targetClassNames: string[], usedModels: string[] = []): Record<string, any> {
+        // HANDLE -> ./models
+        const modelsPath = path.join(process.cwd(), PROJECT_MODELS_FOLDER)
+        let models: Record<string, any> = Project.getUsedModelFolderContents(modelsPath, usedModels)
+        
+        // HANDLE -> ./classes/**/models
+        for (const className of targetClassNames) {
+            
+            const modelsPath = path.join(process.cwd(), PROJECT_CLASSES_FOLDER, className, PROJECT_MODELS_FOLDER)
+            if (!fs.existsSync(modelsPath) || !fs.lstatSync(modelsPath).isDirectory()) continue
+
+            models = {...models, ...Project.getUsedModelFolderContents(modelsPath, usedModels)}
         }
 
         return models

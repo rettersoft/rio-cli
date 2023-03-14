@@ -62,7 +62,6 @@ module.exports = {
     return yargs;
   },
   handler: async (args) => {
-    const start = Date.now()
     
     process.env[RIO_CLI_PROJECT_ID_KEY] = args["project-id"];
     
@@ -76,8 +75,17 @@ module.exports = {
     const api = await Api.createAPI(profile_config, config.projectId)
     console.log(chalk.greenBright(`API CONNECTED ✅`));
     
-    console.log(chalk.yellow(`PRE-DEPLOYMENT started...`));
-    const deploymentSummary = await ProjectManager.preDeployment(api, args.classes)
+    let deploymentSummary: IPreDeploymentContext
+    
+    const start = Date.now()
+
+    if (!api.isV2) {
+      console.log(chalk.yellow(`PRE-DEPLOYMENT started...`));
+      deploymentSummary = await ProjectManager.preDeploymentV1(api, args.classes)
+    } else {
+      console.log(chalk.yellow(`PRE-DEPLOYMENT V2 started...`));
+      deploymentSummary = await ProjectManager.preDeploymentV1(api, args.classes)
+    }
 
     const pre_finish = (Date.now() - start) / 1000
     console.log(chalk.greenBright(`PRE-DEPLOYMENT FINISHED ✅ ${pre_finish} seconds`));

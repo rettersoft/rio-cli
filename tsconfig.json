@@ -2,7 +2,7 @@
   "compilerOptions": {
     "target": "es5",
     "module": "commonjs",
-    "lib": ["es6", "es2015", "dom"],
+    "lib": ["es6", "es2020", "dom"],
     "esModuleInterop": true,
     "moduleResolution": "node",
     "sourceMap": false,
@@ -23,6 +23,6 @@
   },
   "include": ["src"],
   "lib": [
-    "es2015"
+    "es2020"
   ]
 }
