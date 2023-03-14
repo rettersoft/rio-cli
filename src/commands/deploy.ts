@@ -10,6 +10,8 @@ import { CommandModule } from "yargs";
 import { RIO_CLI_PROJECT_ID_KEY, RIO_CLI_URL } from "../config";
 import { Api } from "../lib/Api";
 import { CliConfig } from "../lib/CliConfig";
+import { PreDeploymentSummaryV2, preDeploymentV2, printChangesTable, printClassChanges } from "../lib/v2/pre-deployment";
+import { deployV2 } from "../lib/v2/deploy";
 
 interface Input extends GlobalInput, DeploymentGlobalInput {
   "ignore-approval": boolean;
@@ -75,58 +77,69 @@ module.exports = {
     const api = await Api.createAPI(profile_config, config.projectId)
     console.log(chalk.greenBright(`API CONNECTED ✅`));
     
-    let deploymentSummary: IPreDeploymentContext
-    
-    const start = Date.now()
-
-    if (!api.isV2) {
+    if (!api.isV2) {  
+      const start = Date.now()
       console.log(chalk.yellow(`PRE-DEPLOYMENT started...`));
-      deploymentSummary = await ProjectManager.preDeploymentV1(api, args.classes)
+      const deploymentSummary = await ProjectManager.preDeploymentV1(api, args.classes)
+
+      const pre_finish = (Date.now() - start) / 1000
+      console.log(chalk.greenBright(`PRE-DEPLOYMENT FINISHED ✅ ${pre_finish} seconds`));
+      
+      if (!args.force && !Deployment.isChanged(deploymentSummary)) {
+        if (args["fail-no-changes"]) {
+          throw new Error("No Changes");
+        } else {
+          ConsoleMessage.message(chalk.bold.greenBright("No Changes"));
+          process.exit();
+        }
+      }
+  
+      if (args["verbose"])
+        ConsoleMessage.message(JSON.stringify(deploymentSummary, null, 2));
+  
+      /**
+       * MANUAL-APPROVAL
+       */
+      if (!args["ignore-approval"]) {
+        const response = await prompts({
+          type: "confirm",
+          name: "value",
+          message: `Are you sure to proceed?`,
+          initial: true,
+        });
+        if (!response.value) {
+          ConsoleMessage.message("Deployment cancelled!");
+          process.exit();
+        }
+      }
+  
+      ConsoleMessage.message(
+        `${chalk.greenBright.bold(config.projectId)} ${chalk.green(
+          "DEPLOYMENT STARTED"
+        )}`
+      );
+      await Deployment.deploy(api, deploymentSummary, args.force)
+      const finish = (Date.now() - start) / 1000
+      ConsoleMessage.message(chalk.greenBright(`DEPLOYMENT Finished ✅ ${finish} seconds`)); 
     } else {
+      const start = Date.now()
       console.log(chalk.yellow(`PRE-DEPLOYMENT V2 started...`));
-      deploymentSummary = await ProjectManager.preDeploymentV1(api, args.classes)
+      const deploymentSummaryV2 = await preDeploymentV2(api, args.classes)
+
+      const { changes } = await preDeploymentV2(api, args.classes);
+
+      const pre_finish = (Date.now() - start) / 1000
+      console.log(chalk.greenBright(`PRE-DEPLOYMENT V2 FINISHED ✅ ${pre_finish} seconds`));
+
+      ConsoleMessage.message(
+        `${chalk.greenBright.bold(config.projectId)} ${chalk.green(
+          "DEPLOYMENT V2 STARTED"
+        )}`
+      );
+      await deployV2(api, deploymentSummaryV2, args.force)
+      const finish = (Date.now() - start) / 1000
+      ConsoleMessage.message(chalk.greenBright(`DEPLOYMENT V2 Finished ✅ ${finish} seconds`));
     }
-
-    const pre_finish = (Date.now() - start) / 1000
-    console.log(chalk.greenBright(`PRE-DEPLOYMENT FINISHED ✅ ${pre_finish} seconds`));
-    
-    if (!args.force && !Deployment.isChanged(deploymentSummary)) {
-      if (args["fail-no-changes"]) {
-        throw new Error("No Changes");
-      } else {
-        ConsoleMessage.message(chalk.bold.greenBright("No Changes"));
-        process.exit();
-      }
-    }
-
-    if (args["verbose"])
-      ConsoleMessage.message(JSON.stringify(deploymentSummary, null, 2));
-
-    /**
-     * MANUAL-APPROVAL
-     */
-    if (!args["ignore-approval"]) {
-      const response = await prompts({
-        type: "confirm",
-        name: "value",
-        message: `Are you sure to proceed?`,
-        initial: true,
-      });
-      if (!response.value) {
-        ConsoleMessage.message("Deployment cancelled!");
-        process.exit();
-      }
-    }
-
-    ConsoleMessage.message(
-      `${chalk.greenBright.bold(config.projectId)} ${chalk.green(
-        "DEPLOYMENT STARTED"
-      )}`
-    );
-    await Deployment.deploy(api, deploymentSummary, args.force)
-    const finish = (Date.now() - start) / 1000
-    ConsoleMessage.message(chalk.greenBright(`DEPLOYMENT Finished ✅ ${finish} seconds`));
-
     afterCommand()
   },
 } as CommandModule<Input, Input>;

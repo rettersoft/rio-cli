@@ -15,7 +15,10 @@ export interface RemoteClassFileItem {
   classId: string
   name: string
   content: string
-  _updateToken: string
+}
+export interface GetFilesAndModelsResponse {
+  files: RemoteClassFileItem[]
+  models: RemoteClassFileItem[]
 }
 
 export interface ISaveClassFilesInput {
@@ -373,6 +376,36 @@ export class Api {
       })
     } catch (error) {
       Api.handleError(error)
+    }
+  }
+
+  async getRemoteClassFilesAndModels(className: string): Promise<GetFilesAndModelsResponse> {
+    const classInstance = await this.getClassInstance(className)
+    try {
+      const response = await classInstance.call<GetFilesAndModelsResponse>({
+        method: 'getModelsAndFiles',
+      })
+
+      const { models, files } = response.data
+
+      const _models = models.map((item: any) => {
+        return {
+          ...item,
+          classId: className,
+          content: gunzipSync(Buffer.from(item.content, 'base64')).toString('utf-8'),
+        }})
+
+        const _files = files.map((item: any) => {
+          return {
+            ...item,
+            classId: className,
+            content: gunzipSync(Buffer.from(item.content, 'base64')).toString('utf-8'),
+          }})
+
+          return { models: _models, files: _files }
+    } catch (error) {
+      Api.handleError(error)
+      return { models: [], files: [] }
     }
   }
 }
