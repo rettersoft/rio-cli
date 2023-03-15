@@ -68,7 +68,7 @@ export function generateHash(payload: any): string {
 }
 
 export class Deployment {
-  static isChanged(deploymentSummary: IPreDeploymentContext) {
+  static isChanged(deploymentSummary: IPreDeploymentContext) { 
     for (const item of [
       ...deploymentSummary.modelDeploymentsSummary.createdItems,
       ...deploymentSummary.modelDeploymentsSummary.editedItems,
@@ -76,10 +76,37 @@ export class Deployment {
       ...deploymentSummary.classDeploymentsSummary.classDeploymentsSummary.createdItems,
       ...deploymentSummary.classDeploymentsSummary.classDeploymentsSummary.deletedItems,
     ]) {
-      if (item.status !== DeploymentObjectItemStatus.NONE) return true
+      if (item.status !== DeploymentObjectItemStatus.NONE && item.status !== DeploymentObjectItemStatus.DELETED) return true
     }
 
+   
     for (const className of Object.keys(deploymentSummary.classDeploymentsSummary.classesFileChanges)) {
+      const changedFileDeployments = [
+        ...deploymentSummary.classDeploymentsSummary.classesFileChanges[className].fileEdited,
+        ...deploymentSummary.classDeploymentsSummary.classesFileChanges[className].fileDeleted,
+        ...deploymentSummary.classDeploymentsSummary.classesFileChanges[className].fileCreated,
+      ]
+      if (changedFileDeployments.length) return true
+    }
+    return false
+  }
+
+  static isClassChanged(deploymentSummary: IPreDeploymentContext, _className: string) {
+
+    const changedOrEditedModels =  [
+      ...deploymentSummary.modelDeploymentsSummary.createdItems,
+      ...deploymentSummary.modelDeploymentsSummary.editedItems,
+    ].filter(item => item.status !== DeploymentObjectItemStatus.NONE && item.status !== DeploymentObjectItemStatus.DELETED)
+
+    const classUsesOneOfChangedOrEditedModels = changedOrEditedModels.some(item => {
+      return (deploymentSummary.classUsedModels[_className] || []).includes(item.path)
+    })
+
+    if (classUsesOneOfChangedOrEditedModels) return true
+
+    for (const className of Object.keys(deploymentSummary.classDeploymentsSummary.classesFileChanges)) {
+      if (className !== _className) continue
+
       const changedFileDeployments = [
         ...deploymentSummary.classDeploymentsSummary.classesFileChanges[className].fileEdited,
         ...deploymentSummary.classDeploymentsSummary.classesFileChanges[className].fileDeleted,
@@ -161,6 +188,7 @@ export class Deployment {
                 break
               case DeploymentObjectItemStatus.CREATED:
                 await api.createClass(item.path, '')
+                ConsoleMessage.deploymentMessage(item, DeploymentMessageStatus.SUCCEED)
                 break
               default:
                 break
@@ -187,6 +215,7 @@ export class Deployment {
                   maxContentLength: 104857600, //100mb
                 })
                 await api.commitUpsertDependency(item.path, item.hash)
+                ConsoleMessage.deploymentMessage(item, DeploymentMessageStatus.SUCCEED)
                 break
               default:
                 break
@@ -195,8 +224,7 @@ export class Deployment {
           default:
             CustomError.throwError('Unsupported deployment item type')
             break
-        }
-        ConsoleMessage.deploymentMessage(item, DeploymentMessageStatus.SUCCEED)
+        }    
       } catch (e) {
         ConsoleMessage.deploymentMessage(item, DeploymentMessageStatus.FAILED)
         throw e
@@ -221,7 +249,7 @@ export class Deployment {
         ...(force ? deploymentSummary.classDeploymentsSummary.classesFileChanges[className].fileNone : []),
       ]
       for (const item of changedFileDeployments) {
-        ConsoleMessage.deploymentMessage(item, DeploymentMessageStatus.SAVING)
+        // ConsoleMessage.deploymentMessage(item, DeploymentMessageStatus.SAVING)
         const classFileName = item.path.replace(className + '/', '')
         switch (item.status) {
           case DeploymentObjectItemStatus.CREATED:
@@ -268,7 +296,7 @@ export class Deployment {
         ConsoleMessage.deploymentMessage(item, DeploymentMessageStatus.SAVED)
       }
 
-      if (force || Deployment.isChanged(deploymentSummary)) {
+      if (force || Deployment.isClassChanged(deploymentSummary, className)) {
         ConsoleMessage.deploymentMessage(currentClassDeploymentItem, DeploymentMessageStatus.DEPLOYING)
         await api.deployClass(className, force)
         ConsoleMessage.deploymentMessage(currentClassDeploymentItem, DeploymentMessageStatus.DEPLOYED)
@@ -341,49 +369,30 @@ export class Deployment {
     /**
      * IGNORE LOCAL FILES
      */
-    localClasses = Object.keys(localClasses).reduce<IClassContents>(
-      (acc, localClassName) => {
-        acc[localClassName] = Object.keys(localClasses[localClassName]).reduce<{
-          [fileName: string]: string;
-        }>((subAcc, localClassFileName) => {
-          if (
-            !Ignore.isIgnored(path.relative(process.cwd(), localClassFileName))
-          ) {
-            subAcc[localClassFileName] =
-              localClasses[localClassName][localClassFileName];
-          }
-          return subAcc;
-        }, {});
-        return acc;
-      },
-      {}
-    );
+    localClasses = Object.keys(localClasses).reduce<IClassContents>((acc, localClassName) => {
+      acc[localClassName] = Object.keys(localClasses[localClassName]).reduce<{
+        [fileName: string]: string
+      }>((subAcc, localClassFileName) => {
+        if (!Ignore.isIgnored(path.relative(process.cwd(), localClassFileName))) {
+          subAcc[localClassFileName] = localClasses[localClassName][localClassFileName]
+        }
+        return subAcc
+      }, {})
+      return acc
+    }, {})
 
     /**
      * IGNORE REMOTE FILES
      */
-    remoteClasses = Object.keys(remoteClasses).reduce<IClassContents>(
-      (acc, remoteClassName) => {
-        acc[remoteClassName] = Object.keys(
-          remoteClasses[remoteClassName]
-        ).reduce<{ [fileName: string]: string }>(
-          (subAcc, remoteClassFileName) => {
-            if (
-              !Ignore.isIgnored(
-                path.relative(process.cwd(), remoteClassFileName)
-              )
-            ) {
-              subAcc[remoteClassFileName] =
-                remoteClasses[remoteClassName][remoteClassFileName];
-            }
-            return subAcc;
-          },
-          {}
-        );
-        return acc;
-      },
-      {}
-    );
+    remoteClasses = Object.keys(remoteClasses).reduce<IClassContents>((acc, remoteClassName) => {
+      acc[remoteClassName] = Object.keys(remoteClasses[remoteClassName]).reduce<{ [fileName: string]: string }>((subAcc, remoteClassFileName) => {
+        if (!Ignore.isIgnored(path.relative(process.cwd(), remoteClassFileName))) {
+          subAcc[remoteClassFileName] = remoteClasses[remoteClassName][remoteClassFileName]
+        }
+        return subAcc
+      }, {})
+      return acc
+    }, {})
 
     const classDeleted: IDeploymentOperationItem[] = []
     const classNone: IDeploymentOperationItem[] = []
@@ -474,6 +483,14 @@ export class Deployment {
       })
     })
 
+    // if only rio.ts changed ignore it
+    Object.keys(localClasses).forEach((className) => {
+      const edits = classesFileChanges[className].fileEdited
+      if (edits.length === 1 && edits[0].path.includes('rio.ts')) {
+        classesFileChanges[className].fileEdited = []
+      }
+    })
+  
     return {
       classDeploymentsSummary: {
         deletedItems: classDeleted,
