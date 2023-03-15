@@ -1,4 +1,4 @@
-import Retter, { RetterCloudObject, RetterCloudObjectState } from '@retter/sdk'
+import Retter, { RetterCallResponse, RetterCloudObject, RetterCloudObjectState } from '@retter/sdk'
 import { RetterRootClasses, RetterRootMethods, authenticateCurrentSession, AuthenticateCurrentSessionResponse } from './Auth'
 import { IProjectDetail } from '../Interfaces/IProjectDetail'
 import { Project } from './Project'
@@ -51,22 +51,22 @@ export class Api {
   private projectState: any
   private classInstances: { [key: string]: RetterCloudObject } = {}
 
-  private v2: boolean
+  private root_version: string
   private profile_config: IRIOCliConfigProfileItemData
   // ***********************
   // *  CONSTRUCTOR
   // ***********************
 
-  constructor(retter: Retter, projectInstance: RetterCloudObject, profile_config: any, v2: boolean) {
+  constructor(retter: Retter, projectInstance: RetterCloudObject, profile_config: any, root_version: string) {
     this.retter = retter
     this.projectInstance = projectInstance
     this.profile_config = profile_config
-    this.v2 = v2
+    this.root_version = root_version
   }
 
   static async createAPI(profile_config: IRIOCliConfigProfileItemData, projectId?: string) {
     // Use await to perform async operations
-    const { retter, tokenData } = await authenticateCurrentSession(profile_config)
+    const { retter, root_version } = await authenticateCurrentSession(profile_config)
 
     let projectInstance: RetterCloudObject | undefined
 
@@ -82,7 +82,7 @@ export class Api {
       Api.handleError(error)
     }
 
-    return new Api(retter, projectInstance as RetterCloudObject, profile_config, tokenData.claims?.v2)
+    return new Api(retter, projectInstance as RetterCloudObject, profile_config, root_version)
   }
 
   // ***********************
@@ -93,8 +93,8 @@ export class Api {
     return this.profile_config
   }
 
-  get isV2() {
-    return this.v2
+  get v2() {
+    return this.root_version === '2.0.0'
   }
 
   static handleError(error: any) {
@@ -379,7 +379,67 @@ export class Api {
     }
   }
 
-  async getRemoteClassFilesAndModels(className: string): Promise<GetFilesAndModelsResponse> {
+  async deployClassV2(className: string, force: boolean): Promise<void> {
+    const classInstance = await this.getClassInstance(className)
+    try {
+      await classInstance.call({
+        method: RetterRootMethods.deployClass,
+        body: {
+          force,
+        },
+      })
+
+
+      await new Promise((resolve, reject) => {
+        try {
+          classInstance.state?.public?.subscribe(
+            (event: {
+              deployment?: {
+                status: 'started' | 'ongoing' | 'failed' | 'finished'
+                statusMessage: string
+              }
+            }) => {
+              if (event.deployment) {
+                switch (event.deployment.status) {
+                  case 'failed':
+                    console.log(chalk.redBright(`DEPLOYMENT FAILED FOR[${className}]`))
+                    reject(event.deployment.statusMessage)
+                    break
+                  case 'finished':
+                    console.log(chalk.magenta(`DEPLOYMENT FINISHED FOR [${className}] -> ${event.deployment.statusMessage}`))
+                    resolve(true)
+                    break
+                  case 'started':
+                    console.log(chalk.magenta(`DEPLOYMENT STARTED FOR [${className}] -> ${event.deployment.statusMessage}`))
+                    break
+                  case 'ongoing':
+                    console.log(chalk.magenta(`DEPLOYMENT ONGOING FOR [${className}] -> ${event.deployment.statusMessage}`))
+                    break
+                  default:
+                    break
+                }
+              }
+            },
+          )
+        } catch (error) {
+          throw error
+        }
+      }).catch((error) => {
+        throw error
+      })
+
+    } catch (error: any) {
+      console.log(chalk.redBright('\n Error accured while setting models and files ! '))
+
+      const res_status = error?.response?.status || ''
+      const res_statusText= error?.response?.statusText || ''
+      const res_data = JSON.stringify(error?.response?.data || {})
+
+      console.log(chalk.redBright(`status: ${res_status} statusText: ${res_statusText} data: ${res_data}`))
+    }
+  }
+
+  async getRemoteClassFilesAndModelsV2(className: string): Promise<GetFilesAndModelsResponse> {
     const classInstance = await this.getClassInstance(className)
     try {
       const response = await classInstance.call<GetFilesAndModelsResponse>({
@@ -403,9 +463,38 @@ export class Api {
           }})
 
           return { models: _models, files: _files }
-    } catch (error) {
-      Api.handleError(error)
+    } catch (error: any) {
+      console.log(chalk.redBright('\n Error accured while setting models and files ! '))
+
+      const res_status = error?.response?.status || ''
+      const res_statusText= error?.response?.statusText || ''
+      const res_data = JSON.stringify(error?.response?.data || {})
+
+      console.log(chalk.redBright(`status: ${res_status} statusText: ${res_statusText} data: ${res_data}`))
       return { models: [], files: [] }
+    }
+  }
+
+  async setRemoteClassFilesAndModelsV2(className: string, files: object, models: object): Promise<{ success: boolean}> {
+    const classInstance = await this.getClassInstance(className)
+    try {
+      const response = await classInstance.call<{ success: boolean}>({
+        method: 'setModelsAndFiles',
+        body: {
+          files,
+          models,
+        }
+      })
+      return { success: response.data.success }
+    } catch (error: any) {
+      console.log(chalk.redBright('\n Error accured while setting models and files ! '))
+
+      const res_status = error?.response?.status || ''
+      const res_statusText= error?.response?.statusText || ''
+      const res_data = JSON.stringify(error?.response?.data || {})
+
+      console.log(chalk.redBright(`status: ${res_status} statusText: ${res_statusText} data: ${res_data}`))
+      return { success: false }
     }
   }
 }

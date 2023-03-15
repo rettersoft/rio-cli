@@ -17,6 +17,7 @@ export enum DeploymentMessageStatus {
 }
 
 export class ConsoleMessage {
+  static summaryStream: WritableStream
   static deploymentCurrentTableStream: WritableStream
 
   static errorMessage(message: string) {
@@ -87,7 +88,7 @@ export class ConsoleMessage {
   }
 
   static fancyTable(input: any, title: string) {
-    console.log(chalk`{rgb(200,200,200) ${title}}`);
+    console.log(chalk`{rgb(200,200,200) ${title}}`)
     // @see https://stackoverflow.com/a/67859384
     const ts = new Transform({
       transform(chunk, enc, cb) {
@@ -108,4 +109,25 @@ export class ConsoleMessage {
     }
     console.log(result)
   }
+
+  static fancyTable2(rows: string[]) {
+    if (!ConsoleMessage.summaryStream) {
+      ConsoleMessage.summaryStream = createStream({
+        columnDefault: {
+          width: 8,
+          alignment: 'left',
+        },
+        columnCount: 3,
+        columns: [
+          { alignment: 'left', width: 10 },
+          { alignment: 'left', width: 50 },
+          { alignment: 'left', width: 50 },
+        ],
+        border: getBorderCharacters('norc'),
+      })
+    }
+    ConsoleMessage.summaryStream.write(rows)
+  }
 }
+
+

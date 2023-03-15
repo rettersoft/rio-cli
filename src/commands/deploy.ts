@@ -10,7 +10,7 @@ import { CommandModule } from "yargs";
 import { RIO_CLI_PROJECT_ID_KEY, RIO_CLI_URL } from "../config";
 import { Api } from "../lib/Api";
 import { CliConfig } from "../lib/CliConfig";
-import { PreDeploymentSummaryV2, preDeploymentV2, printChangesTable, printClassChanges } from "../lib/v2/pre-deployment";
+import { isChanged, preDeploymentV2, printSummaryV2, } from "../lib/v2/pre-deployment";
 import { deployV2 } from "../lib/v2/deploy";
 
 interface Input extends GlobalInput, DeploymentGlobalInput {
@@ -75,9 +75,9 @@ module.exports = {
     
     console.log(chalk.yellow(`API connecting...`));
     const api = await Api.createAPI(profile_config, config.projectId)
-    console.log(chalk.greenBright(`API CONNECTED ✅`));
+    console.log(chalk.greenBright(`API CONNECTED ✅ \n\n`));
     
-    if (!api.isV2) {  
+    if (!api.v2) {  
       const start = Date.now()
       console.log(chalk.yellow(`PRE-DEPLOYMENT started...`));
       const deploymentSummary = await ProjectManager.preDeploymentV1(api, args.classes)
@@ -123,22 +123,29 @@ module.exports = {
       ConsoleMessage.message(chalk.greenBright(`DEPLOYMENT Finished ✅ ${finish} seconds`)); 
     } else {
       const start = Date.now()
-      console.log(chalk.yellow(`PRE-DEPLOYMENT V2 started...`));
-      const deploymentSummaryV2 = await preDeploymentV2(api, args.classes)
+      console.log(chalk.yellow(`Gathering information...\n`));
 
-      const { changes } = await preDeploymentV2(api, args.classes);
+      const preDeployResults = await preDeploymentV2(api, args.classes);
 
       const pre_finish = (Date.now() - start) / 1000
-      console.log(chalk.greenBright(`PRE-DEPLOYMENT V2 FINISHED ✅ ${pre_finish} seconds`));
 
-      ConsoleMessage.message(
-        `${chalk.greenBright.bold(config.projectId)} ${chalk.green(
-          "DEPLOYMENT V2 STARTED"
-        )}`
-      );
-      await deployV2(api, deploymentSummaryV2, args.force)
+      const _isChanged = isChanged(preDeployResults.comparization)
+
+      if (!_isChanged && !args.force) {
+        console.log(chalk.greenBright(`Gathered information ✅ ${pre_finish} seconds \n\n`))
+        console.log(chalk.bold.redBright("No Changes"));
+        process.exit();
+      }
+      
+      await printSummaryV2(preDeployResults.comparization)
+      
+      console.log(chalk.greenBright(`\nGathered information ✅ ${pre_finish} seconds`))
+      console.log(chalk.yellow("Starting deployment...\n\n"))
+      
+      await deployV2(api, preDeployResults, args.force)
+      
       const finish = (Date.now() - start) / 1000
-      ConsoleMessage.message(chalk.greenBright(`DEPLOYMENT V2 Finished ✅ ${finish} seconds`));
+      console.log(chalk.greenBright(`\n\nDeployed ✅ ${finish} seconds`));
     }
     afterCommand()
   },
