@@ -14,6 +14,7 @@ export interface IPreDeploymentContext {
   }
   modelDeploymentsSummary: IDeploymentSummary
   dependencyDeploymentsSummary: IDeploymentSummary
+  classUsedModels: { [className: string]: string[] }
 }
 
 export class ProjectManager {
@@ -50,8 +51,8 @@ export class ProjectManager {
     return remoteClasses
   }
 
-  static fetchUsedModelNames(localClassFiles: IClassContents, targetClassNames: string[]): string[] {
-    const usedModels: string[] = []
+  static fetchUsedModelNames(localClassFiles: IClassContents, targetClassNames: string[]): { [className: string]: string[] } {
+    const usedModels: { [className: string]: string[] } = {}
 
     for (const className of targetClassNames) {
       const templateFileContent = localClassFiles[className][PROJECT_CLASS_TEMPLATE_FILE]
@@ -59,7 +60,6 @@ export class ProjectManager {
       if (!templateFileContent) {
         throw new Error(`failed to find template file for class: ${className}`)
       }
-
       const template = YAML.parse(templateFileContent)
 
       if (template.methods) {
@@ -67,7 +67,10 @@ export class ProjectManager {
           ProjectManager.models.forEach((model: string) => {
             if (Object.prototype.hasOwnProperty.call(m, model)) {
               const modelName: string = (m as any)[model]
-              usedModels.push(modelName)
+              if (!usedModels[className]) {
+                usedModels[className] = []
+              }
+              usedModels[className].push(modelName)
             }
           })
         })
@@ -77,7 +80,10 @@ export class ProjectManager {
         ProjectManager.models.forEach((model: string) => {
           if (Object.prototype.hasOwnProperty.call(template.init, model)) {
             const modelName: string = (template.init as any)[model]
-            usedModels.push(modelName)
+            if (!usedModels[className]) {
+              usedModels[className] = []
+            }
+            usedModels[className].push(modelName)
           }
         })
       }
@@ -85,7 +91,10 @@ export class ProjectManager {
         ProjectManager.models.forEach((model: string) => {
           if (Object.prototype.hasOwnProperty.call(template.get, model)) {
             const modelName: string = (template.get as any)[model]
-            usedModels.push(modelName)
+            if (!usedModels[className]) {
+              usedModels[className] = []
+            }
+            usedModels[className].push(modelName)
           }
         })
       }
@@ -117,7 +126,9 @@ export class ProjectManager {
 
     // models
     const usedModels = ProjectManager.fetchUsedModelNames(localClasses, targetClassNames)
-    const localModels: IProjectModels = Project.getUsedModelsContents(targetClassNames, usedModels)
+
+    const justNames = Object.values(usedModels).flat()
+    const localModels: IProjectModels = Project.getUsedModelsContents(targetClassNames, justNames)
     const remoteModels = { ...projectState.public.modelDefinitions, ...projectState.private.modelDefinitions }
 
     // start of "handle dependencies"
@@ -150,6 +161,7 @@ export class ProjectManager {
       classDeploymentsSummary,
       modelDeploymentsSummary,
       dependencyDeploymentsSummary,
+      classUsedModels: usedModels,
     }
   }
 
