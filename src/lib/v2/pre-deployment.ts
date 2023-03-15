@@ -148,7 +148,6 @@ const fetchRemoteClassContents = async (api: Api, targetClassNames: string[]): P
     if (response.status !== 'fulfilled') {
       throw new Error(`failed to fetch remote class files: ${response.reason}`)
     }
-
     const datas = response.value
 
     for (const model of datas.models) {
@@ -158,6 +157,7 @@ const fetchRemoteClassContents = async (api: Api, targetClassNames: string[]): P
           files: {},
         }
       }
+
       remoteClassesContents[model.classId].models[model.name] = model.content
     }
 
@@ -271,7 +271,6 @@ export const preDeploymentV2 = async (api: Api, classes?: string[]): Promise<Pre
 }
 
 export const printSummaryV2 = async (summary: CompareSummary) => {
-
   for (const className in summary) {
     const { createdFiles, createdModels, editedFiles, editedModels, deletedFiles, deletedModels } = summary[className]
 
@@ -285,10 +284,10 @@ export const printSummaryV2 = async (summary: CompareSummary) => {
       console.log(chalk.dim('    None'))
     } else {
       for (const fileName of createdModels) {
-        console.log(chalk.green(`    added: ${fileName}`))
+        console.log(chalk.green(`    added  : ${fileName}`))
       }
       for (const fileName of editedModels) {
-        console.log(chalk.blue(`    edited: ${fileName}`))
+        console.log(chalk.blue(`    edited : ${fileName}`))
       }
       for (const fileName of deletedModels) {
         console.log(chalk.red(`    deleted: ${fileName}`))
@@ -299,10 +298,10 @@ export const printSummaryV2 = async (summary: CompareSummary) => {
       console.log(chalk.dim('    None'))
     } else {
       for (const fileName of createdFiles) {
-        console.log(chalk.green(`    added: ${fileName}`))
+        console.log(chalk.green(`    added  : ${fileName}`))
       }
       for (const fileName of editedFiles) {
-        console.log(chalk.blue(`    edited: ${fileName}`))
+        console.log(chalk.blue(`    edited : ${fileName}`))
       }
       for (const fileName of deletedFiles) {
         console.log(chalk.red(`    deleted: ${fileName}`))

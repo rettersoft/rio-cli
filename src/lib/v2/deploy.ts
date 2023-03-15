@@ -27,7 +27,7 @@ const setFiles = async (api: Api, summary: PreDeploymentSummaryV2, className: st
   }
 
   for (const [fileName, fileContent] of Object.entries(modelContents)) {
-    files[fileName] = {
+    models[fileName] = {
       name: fileName,
       content: gzipSync(Buffer.from(fileContent)).toString('base64')
     }
