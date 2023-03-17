@@ -16,14 +16,69 @@ import { deployV2 } from "../lib/v2/deploy";
 interface Input extends GlobalInput, DeploymentGlobalInput {
   "ignore-approval": boolean;
   "fail-no-changes": boolean;
-  verbose: boolean;
 }
 
-interface TaskContext {
-  config: IProjectRioConfig;
-  deploymentSummary: IPreDeploymentContext;
+const processDeployV1 = async (api: Api, config: IProjectRioConfig, args: Input) => {
+  const start = Date.now()
+  console.log(chalk.yellow(`PRE-DEPLOYMENT started...`))
+  const deploymentSummary = await ProjectManager.preDeploymentV1(api, args.classes)
+
+  const pre_finish = (Date.now() - start) / 1000
+  console.log(chalk.greenBright(`PRE-DEPLOYMENT FINISHED ✅ ${pre_finish} seconds`))
+
+  if (!args.force && !Deployment.isChanged(deploymentSummary)) {
+    ConsoleMessage.message(chalk.bold.red('No Changes') + chalk.bold.grey(" -> if you want to ignore diff check use '--force' flag"))
+    process.exit()
+  }
+
+  /**
+   * MANUAL-APPROVAL
+   */
+  if (!args['ignore-approval']) {
+    const response = await prompts({
+      type: 'confirm',
+      name: 'value',
+      message: `Are you sure to proceed?`,
+      initial: true,
+    })
+    if (!response.value) {
+      ConsoleMessage.message('Deployment cancelled!')
+      process.exit()
+    }
+  }
+
+  ConsoleMessage.message(`${chalk.greenBright.bold(config.projectId)} ${chalk.green('DEPLOYMENT STARTED')}`)
+  await Deployment.deploy(api, deploymentSummary, args.force, args['rio-force'])
+  const finish = (Date.now() - start) / 1000
+  ConsoleMessage.message(chalk.greenBright(`DEPLOYMENT Finished ✅ ${finish} seconds`))
 }
 
+const processDeployV2 = async (api: Api, config: IProjectRioConfig, args: Input) => {
+  const start = Date.now()
+  console.log(chalk.yellow(`Gathering information...\n`));
+
+  const preDeployResults = await preDeploymentV2(api, args.classes);
+
+  const pre_finish = (Date.now() - start) / 1000
+
+  const _isChanged = isChanged(preDeployResults.comparization)
+
+  if (!_isChanged && !args.force) {
+    console.log(chalk.greenBright(`Gathered information ✅ ${pre_finish} seconds \n\n`))
+    console.log(chalk.bold.redBright("No Changes"));
+    process.exit();
+  }
+  
+  await printSummaryV2(preDeployResults.comparization)
+  
+  console.log(chalk.greenBright(`\nGathered information ✅ ${pre_finish} seconds`))
+  console.log(chalk.yellow("Starting deployment...\n\n"))
+  
+  await deployV2(api, preDeployResults, args["rio-force"])
+  
+  const finish = (Date.now() - start) / 1000
+  console.log(chalk.greenBright(`\n\nDeployed ✅ ${finish} seconds`));
+}
 
 module.exports = {
   command: "deploy",
@@ -82,71 +137,11 @@ module.exports = {
     console.log(chalk.greenBright(`API CONNECTED ✅ \n\n`));
     
     if (!api.v2) {  
-      const start = Date.now()
-      console.log(chalk.yellow(`PRE-DEPLOYMENT started...`));
-      const deploymentSummary = await ProjectManager.preDeploymentV1(api, args.classes)
-
-      const pre_finish = (Date.now() - start) / 1000
-      console.log(chalk.greenBright(`PRE-DEPLOYMENT FINISHED ✅ ${pre_finish} seconds`));
-      
-    if (!args.force && !Deployment.isChanged(deploymentSummary)) {
-        ConsoleMessage.message(chalk.bold.red("No Changes") + chalk.bold.grey(" -> if you want to ignore diff check use '--force' flag"));
-        process.exit();
-    }
-  
-      if (args["verbose"])
-        ConsoleMessage.message(JSON.stringify(deploymentSummary, null, 2));
-  
-      /**
-       * MANUAL-APPROVAL
-       */
-      if (!args["ignore-approval"]) {
-        const response = await prompts({
-          type: "confirm",
-          name: "value",
-          message: `Are you sure to proceed?`,
-          initial: true,
-        });
-        if (!response.value) {
-          ConsoleMessage.message("Deployment cancelled!");
-          process.exit();
-        }
-      }
-  
-      ConsoleMessage.message(
-        `${chalk.greenBright.bold(config.projectId)} ${chalk.green(
-          "DEPLOYMENT STARTED"
-        )}`
-      );
-      await Deployment.deploy(api, deploymentSummary, args.force, args["rio-force"])
-      const finish = (Date.now() - start) / 1000
-      ConsoleMessage.message(chalk.greenBright(`DEPLOYMENT Finished ✅ ${finish} seconds`)); 
+     await processDeployV1(api, config, args)
     } else {
-      const start = Date.now()
-      console.log(chalk.yellow(`Gathering information...\n`));
-
-      const preDeployResults = await preDeploymentV2(api, args.classes);
-
-      const pre_finish = (Date.now() - start) / 1000
-
-      const _isChanged = isChanged(preDeployResults.comparization)
-
-      if (!_isChanged && !args.force) {
-        console.log(chalk.greenBright(`Gathered information ✅ ${pre_finish} seconds \n\n`))
-        console.log(chalk.bold.redBright("No Changes"));
-        process.exit();
-      }
-      
-      await printSummaryV2(preDeployResults.comparization)
-      
-      console.log(chalk.greenBright(`\nGathered information ✅ ${pre_finish} seconds`))
-      console.log(chalk.yellow("Starting deployment...\n\n"))
-      
-      await deployV2(api, preDeployResults, args.force)
-      
-      const finish = (Date.now() - start) / 1000
-      console.log(chalk.greenBright(`\n\nDeployed ✅ ${finish} seconds`));
+     await processDeployV2(api, config, args)
     }
+
     afterCommand()
   },
 } as CommandModule<Input, Input>;
