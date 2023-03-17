@@ -25,22 +25,24 @@ interface TaskContext {
 
 module.exports = {
   command: "deploy",
-  description: "Deploy the project",
+  description: `
+  Description: Deploy the project
+    Arguments:
+    --project-id: Project id for deployment (type: string)
+    --classes: Filtered classes for deployment (type: array)
+    --ignore-approval: Ignore deployment manual approval. 
+    --force: Do not execute difference check. 
+    --rio-force: Send deployment requests with force parameter to rio. 
+  `,    
   aliases: ["d"],
   builder: (yargs) => {
     yargs.options("project-id", {
       describe: "Project id for deployment",
       type: "string",
     });
-    yargs.options("verbose", {
-      describe: "Show change-set",
-      type: "boolean",
-      boolean: false,
-    });
-    yargs.options("fail-no-changes", {
-      describe: "Fail on no changes",
-      type: "boolean",
-      boolean: true,
+    yargs.options("classes", {
+      describe: "Filtered classes for deployment",
+      type: "array",
     });
     yargs.options("ignore-approval", {
       describe:
@@ -50,25 +52,27 @@ module.exports = {
       type: "boolean",
     });
     yargs.options("force", {
-      describe: "Force the deployment \n Example: rio deploy --force",
+      describe: "This parameter could be used to force a deployment of all files, even if there have been no changes since the last deployment.  \n Example: rio deploy --force",
       default: false,
       boolean: true,
       type: "boolean",
     });
-    yargs.options("classes", {
-      describe: "Filtered classes for deployment",
-      type: "array",
+    yargs.options("rio-force", {
+      describe: "This will be used when pushing deployment requests to RIO, its used for forcing rio to deploy even if class already in a state of deployment, \n Example: rio deploy --rio-force",
+      default: false,
+      boolean: true,
+      type: "boolean",
     });
     return yargs;
   },
   handler: async (args) => {
-    
+
     process.env[RIO_CLI_PROJECT_ID_KEY] = args["project-id"];
     
     const profile_config = CliConfig.getAdminConfig(args.profile);
     const config = Project.getProjectRioConfig()
     
-    const exampleArray = [{ Profile: args.profile, 'Classes': args.classes?.toString() || 'All Classes', ProjectId: config.projectId, Endpoint: profile_config.endpoint || RIO_CLI_URL, 'Force': args.force ? 'Yes' : 'No' }]
+    const exampleArray = [{ Profile: args.profile, 'Classes': args.classes?.toString() || 'All Classes', ProjectId: config.projectId, Endpoint: profile_config.endpoint || RIO_CLI_URL, '--force': args.force ? 'Yes' : 'No', '--rio-force': args["rio-force"] ? 'Yes' : 'No' }]
     ConsoleMessage.fancyTable(exampleArray, 'Deployment Configuration:')
     
     console.log(chalk.yellow(`API connecting...`));
@@ -91,16 +95,9 @@ module.exports = {
     console.log(chalk.greenBright(`PRE-DEPLOYMENT FINISHED ✅ ${pre_finish} seconds`));
     
     if (!args.force && !Deployment.isChanged(deploymentSummary)) {
-      if (args["fail-no-changes"]) {
-        throw new Error("No Changes");
-      } else {
-        ConsoleMessage.message(chalk.bold.greenBright("No Changes"));
+        ConsoleMessage.message(chalk.bold.red("No Changes") + chalk.bold.grey(" -> if you want to ignore diff check use '--force' flag"));
         process.exit();
-      }
     }
-
-    if (args["verbose"])
-      ConsoleMessage.message(JSON.stringify(deploymentSummary, null, 2));
 
     /**
      * MANUAL-APPROVAL
@@ -123,7 +120,7 @@ module.exports = {
         "DEPLOYMENT STARTED"
       )}`
     );
-    await Deployment.deploy(api, deploymentSummary, args.force)
+    await Deployment.deploy(api, deploymentSummary, args.force, args["rio-force"])
     const finish = (Date.now() - start) / 1000
     ConsoleMessage.message(chalk.greenBright(`DEPLOYMENT Finished ✅ ${finish} seconds`));
 
