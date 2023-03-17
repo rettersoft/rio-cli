@@ -10,6 +10,8 @@ import { CommandModule } from "yargs";
 import { RIO_CLI_PROJECT_ID_KEY, RIO_CLI_URL } from "../config";
 import { Api } from "../lib/Api";
 import { CliConfig } from "../lib/CliConfig";
+import { isChanged, preDeploymentV2, printSummaryV2, } from "../lib/v2/pre-deployment";
+import { deployV2 } from "../lib/v2/deploy";
 
 interface Input extends GlobalInput {
   force: boolean;
@@ -17,6 +19,68 @@ interface Input extends GlobalInput {
   "project-id": string;
   "ignore-approval": boolean;
   "skip-diff": boolean;
+}
+
+const processDeployV1 = async (api: Api, config: IProjectRioConfig, args: Input) => {
+  const start = Date.now()
+  console.log(chalk.yellow(`PRE-DEPLOYMENT started...`))
+  const deploymentSummary = await ProjectManager.preDeploymentV1(api, args.classes)
+
+  const pre_finish = (Date.now() - start) / 1000
+  console.log(chalk.greenBright(`PRE-DEPLOYMENT FINISHED ✅ ${pre_finish} seconds`))
+
+  if (!args.force && !Deployment.isChanged(deploymentSummary)) {
+    ConsoleMessage.message(chalk.bold.red('No Changes') + chalk.bold.grey(" -> if you want to ignore diff check use '--force' flag"))
+    process.exit()
+  }
+
+  /**
+   * MANUAL-APPROVAL
+   */
+  if (!args['ignore-approval']) {
+    const response = await prompts({
+      type: 'confirm',
+      name: 'value',
+      message: `Are you sure to proceed?`,
+      initial: true,
+    })
+    if (!response.value) {
+      ConsoleMessage.message('Deployment cancelled!')
+      process.exit()
+    }
+  }
+
+  ConsoleMessage.message(`${chalk.greenBright.bold(config.projectId)} ${chalk.green('DEPLOYMENT STARTED')}`)
+  await Deployment.deploy(api, deploymentSummary, args.force, args['rio-force'])
+  const finish = (Date.now() - start) / 1000
+  ConsoleMessage.message(chalk.greenBright(`DEPLOYMENT Finished ✅ ${finish} seconds`))
+}
+
+const processDeployV2 = async (api: Api, config: IProjectRioConfig, args: Input) => {
+  const start = Date.now()
+  console.log(chalk.yellow(`Gathering information...\n`));
+
+  const preDeployResults = await preDeploymentV2(api, args.classes);
+
+  const pre_finish = (Date.now() - start) / 1000
+
+  const _isChanged = isChanged(preDeployResults.comparization)
+
+  if (!_isChanged && !args.force) {
+    console.log(chalk.greenBright(`Gathered information ✅ ${pre_finish} seconds \n\n`))
+    console.log(chalk.bold.redBright("No Changes"));
+    process.exit();
+  }
+  
+  await printSummaryV2(preDeployResults.comparization)
+  
+  console.log(chalk.greenBright(`\nGathered information ✅ ${pre_finish} seconds`))
+  console.log(chalk.yellow("Starting deployment...\n\n"))
+  
+  await deployV2(api, preDeployResults, args["rio-force"])
+  
+  const finish = (Date.now() - start) / 1000
+  console.log(chalk.greenBright(`\n\nDeployed ✅ ${finish} seconds`));
 }
 
 module.exports = {
@@ -73,52 +137,13 @@ module.exports = {
     
     console.log(chalk.yellow(`API connecting...`));
     const api = await Api.createAPI(profile_config, config.projectId)
-    console.log(chalk.greenBright(`API CONNECTED ✅`));
+    console.log(chalk.greenBright(`API CONNECTED ✅ \n\n`));
     
-    let deploymentSummary: IPreDeploymentContext
-    
-    const start = Date.now()
-
-    if (!api.isV2) {
-      console.log(chalk.yellow(`PRE-DEPLOYMENT started...`));
-      deploymentSummary = await ProjectManager.preDeploymentV1(api, args.classes)
+    if (!api.v2) {  
+     await processDeployV1(api, config, args)
     } else {
-      console.log(chalk.yellow(`PRE-DEPLOYMENT V2 started...`));
-      deploymentSummary = await ProjectManager.preDeploymentV1(api, args.classes)
+     await processDeployV2(api, config, args)
     }
-
-    const pre_finish = (Date.now() - start) / 1000
-    console.log(chalk.greenBright(`PRE-DEPLOYMENT FINISHED ✅ ${pre_finish} seconds`));
-    
-    if (!args["skip-diff"] && !Deployment.isChanged(deploymentSummary)) {
-        ConsoleMessage.message(chalk.bold.red("No Changes") + chalk.bold.grey(" -> if you want to ignore diff check use '--skip-diff' flag"));
-        process.exit();
-    }
-
-    /**
-     * MANUAL-APPROVAL
-     */
-    if (!args["ignore-approval"]) {
-      const response = await prompts({
-        type: "confirm",
-        name: "value",
-        message: `Are you sure to proceed?`,
-        initial: true,
-      });
-      if (!response.value) {
-        ConsoleMessage.message("Deployment cancelled!");
-        process.exit();
-      }
-    }
-
-    ConsoleMessage.message(
-      `${chalk.greenBright.bold(config.projectId)} ${chalk.green(
-        "DEPLOYMENT STARTED"
-      )}`
-    );
-    await Deployment.deploy(api, deploymentSummary, args["skip-diff"], args.force)
-    const finish = (Date.now() - start) / 1000
-    ConsoleMessage.message(chalk.greenBright(`DEPLOYMENT Finished ✅ ${finish} seconds`));
 
     afterCommand()
   },

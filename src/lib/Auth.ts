@@ -24,16 +24,9 @@ export enum RetterRootMethods {
 export interface KeyValue {
   [key: string]: any
 }
-
-export interface GenerateCustomToken {
-  userId: string
-  identity: string
-  claims?: KeyValue
-}
-
 export interface AuthenticateCurrentSessionResponse {
   retter: Retter
-  tokenData: GenerateCustomToken
+  root_version: string
 }
 
 function prepareRootUrlByKeyValue(classId: string, methodName: string, options: { key: string; value: string }, endpoint?: string) {
@@ -78,10 +71,9 @@ async function getRootAdminCustomToken(config: IRIOCliConfigProfileItemData) {
     if (!result || !result.data || !result.data.customToken) {
       throw new Error('Custom token error!')
     } else {
-      const { userId, identity, claims } = jwt.decode(result.data.customToken) as GenerateCustomToken
       return {
         customToken: result.data.customToken,
-        tokenData: { userId, identity, claims },
+        root_version: result.data.version || '',
       }
     }
   } catch (e: any) {
@@ -102,7 +94,7 @@ export async function authenticateCurrentSession(profile_config: IRIOCliConfigPr
     const customAuth = await getRootAdminCustomToken(profile_config)
     await sdk.authenticateWithCustomToken(customAuth.customToken)
 
-    return { retter: sdk, tokenData: customAuth.tokenData }
+    return { retter: sdk, root_version: customAuth.root_version }
   } catch (e: any) {
     const customMessage = e.response && e.response.data ? (typeof e.response.data === 'object' ? JSON.stringify(e.response.data) : e.response.data) : ''
     throw new Error('Authentication error (' + e.toString() + ') :: ' + customMessage)
