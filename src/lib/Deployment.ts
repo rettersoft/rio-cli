@@ -117,7 +117,7 @@ export class Deployment {
     return false
   }
 
-  static async deploy(api: Api, deploymentSummary: IPreDeploymentContext, force: boolean, parallel?: number) {
+  static async deploy(api: Api, deploymentSummary: IPreDeploymentContext, force: boolean, rio_force: boolean) {
     const models = []
     const modelItems = []
 
@@ -298,7 +298,7 @@ export class Deployment {
 
       if (force || Deployment.isClassChanged(deploymentSummary, className)) {
         ConsoleMessage.deploymentMessage(currentClassDeploymentItem, DeploymentMessageStatus.DEPLOYING)
-        await api.deployClass(className, force)
+        await api.deployClass(className, rio_force)
         ConsoleMessage.deploymentMessage(currentClassDeploymentItem, DeploymentMessageStatus.DEPLOYED)
       }
     }

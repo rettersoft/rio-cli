@@ -7,4 +7,5 @@ export interface DeploymentGlobalInput {
   force: boolean;
   parallel: number;
   "project-id": string;
+  "rio-force": boolean;
 }

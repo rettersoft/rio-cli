@@ -58,4 +58,5 @@ rio deploy
 
 ```shell
 rio deploy
+rio d --profile PROFILE --project-id PROJECT_ID --classes CLASSES --force --ignore-approval --ignore-approval --rio-force
 ```
