@@ -83,7 +83,7 @@ const processDeployV2 = async (api: Api, args: Input) => {
     throw new Error('User asked to compare but comparization is not available')
   }
   
-  console.log(chalk.yellow("********    Starting deployment...    ********\n\n"))
+  console.log(chalk.yellow("********   Starting deployment...    ********\n\n"))
   
   await deployV2(api, deploymentContents.classes, deploymentContents.dependencies, args.force)
   

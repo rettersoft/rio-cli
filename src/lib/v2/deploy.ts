@@ -64,10 +64,9 @@ export const deployV2 = async (api: Api, classes: DeploymentClasses, dependencie
     console.log(chalk.cyan(`   deployed: [${name}] `))
   }
 
-  if (Object.keys(dependencies).length === 0) {
-    console.log(chalk.cyan('   None of the dependencies needs to be deplyed.'))
+  if (Object.values(dependencies).every(e => !e.shouldDeploy)) {
+    console.log(chalk.gray('   None of the dependencies needs to be deplyed.'))
   }
-
 
   console.log(chalk.magenta.bold('Classes'))
 
