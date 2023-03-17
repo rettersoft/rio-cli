@@ -120,7 +120,7 @@ export const printSummaryV2 = async (summary: ComparizationSummary) => {
   }
 
   if (Object.keys(summary.dependencies).length === 0) {
-    console.log(chalk.gray('   There has been no change in any dependencies \n'))
+    console.log(chalk.gray('   There has been no change in any dependencies'))
   }
 
   console.log(chalk.magenta.bold('Classes'))

@@ -65,7 +65,7 @@ export const deployV2 = async (api: Api, classes: DeploymentClasses, dependencie
   }
 
   if (Object.values(dependencies).every(e => !e.shouldDeploy)) {
-    console.log(chalk.gray('   None of the dependencies needs to be deplyed.'))
+    console.log(chalk.gray('   None'))
   }
 
   console.log(chalk.magenta.bold('Classes'))
@@ -89,5 +89,7 @@ export const deployV2 = async (api: Api, classes: DeploymentClasses, dependencie
 
     await api.deployClassV2(className, force)
   }
+
+  console.log('\n\n')
 }
   
