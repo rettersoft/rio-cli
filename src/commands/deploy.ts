@@ -10,18 +10,18 @@ import { CommandModule } from "yargs";
 import { RIO_CLI_PROJECT_ID_KEY, RIO_CLI_URL } from "../config";
 import { Api } from "../lib/Api";
 import { CliConfig } from "../lib/CliConfig";
-import { isChanged, preDeploymentV2, printSummaryV2, } from "../lib/v2/pre-deployment";
 import { deployV2 } from "../lib/v2/deploy";
+import { fetchDeploymentContents, isChanged, printSummaryV2 } from "../lib/v2/pre-deployment";
 
 interface Input extends GlobalInput {
   force: boolean;
   classes?: string[];
   "project-id": string;
   "ignore-approval": boolean;
-  "skip-diff": boolean;
+  "skip-diff-check": boolean;
 }
 
-const processDeployV1 = async (api: Api, config: IProjectRioConfig, args: Input) => {
+const processDeployV1 = async (api: Api, args: Input) => {
   const start = Date.now()
   console.log(chalk.yellow(`PRE-DEPLOYMENT started...`))
   const deploymentSummary = await ProjectManager.preDeploymentV1(api, args.classes)
@@ -29,8 +29,8 @@ const processDeployV1 = async (api: Api, config: IProjectRioConfig, args: Input)
   const pre_finish = (Date.now() - start) / 1000
   console.log(chalk.greenBright(`PRE-DEPLOYMENT FINISHED ✅ ${pre_finish} seconds`))
 
-  if (!args.force && !Deployment.isChanged(deploymentSummary)) {
-    ConsoleMessage.message(chalk.bold.red('No Changes') + chalk.bold.grey(" -> if you want to ignore diff check use '--force' flag"))
+  if (!args["skip-diff-check"] && !Deployment.isChanged(deploymentSummary)) {
+    ConsoleMessage.message(chalk.bold.red('No Changes') + chalk.bold.grey(" -> if you want to ignore diff check use 'skip-diff-check' flag"))
     process.exit()
   }
 
@@ -50,37 +50,45 @@ const processDeployV1 = async (api: Api, config: IProjectRioConfig, args: Input)
     }
   }
 
-  ConsoleMessage.message(`${chalk.greenBright.bold(config.projectId)} ${chalk.green('DEPLOYMENT STARTED')}`)
-  await Deployment.deploy(api, deploymentSummary, args.force, args['rio-force'])
+  ConsoleMessage.message(`${chalk.green('DEPLOYMENT STARTED')}`)
+  await Deployment.deploy(api, deploymentSummary, args["skip-diff-check"], args.force)
   const finish = (Date.now() - start) / 1000
   ConsoleMessage.message(chalk.greenBright(`DEPLOYMENT Finished ✅ ${finish} seconds`))
 }
 
-const processDeployV2 = async (api: Api, config: IProjectRioConfig, args: Input) => {
-  const start = Date.now()
-  console.log(chalk.yellow(`Gathering information...\n`));
+const processDeployV2 = async (api: Api, args: Input) => {
 
-  const preDeployResults = await preDeploymentV2(api, args.classes);
+  const dontPerformComparization = args["skip-diff-check"]
+
+  const start = Date.now()
+  console.log(chalk.yellow(`********    Gathering information...    ********\n`));
+
+  const deploymentContents = await fetchDeploymentContents(api, dontPerformComparization, args.classes);
 
   const pre_finish = (Date.now() - start) / 1000
 
-  const _isChanged = isChanged(preDeployResults.comparization)
-
-  if (!_isChanged && !args.force) {
-    console.log(chalk.greenBright(`Gathered information ✅ ${pre_finish} seconds \n\n`))
-    console.log(chalk.bold.redBright("No Changes"));
-    process.exit();
+  if (dontPerformComparization) {
+    console.log(chalk.blue(`Since you used '--skip-diff-check' flag, CLI will be deploying following classes even if there is nothing changed: [${args.classes || 'All Classes'}]  \n`))
+    console.log(chalk.greenBright(`********   Gathered information ✅ ${pre_finish} seconds   ********\n\n`))
+  } else if (deploymentContents.comparization) {
+    if (!isChanged(deploymentContents.comparization)) {
+      console.log(chalk.greenBright(`********   Gathered information ✅ ${pre_finish} seconds   ********\n\n`))
+      console.log(chalk.bold.redBright('No Changes') + chalk.bold.grey(" -> if you want to ignore diff check use '--skip-diff-check' flag\n"))
+      process.exit();
+    }
+    
+    await printSummaryV2(deploymentContents.comparization)
+    console.log(chalk.greenBright(`********   Gathered information ✅ ${pre_finish} seconds   ********\n\n`))
+  } else {
+    throw new Error('User asked to compare but comparization is not available')
   }
   
-  await printSummaryV2(preDeployResults.comparization)
+  console.log(chalk.yellow("********    Starting deployment...    ********\n\n"))
   
-  console.log(chalk.greenBright(`\nGathered information ✅ ${pre_finish} seconds`))
-  console.log(chalk.yellow("Starting deployment...\n\n"))
-  
-  await deployV2(api, preDeployResults, args["rio-force"])
+  await deployV2(api, deploymentContents.classes, deploymentContents.dependencies, args.force)
   
   const finish = (Date.now() - start) / 1000
-  console.log(chalk.greenBright(`\n\nDeployed ✅ ${finish} seconds`));
+  console.log(chalk.greenBright(`\n\n********    Deployed ✅ ${finish} seconds    ********`));
 }
 
 module.exports = {
@@ -92,7 +100,7 @@ module.exports = {
     --classes: Filtered classes for deployment (type: array)
     --ignore-approval: Ignore deployment manual approval. 
     --force: Send deployment requests with force parameter to rio.
-    --skip-diff: Skip and dont perform difference checks.
+    --skip-diff-check: Skip and dont perform difference checks while deploying.
   `,    
   aliases: ["d"],
   builder: (yargs) => {
@@ -117,8 +125,8 @@ module.exports = {
       boolean: true,
       type: "boolean",
     });
-    yargs.options("skip-diff", {
-      describe: "This parameter could be used to deploy target classes, even if there have been no changes since the last deployment.  \n Example: rio deploy --skip-diff",
+    yargs.options("skip-diff-check", {
+      describe: "This parameter could be used to deploy target classes, even if there have been no changes since the last deployment.  \n Example: rio deploy --skip-diff-check",
       default: false,
       boolean: true,
       type: "boolean",
@@ -132,17 +140,23 @@ module.exports = {
     const profile_config = CliConfig.getAdminConfig(args.profile);
     const config = Project.getProjectRioConfig()
     
-    const exampleArray = [{ Profile: args.profile, 'Classes': args.classes?.toString() || 'All Classes', ProjectId: config.projectId, Endpoint: profile_config.endpoint || RIO_CLI_URL, '--skip-diff': args["skip-diff"] ? 'Yes' : 'No', '--force': args.force ? 'Yes' : 'No',  }]
+    const exampleArray = [{ 
+      'Profile': args.profile, 
+      'Classes': args.classes?.toString() || 'All Classes', 
+      'ProjectId': config.projectId, 
+      'Endpoint': profile_config.endpoint || RIO_CLI_URL, 
+      'Skip Diff Check': args["skip-diff-check"] ? 'Yes' : 'No', 
+      'Force': args.force ? 'Yes' : 'No',  }]
     ConsoleMessage.fancyTable(exampleArray, 'Deployment Configuration:')
     
     console.log(chalk.yellow(`API connecting...`));
     const api = await Api.createAPI(profile_config, config.projectId)
-    console.log(chalk.greenBright(`API CONNECTED ✅ \n\n`));
+    console.log(chalk.greenBright(`API CONNECTED ✅ ${api.v2 ? chalk.gray('v2') : ''}\n\n`));
     
-    if (!api.v2) {  
-     await processDeployV1(api, config, args)
+    if (api.v2) {  
+      await processDeployV2(api, args)
     } else {
-     await processDeployV2(api, config, args)
+      await processDeployV1(api, args)
     }
 
     afterCommand()

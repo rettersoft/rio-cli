@@ -1,184 +1,39 @@
 import path from 'path'
-import { PROJECT_CLASSES_FOLDER } from '../../config'
+import { PROJECT_CLASSES_FOLDER, RIO_CLI_DEPENDENCIES_FOLDER } from '../../config'
 import { Api } from '../Api'
 import fs from 'fs'
 import { ConsoleMessage } from '../ConsoleMessage'
 import chalk from 'chalk'
+import { RetterCloudObjectState } from '@retter/sdk'
+import { ComparizationSummary, DeploymentClasses, DeploymentContents, DeploymentDependencies, ProjectState } from './types'
+import { fetchLocalClassContents, fetchRemoteClassContents, listClassNames } from './class-contents'
+import { readLocalDependencies } from './dependency-content'
 
-export interface IClassContentsV2 {
-  [className: string]: {
-    models: { [fileName: string]: string }
-    files: { [fileName: string]: string }
+// ********* Comparization Summary *********
+
+function generateComparizationSummary(localClasses: DeploymentClasses, LocalDependencies: DeploymentDependencies, remoteClasses: DeploymentClasses, projectState: ProjectState): ComparizationSummary {
+  const summary: ComparizationSummary = {
+    classes: {},
+    dependencies: {},
   }
-}
 
-interface CompareSummary {
-  [className: string]: {
-    editedFiles: string[]
-    editedModels: string[]
-    createdFiles: string[]
-    createdModels: string[]
-    deletedFiles: string[]
-    deletedModels: string[]
-    newClass: boolean
-  }
-}
+  const remoteLayers = projectState.public?.layers || {}
+  for (const dependencyName in LocalDependencies) {
+    const remoteDep = remoteLayers[dependencyName]
 
-export interface PreDeploymentSummaryV2 {
-  remoteClasses: IClassContentsV2
-  localClasses: IClassContentsV2
-  comparization: CompareSummary
-}
-
-// ********* LOCAL CLASS CONTENTS *********
-
-interface FileInfo {
-  fileName: string
-  filePath: string
-}
-
-const excludedFolders = ['__tests__', 'node_modules', 'scripts', '.turbo', '.nyc_output']
-const excludedFiles = ['.DS_Store', 'package-lock.json', 'yarn.lock']
-
-function listFilesRecursively(ogPath: string, directoryPath: string): { files: FileInfo[]; models: FileInfo[] } {
-  const fileInfos: FileInfo[] = []
-  const modelInfos: FileInfo[] = []
-  const filesAndFolders = fs.readdirSync(directoryPath)
-  filesAndFolders.forEach((fileOrFolder) => {
-    const fullPath = path.join(directoryPath, fileOrFolder)
-    const stats = fs.statSync(fullPath)
-    if (stats.isDirectory()) {
-      if (excludedFolders.includes(fileOrFolder) || excludedFiles.includes(fileOrFolder)) {
-        return
+    if (!remoteDep) {
+      summary.dependencies[dependencyName] = {
+        new: true,
       }
-      if (fileOrFolder === 'models') {
-        const modelFiles = listFilesRecursivelyForModelsFolder(fullPath)
-        modelInfos.push(...modelFiles)
-      } else {
-        const { files, models } = listFilesRecursively(ogPath, fullPath)
-        fileInfos.push(...files)
-        models.push(...models)
-      }
-    } else {
-      const relativePath = path.relative(ogPath, fullPath)
-      const fileName = relativePath.includes('/') ? relativePath : fileOrFolder
-      fileInfos.push({ fileName, filePath: fullPath })
-    }
-  })
-  return { files: fileInfos, models: modelInfos }
-}
-
-function listFilesRecursivelyForModelsFolder(directoryPath: string): FileInfo[] {
-  const fileInfos: FileInfo[] = []
-  const files = fs.readdirSync(directoryPath)
-  files.forEach((file) => {
-    const fullPath = path.join(directoryPath, file)
-    const stats = fs.statSync(fullPath)
-    if (!stats.isDirectory()) {
-      fileInfos.push({ fileName: file, filePath: fullPath })
-    }
-  })
-  return fileInfos
-}
-
-function listClassNames(): string[] {
-  const classesFolder = fs.readdirSync(PROJECT_CLASSES_FOLDER, { withFileTypes: true })
-  const classesFolderDirectories = classesFolder.filter((l) => l.isDirectory())
-  return classesFolderDirectories.map((dir) => dir.name)
-}
-
-function readFileContents(filePath: string): string {
-  const fileContents = fs.readFileSync(filePath, 'utf-8')
-  return fileContents
-}
-
-function readContents(files: FileInfo[]) {
-  const filesObject: { [fileName: string]: string } = {}
-  files.forEach((fileInfo) => {
-    const fileContents = readFileContents(fileInfo.filePath)
-    filesObject[fileInfo.fileName] = fileContents
-  })
-  return filesObject
-}
-
-const fetchLocalClassContents = async (targetClassNames: string[]): Promise<IClassContentsV2> => {
-  const classesContents: IClassContentsV2 = {}
-
-  if (!targetClassNames.length) {
-    return classesContents
-  }
-
-  const promises = targetClassNames.map(async (className) => {
-    const classPath = path.join(process.cwd(), PROJECT_CLASSES_FOLDER, className)
-
-    const { files, models } = listFilesRecursively(classPath, classPath)
-
-    // console.log(`Found ${files.length} files and ${models.length} models for class ${className}`)
-
-    const [filesWithContent, modelsWithContent] = await Promise.allSettled([readContents(files), readContents(models)])
-
-    classesContents[className] = {
-      files: filesWithContent.status === 'fulfilled' ? filesWithContent.value : {},
-      models: modelsWithContent.status === 'fulfilled' ? modelsWithContent.value : {},
-    }
-  })
-
-  await Promise.allSettled(promises)
-
-  return classesContents
-}
-// ********* END OF LOCAL CLASS CONTENTS *********
-
-// ********* REMOTE CLASS CONTENTS *********
-
-const fetchRemoteClassContents = async (api: Api, targetClassNames: string[]): Promise<IClassContentsV2> => {
-  const remoteClassesContents: IClassContentsV2 = {}
-
-  if (!targetClassNames.length) {
-    return remoteClassesContents
-  }
-
-  const workers = []
-  for (const className of targetClassNames) {
-    workers.push(api.getRemoteClassFilesAndModelsV2(className))
-  }
-  const responses = await Promise.allSettled(workers)
-
-  for (const response of responses) {
-    if (response.status !== 'fulfilled') {
-      throw new Error(`failed to fetch remote class files: ${response.reason}`)
-    }
-    const datas = response.value
-
-    for (const model of datas.models) {
-      if (!remoteClassesContents[model.classId]) {
-        remoteClassesContents[model.classId] = {
-          models: {},
-          files: {},
-        }
-      }
-
-      remoteClassesContents[model.classId].models[model.name] = model.content
+      LocalDependencies[dependencyName].shouldDeploy = true
+      continue
     }
 
-    for (const file of datas.files) {
-      if (!remoteClassesContents[file.classId]) {
-        remoteClassesContents[file.classId] = {
-          models: {},
-          files: {},
-        }
-      }
-      remoteClassesContents[file.classId].files[file.name] = file.content
+    if (LocalDependencies[dependencyName].hash !== remoteDep.hash) {
+      summary.dependencies[dependencyName] = {}
+      LocalDependencies[dependencyName].shouldDeploy = true
     }
   }
-  return remoteClassesContents
-}
-// ********* END OF REMOTE CLASS CONTENTS *********
-
-// ********* PRE DEPLOYMENT *********
-
-function compareClasses(remoteClasses: IClassContentsV2, localClasses: IClassContentsV2): CompareSummary {
-  const summary: CompareSummary = {}
 
   for (const className in localClasses) {
     const remoteClass = remoteClasses[className]
@@ -186,7 +41,7 @@ function compareClasses(remoteClasses: IClassContentsV2, localClasses: IClassCon
 
     if (!remoteClass) {
       // Class exists in local but not remote
-      summary[className] = {
+      summary.classes[className] = {
         editedFiles: [],
         editedModels: [],
         createdFiles: Object.keys(localClass.files),
@@ -195,6 +50,8 @@ function compareClasses(remoteClasses: IClassContentsV2, localClasses: IClassCon
         deletedModels: [],
         newClass: true,
       }
+      localClass.newClass = true
+      localClass.shouldDeploy = true
       continue
     }
 
@@ -234,7 +91,7 @@ function compareClasses(remoteClasses: IClassContentsV2, localClasses: IClassCon
     }
 
     if (createdFiles.length > 0 || createdModels.length > 0 || editedFiles.length > 0 || editedModels.length > 0 || deletedFiles.length > 0 || deletedModels.length > 0) {
-      summary[className] = {
+      summary.classes[className] = {
         createdFiles,
         createdModels,
         editedFiles,
@@ -243,70 +100,117 @@ function compareClasses(remoteClasses: IClassContentsV2, localClasses: IClassCon
         deletedModels,
         newClass: false,
       }
+      localClass.shouldDeploy = true
     }
   }
 
   return summary
 }
 
-export const isChanged = (comparization: CompareSummary) => {
-  return Object.values(comparization).some((s) => s.createdFiles.length > 0 || s.createdModels.length > 0 || s.editedFiles.length > 0 || s.editedModels.length > 0 || s.deletedFiles.length > 0 || s.deletedModels.length > 0)
-}
+export const printSummaryV2 = async (summary: ComparizationSummary) => {
+  console.log(chalk.magenta.bold('Dependencies'))
 
-export const preDeploymentV2 = async (api: Api, classes?: string[]): Promise<PreDeploymentSummaryV2> => {
-  if (classes && !Array.isArray(classes)) throw new Error('invalid classes input')
+  for (const name in summary.dependencies) {
+    const dependency = summary.dependencies[name]
+    if (dependency.new) {
+      console.log(chalk.green(`   added : ${name}`))
+    } else {
+      console.log(chalk.blue(`   edited: ${name}`))
+    }
+  }
 
-  const projectState = await api.getProjectState()
+  if (Object.keys(summary.dependencies).length === 0) {
+    console.log(chalk.red('   There has been no change in any dependencies \n'))
+  }
 
-  // classes
-  let targetClassNames = classes || listClassNames()
-  const targetRemoteClassNames = targetClassNames.filter((className: string) => projectState.public.classes.some((c: any) => c.classId === className))
+  console.log(chalk.magenta.bold('Classes'))
 
-  const [remoteClasses, localClasses] = await Promise.all([fetchRemoteClassContents(api, targetRemoteClassNames), fetchLocalClassContents(targetClassNames)])
-
-  // if not being forced, we will only deploy classes that have changed
-  const summary = compareClasses(remoteClasses, localClasses)
-
-  return { remoteClasses, localClasses, comparization: summary }
-}
-
-export const printSummaryV2 = async (summary: CompareSummary) => {
-  for (const className in summary) {
-    const { createdFiles, createdModels, editedFiles, editedModels, deletedFiles, deletedModels } = summary[className]
+  for (const className in summary.classes) {
+    const { createdFiles, createdModels, editedFiles, editedModels, deletedFiles, deletedModels } = summary.classes[className]
 
     if (createdModels.length === 0 && createdFiles.length === 0 && editedModels.length === 0 && editedFiles.length === 0 && deletedModels.length === 0 && deletedFiles.length === 0) {
       continue
     }
 
-    console.log(chalk.cyan.bold(className + ''))
-    console.log(chalk.cyan('  Models:'))
+    console.log(chalk.cyan.bold('   ' + className + ''))
+    console.log(chalk.cyan('     Models:'))
     if (createdModels.length === 0 && editedModels.length === 0 && deletedModels.length === 0) {
-      console.log(chalk.dim('    None'))
+      console.log(chalk.dim('       None'))
     } else {
       for (const fileName of createdModels) {
-        console.log(chalk.green(`    added  : ${fileName}`))
+        console.log(chalk.green(`       added  : ${fileName}`))
       }
       for (const fileName of editedModels) {
-        console.log(chalk.blue(`    edited : ${fileName}`))
+        console.log(chalk.blue(`       edited : ${fileName}`))
       }
       for (const fileName of deletedModels) {
-        console.log(chalk.red(`    deleted: ${fileName}`))
+        console.log(chalk.red(`       deleted: ${fileName}`))
       }
     }
-    console.log(chalk.cyan('  Files:'))
+    console.log(chalk.cyan('     Files:'))
     if (createdFiles.length === 0 && editedFiles.length === 0 && deletedFiles.length === 0) {
-      console.log(chalk.dim('    None'))
+      console.log(chalk.dim('       None'))
     } else {
       for (const fileName of createdFiles) {
-        console.log(chalk.green(`    added  : ${fileName}`))
+        console.log(chalk.green(`       added  : ${fileName}`))
       }
       for (const fileName of editedFiles) {
-        console.log(chalk.blue(`    edited : ${fileName}`))
+        console.log(chalk.blue(`       edited : ${fileName}`))
       }
       for (const fileName of deletedFiles) {
-        console.log(chalk.red(`    deleted: ${fileName}`))
+        console.log(chalk.red(`       deleted: ${fileName}`))
       }
     }
+  }
+
+  if (Object.keys(summary.classes).length === 0) {
+    console.log(chalk.red('   There has been no change in any class \n'))
+  }
+
+  console.log('\n')
+}
+
+export const isChanged = (comparization: ComparizationSummary) => {
+  return Object.keys(comparization.dependencies).length > 0 || Object.keys(comparization.classes).length > 0
+}
+// ********* END OF Comparization Summary *********
+
+// ********* PRE DEPLOYMENT *********
+
+export const fetchDeploymentContents = async (api: Api, dontPerformComparization: boolean, classes?: string[]): Promise<DeploymentContents> => {
+  if (classes && !Array.isArray(classes)) throw new Error('invalid classes input')
+
+  const dependencyPath = path.join(process.cwd(), RIO_CLI_DEPENDENCIES_FOLDER)
+  const projectState = (await api.getProjectState()) as ProjectState
+
+  // classes
+  let targetClassNames = classes || listClassNames()
+  const targetRemoteClassNames = targetClassNames.filter((className: string) => projectState.public.classes.some((c) => c.classId === className))
+
+  if (dontPerformComparization) {
+    const [localClasses, LocalDependencies] = await Promise.all([fetchLocalClassContents(targetClassNames), readLocalDependencies(dependencyPath)])
+
+    for (const className in localClasses) {
+      localClasses[className].newClass = projectState.public.classes.some((c) => c.classId === className) ? false : true
+      localClasses[className].shouldDeploy = true
+    }
+
+    for (const dependency in LocalDependencies) {
+      LocalDependencies[dependency].shouldDeploy = true
+    }
+
+    return { classes: localClasses, dependencies: LocalDependencies }
+  } else {
+    const [remoteClasses, localClasses, LocalDependencies] = await Promise.all([
+      fetchRemoteClassContents(api, targetRemoteClassNames),
+      fetchLocalClassContents(targetClassNames),
+      readLocalDependencies(dependencyPath),
+    ])
+
+    // this will decide which classes and dependencies should be deployed
+    const comparization = generateComparizationSummary(localClasses, LocalDependencies, remoteClasses, projectState)
+
+    return { classes: localClasses, dependencies: LocalDependencies, comparization }
   }
 }
 

@@ -2,19 +2,20 @@ import path from 'path'
 import { PROJECT_CLASSES_FOLDER } from '../../config'
 import { Api } from '../Api'
 import fs from 'fs'
-import { IClassContentsV2, PreDeploymentSummaryV2 } from './pre-deployment'
 import chalk from 'chalk'
 import { gzipSync } from 'zlib'
+import { DeploymentClassContent, DeploymentClasses, DeploymentDependencies } from './types'
+import axios from 'axios'
 
 interface RIO_FILE {
   name: string
   content: string
 }
 
-const setFiles = async (api: Api, summary: PreDeploymentSummaryV2, className: string) => {
+const setFiles = async (api: Api, className: string, classContents: DeploymentClassContent, ) => {
 
-  const fileContents = summary.localClasses[className].files
-  const modelContents = summary.localClasses[className].models
+  const fileContents = classContents.files
+  const modelContents = classContents.models
 
   const files:{ [fileName: string]: RIO_FILE } = {}
   const models:{ [fileName: string]: RIO_FILE } = {}
@@ -34,33 +35,58 @@ const setFiles = async (api: Api, summary: PreDeploymentSummaryV2, className: st
   }
 
   await api.setRemoteClassFilesAndModelsV2(className, files, models)
-  console.log(chalk.magenta(`SAVED [${className}] `))
+  console.log(chalk.blue(`   saved   : [${className}] `))
 }
 
 const createClass = async (api: Api, className: string) => {
   await api.createClass(className)
-  console.log(chalk.magenta(`CREATED [${className}] `))
+  console.log(chalk.green(`   created : [${className}] `))
 }
 
-export const deployV2 = async (api: Api, summary: PreDeploymentSummaryV2, force: boolean ): Promise<void> => {
+export const deployV2 = async (api: Api, classes: DeploymentClasses, dependencies: DeploymentDependencies, force: boolean ): Promise<void> => {
   const fileWorkers = []
   const createClassWorkers = []
 
-  for (const [className, _summary] of Object.entries(summary.comparization)) {
-    if (!_summary.newClass) continue
+  console.log(chalk.magenta.bold('Dependencies'))
+
+  for (const [name, values] of Object.entries(dependencies)) {
+    if (!values.shouldDeploy) continue
+
+    const url = await api.upsertDependency(name)
+    await axios.put(url, values.zipContent, {
+      headers: {
+        'Content-Type': 'application/zip',
+      },
+      maxBodyLength: 104857600, //100mb
+      maxContentLength: 104857600, //100mb
+    })
+    await api.commitUpsertDependency(name, values.hash)
+    console.log(chalk.cyan(`   deployed: [${name}] `))
+  }
+
+  if (Object.keys(dependencies).length === 0) {
+    console.log(chalk.cyan('   None of the dependencies needs to be deplyed.'))
+  }
+
+
+  console.log(chalk.magenta.bold('Classes'))
+
+  for (const [className, classValues] of Object.entries(classes)) {
+    if (!classValues.newClass) continue
 
     createClassWorkers.push(createClass(api, className))
   }
   await Promise.all(createClassWorkers)
   
-  for (const [className, _summary] of Object.entries(summary.comparization)) {
-    fileWorkers.push(setFiles(api, summary, className))
+  for (const [className, classValues] of Object.entries(classes)) {
+    if (!classValues.shouldDeploy) continue
+    fileWorkers.push(setFiles(api, className, classValues ))
   }
 
   await Promise.all(fileWorkers)
 
-  for (const [className, _summary] of Object.entries(summary.comparization)) {
-    if (_summary.newClass) continue
+  for (const [className, classValues] of Object.entries(classes)) {
+    if (!classValues.shouldDeploy) continue
 
     await api.deployClassV2(className, force)
   }

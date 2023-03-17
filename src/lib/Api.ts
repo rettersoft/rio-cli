@@ -402,18 +402,18 @@ export class Api {
               if (event.deployment) {
                 switch (event.deployment.status) {
                   case 'failed':
-                    console.log(chalk.redBright(`DEPLOYMENT FAILED FOR[${className}]`))
+                    console.log(chalk.redBright(` failed: [${className}]`))
                     reject(event.deployment.statusMessage)
                     break
                   case 'finished':
-                    console.log(chalk.magenta(`DEPLOYMENT FINISHED FOR [${className}] -> ${event.deployment.statusMessage}`))
+                    console.log(chalk.greenBright(`   finished: [${className}] -> ${event.deployment.statusMessage}`))
                     resolve(true)
                     break
                   case 'started':
-                    console.log(chalk.magenta(`DEPLOYMENT STARTED FOR [${className}] -> ${event.deployment.statusMessage}`))
+                    console.log(chalk.blue(`   started : [${className}] -> ${event.deployment.statusMessage}`))
                     break
                   case 'ongoing':
-                    console.log(chalk.magenta(`DEPLOYMENT ONGOING FOR [${className}] -> ${event.deployment.statusMessage}`))
+                    console.log(chalk.blue(`   ongoin  : [${className}] -> ${event.deployment.statusMessage}`))
                     break
                   default:
                     break
