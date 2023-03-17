@@ -37,8 +37,8 @@ interface FileInfo {
   filePath: string
 }
 
-const excludedFolders = ['__tests__', 'node_modules', 'scripts']
-const excludedFiles = ['.DS_Store']
+const excludedFolders = ['__tests__', 'node_modules', 'scripts', '.turbo', '.nyc_output']
+const excludedFiles = ['.DS_Store', 'package-lock.json', 'yarn.lock']
 
 function listFilesRecursively(ogPath: string, directoryPath: string): { files: FileInfo[]; models: FileInfo[] } {
   const fileInfos: FileInfo[] = []
