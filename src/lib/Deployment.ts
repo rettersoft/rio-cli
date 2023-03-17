@@ -117,7 +117,7 @@ export class Deployment {
     return false
   }
 
-  static async deploy(api: Api, deploymentSummary: IPreDeploymentContext, force: boolean, rio_force: boolean) {
+  static async deploy(api: Api, deploymentSummary: IPreDeploymentContext, skip_diff: boolean, rio_force: boolean) {
     const models = []
     const modelItems = []
 
@@ -125,7 +125,7 @@ export class Deployment {
       ...deploymentSummary.modelDeploymentsSummary.createdItems,
       ...deploymentSummary.modelDeploymentsSummary.editedItems,
       ...deploymentSummary.modelDeploymentsSummary.deletedItems,
-      ...(force ? deploymentSummary.modelDeploymentsSummary.noneItems : []),
+      ...(skip_diff ? deploymentSummary.modelDeploymentsSummary.noneItems : []),
     ]) {
       if (item.type === DeploymentObjectItemType.MODEL) {
         // ConsoleMessage.deploymentMessage(item, DeploymentMessageStatus.STARTED);
@@ -246,7 +246,7 @@ export class Deployment {
         ...deploymentSummary.classDeploymentsSummary.classesFileChanges[className].fileEdited,
         ...deploymentSummary.classDeploymentsSummary.classesFileChanges[className].fileDeleted,
         ...deploymentSummary.classDeploymentsSummary.classesFileChanges[className].fileCreated,
-        ...(force ? deploymentSummary.classDeploymentsSummary.classesFileChanges[className].fileNone : []),
+        ...(skip_diff ? deploymentSummary.classDeploymentsSummary.classesFileChanges[className].fileNone : []),
       ]
       for (const item of changedFileDeployments) {
         // ConsoleMessage.deploymentMessage(item, DeploymentMessageStatus.SAVING)
@@ -275,7 +275,7 @@ export class Deployment {
             break
           case DeploymentObjectItemStatus.NONE:
             // force save
-            if (force) {
+            if (skip_diff) {
               preparedData.push({
                 status: 'EDITED',
                 name: classFileName,
@@ -296,7 +296,7 @@ export class Deployment {
         ConsoleMessage.deploymentMessage(item, DeploymentMessageStatus.SAVED)
       }
 
-      if (force || Deployment.isClassChanged(deploymentSummary, className)) {
+      if (skip_diff || Deployment.isClassChanged(deploymentSummary, className)) {
         ConsoleMessage.deploymentMessage(currentClassDeploymentItem, DeploymentMessageStatus.DEPLOYING)
         await api.deployClass(className, rio_force)
         ConsoleMessage.deploymentMessage(currentClassDeploymentItem, DeploymentMessageStatus.DEPLOYED)
