@@ -23,11 +23,10 @@ interface Input extends GlobalInput {
 
 function addAsterisks(string: string): string {
   const totalLength = 60;
-  const line = "-".repeat(totalLength);
-  const asterisks = "*".repeat(3);
-  const remainingLength = totalLength - (2 * asterisks.length + string.length);
+  const line = "*".repeat(string.length);
+  const remainingLength = totalLength - string.length;
   const spaces = " ".repeat(remainingLength / 2);
-  return `${line}\n${asterisks}${spaces}${string}${spaces}${asterisks}\n${line}`;
+  return `${spaces}${line}${spaces}\n${spaces}${string}${spaces}\n${spaces}${line}${spaces}`;
 }
 
 const processDeployV1 = async (api: Api, args: Input) => {
@@ -70,34 +69,34 @@ const processDeployV2 = async (api: Api, args: Input) => {
   const dontPerformComparization = args["skip-diff-check"]
 
   const start = Date.now()
-  console.log(chalk.yellow(addAsterisks(`Gathering information...`) + '\n'));
+  console.log(chalk.yellow(addAsterisks(`Gathering information`) + '\n'));
 
   const deploymentContents = await fetchDeploymentContents(api, dontPerformComparization, args.classes);
 
-  const pre_finish = (Date.now() - start) / 1000
+  const pre_finish = ((Date.now() - start) / 1000).toFixed(1)
 
   if (dontPerformComparization) {
     console.log(chalk.blue(`Since you used '--skip-diff-check' flag, CLI will be deploying following classes even if there is nothing changed: [${args.classes || 'All Classes'}]  \n`))
-    console.log(chalk.greenBright(addAsterisks(`Gathered information ✅ ${pre_finish} seconds`)))
+    console.log(chalk.greenBright(addAsterisks(`Gathered information ✅ ${pre_finish} seconds `)))
   } else if (deploymentContents.comparization) {
     if (!isChanged(deploymentContents.comparization)) {
-      console.log(chalk.greenBright(addAsterisks(`Gathered information ✅ ${pre_finish} seconds`)))
+      console.log(chalk.greenBright(addAsterisks(`Gathered information ✅ ${pre_finish} seconds `)))
       console.log(chalk.bold.redBright('No Changes') + chalk.bold.grey(" -> if you want to ignore diff check use '--skip-diff-check' flag\n"))
       process.exit();
     }
     
     await printSummaryV2(deploymentContents.comparization)
-    console.log(chalk.greenBright(addAsterisks(`Gathered information ✅ ${pre_finish} seconds`)))
+    console.log(chalk.greenBright(addAsterisks(`Gathered information ✅ ${pre_finish} seconds `)))
   } else {
     throw new Error('User asked to compare but comparization is not available')
   }
   
-  console.log(chalk.yellow(addAsterisks('Starting deployment...') + '\n\n'))
+  console.log(chalk.yellow(addAsterisks('Starting deployment') + '\n\n'))
   
   await deployV2(api, deploymentContents.classes, deploymentContents.dependencies, args.force)
   
   const finish = (Date.now() - start) / 1000
-  console.log(chalk.greenBright(addAsterisks(`Deployed ✅ ${finish} seconds`)))
+  console.log(chalk.greenBright(addAsterisks(`Deployed ✅ ${finish} seconds `)))
 }
 
 module.exports = {
