@@ -58,5 +58,5 @@ rio deploy
 
 ```shell
 rio deploy
-rio d --profile PROFILE --project-id PROJECT_ID --classes CLASSES --ignore-approval --ignore-approval --skip-diff
+rio d --profile PROFILE --project-id PROJECT_ID --classes CLASSES --ignore-approval --skip-diff-check --force
 ```
