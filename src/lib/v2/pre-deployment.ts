@@ -48,6 +48,8 @@ function generateComparizationSummary(localClasses: DeploymentClasses, LocalDepe
         createdModels: Object.keys(localClass.models),
         deletedFiles: [],
         deletedModels: [],
+        forcedFiles: [],
+        forcedModels: [],
         newClass: true,
       }
       localClass.newClass = true
@@ -61,6 +63,8 @@ function generateComparizationSummary(localClasses: DeploymentClasses, LocalDepe
     const createdModels = []
     const deletedFiles = []
     const deletedModels = []
+    const forcedFiles: string[] = []
+    const forcedModels: string[] = []
 
     for (const fileName in localClass.files) {
       if (!remoteClass.files[fileName]) {
@@ -98,6 +102,54 @@ function generateComparizationSummary(localClasses: DeploymentClasses, LocalDepe
         editedModels,
         deletedFiles,
         deletedModels,
+        forcedFiles,
+        forcedModels,
+        newClass: false,
+      }
+      localClass.shouldDeploy = true
+    }
+  }
+
+  return summary
+}
+
+function generateForcedComparizationSummary(localClasses: DeploymentClasses, LocalDependencies: DeploymentDependencies): ComparizationSummary {
+  const summary: ComparizationSummary = {
+    classes: {},
+    dependencies: {},
+  }
+
+  for (const dependencyName in LocalDependencies) {
+      summary.dependencies[dependencyName] = {
+        forced: true
+      }
+      LocalDependencies[dependencyName].shouldDeploy = true
+  }
+
+  for (const className in localClasses) {
+    const localClass = localClasses[className]
+
+    const forcedFiles: string[] = []
+    const forcedModels: string[] = []
+
+    for (const fileName in localClass.files) {
+        forcedFiles.push(fileName)
+    }
+
+    for (const modelName in localClass.models) {
+        forcedModels.push(modelName)
+    }
+
+    if (forcedFiles.length > 0 || forcedModels.length > 0) {
+      summary.classes[className] = {
+        createdFiles: [],
+        createdModels: [],
+        editedFiles: [],
+        editedModels: [],
+        deletedFiles: [],
+        deletedModels: [],
+        forcedFiles,
+        forcedModels,
         newClass: false,
       }
       localClass.shouldDeploy = true
@@ -108,12 +160,15 @@ function generateComparizationSummary(localClasses: DeploymentClasses, LocalDepe
 }
 
 export const printSummaryV2 = async (summary: ComparizationSummary) => {
+
   console.log(chalk.magenta.bold('Dependencies'))
 
   for (const name in summary.dependencies) {
     const dependency = summary.dependencies[name]
     if (dependency.new) {
       console.log(chalk.green(`   added : ${name}`))
+    } else if (dependency.forced) {
+      console.log(chalk.grey(`   forced: ${name}`))
     } else {
       console.log(chalk.blue(`   edited: ${name}`))
     }
@@ -126,39 +181,45 @@ export const printSummaryV2 = async (summary: ComparizationSummary) => {
   console.log(chalk.magenta.bold('Classes'))
 
   for (const className in summary.classes) {
-    const { createdFiles, createdModels, editedFiles, editedModels, deletedFiles, deletedModels } = summary.classes[className]
+    const { createdFiles, createdModels, editedFiles, editedModels, deletedFiles, deletedModels, forcedFiles, forcedModels } = summary.classes[className]
 
-    if (createdModels.length === 0 && createdFiles.length === 0 && editedModels.length === 0 && editedFiles.length === 0 && deletedModels.length === 0 && deletedFiles.length === 0) {
+    if (createdModels.length === 0 && createdFiles.length === 0 && editedModels.length === 0 && editedFiles.length === 0 && deletedModels.length === 0 && deletedFiles.length === 0 && forcedModels.length === 0 && forcedFiles.length === 0) {
       continue
     }
 
-    console.log(chalk.cyan.bold('   ' + className + ''))
-    console.log(chalk.cyan('     Models:'))
-    if (createdModels.length === 0 && editedModels.length === 0 && deletedModels.length === 0) {
-      console.log(chalk.dim('       None'))
+    console.log(chalk.cyanBright.bold('   [' + className + ']'))
+    console.log(chalk.cyan('       Models:'))
+    if (createdModels.length === 0 && editedModels.length === 0 && deletedModels.length === 0 && forcedModels.length === 0) {
+      console.log(chalk.dim('         None'))
     } else {
       for (const fileName of createdModels) {
-        console.log(chalk.green(`       added  : ${fileName}`))
+        console.log(chalk.green(`         added  : ${fileName}`))
       }
       for (const fileName of editedModels) {
-        console.log(chalk.blue(`       edited : ${fileName}`))
+        console.log(chalk.blue(`         edited : ${fileName}`))
       }
       for (const fileName of deletedModels) {
-        console.log(chalk.red(`       deleted: ${fileName}`))
+        console.log(chalk.red(`         deleted: ${fileName}`))
+      }
+      for (const fileName of forcedModels) {
+        console.log(chalk.grey(`         forced : ${fileName}`))
       }
     }
-    console.log(chalk.cyan('     Files:'))
-    if (createdFiles.length === 0 && editedFiles.length === 0 && deletedFiles.length === 0) {
-      console.log(chalk.dim('       None'))
+    console.log(chalk.cyan('       Files:'))
+    if (createdFiles.length === 0 && editedFiles.length === 0 && deletedFiles.length === 0 && forcedFiles.length === 0) {
+      console.log(chalk.dim('         None'))
     } else {
       for (const fileName of createdFiles) {
-        console.log(chalk.green(`       added  : ${fileName}`))
+        console.log(chalk.green(`         added  : ${fileName}`))
       }
       for (const fileName of editedFiles) {
-        console.log(chalk.blue(`       edited : ${fileName}`))
+        console.log(chalk.blue(`         edited : ${fileName}`))
       }
       for (const fileName of deletedFiles) {
-        console.log(chalk.red(`       deleted: ${fileName}`))
+        console.log(chalk.red(`         deleted: ${fileName}`))
+      }
+      for (const fileName of forcedFiles) {
+        console.log(chalk.grey(`         forced : ${fileName}`))
       }
     }
   }
@@ -190,16 +251,9 @@ export const fetchDeploymentContents = async (api: Api, dontPerformComparization
   if (dontPerformComparization) {
     const [localClasses, LocalDependencies] = await Promise.all([fetchLocalClassContents(targetClassNames), readLocalDependencies(dependencyPath)])
 
-    for (const className in localClasses) {
-      localClasses[className].newClass = projectState.public.classes.some((c) => c.classId === className) ? false : true
-      localClasses[className].shouldDeploy = true
-    }
+    const comparization = generateForcedComparizationSummary(localClasses, LocalDependencies)
 
-    for (const dependency in LocalDependencies) {
-      LocalDependencies[dependency].shouldDeploy = true
-    }
-
-    return { classes: localClasses, dependencies: LocalDependencies }
+    return { classes: localClasses, dependencies: LocalDependencies, comparization }
   } else {
     const [remoteClasses, localClasses, LocalDependencies] = await Promise.all([
       fetchRemoteClassContents(api, targetRemoteClassNames),

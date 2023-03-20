@@ -9,8 +9,8 @@ import { IRemoteDependencyContent } from './Dependencies'
 import { IPreDeploymentContext } from './ProjectManager'
 import { CliConfig, IRIOCliConfigProfileItemData } from './CliConfig'
 import chalk from 'chalk'
-import { Transform } from "stream";
-import { Console } from "console";
+import { Transform } from 'stream'
+import { Console } from 'console'
 export interface RemoteClassFileItem {
   classId: string
   name: string
@@ -29,20 +29,24 @@ export interface ISaveClassFilesInput {
 
 function table(input: any) {
   // @see https://stackoverflow.com/a/67859384
-  const ts = new Transform({ transform(chunk, enc, cb) { cb(null, chunk) } })
+  const ts = new Transform({
+    transform(chunk, enc, cb) {
+      cb(null, chunk)
+    },
+  })
   const logger = new Console({ stdout: ts })
   logger.table(input)
   const table = (ts.read() || '').toString()
-  let result = '';
+  let result = ''
   for (let row of table.split(/[\r\n]+/)) {
-    let r = row.replace(/[^┬]*┬/, '┌');
-    r = r.replace(/^├─*┼/, '├');
-    r = r.replace(/│[^│]*/, '');
-    r = r.replace(/^└─*┴/, '└');
-    r = r.replace(/'/g, ' ');
-    result += chalk.redBright(`${r}\n`);
+    let r = row.replace(/[^┬]*┬/, '┌')
+    r = r.replace(/^├─*┼/, '├')
+    r = r.replace(/│[^│]*/, '')
+    r = r.replace(/^└─*┴/, '└')
+    r = r.replace(/'/g, ' ')
+    result += chalk.redBright(`${r}\n`)
   }
-  console.log(result.slice(0, -3));
+  console.log(result.slice(0, -3))
 }
 
 export class Api {
@@ -96,6 +100,8 @@ export class Api {
   get v2() {
     return this.root_version === '2.0.0'
   }
+
+  sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
   static handleError(error: any) {
     console.log(chalk.redBright('\nUPS ! Something went wrong ! ' + error?.message || ''))
@@ -298,7 +304,7 @@ export class Api {
         detail: state.public as any,
       }
     } catch (error) {
-      console.log("createNewProject error")
+      console.log('createNewProject error')
       Api.handleError(error)
       return { projectId: '', detail: {} as any }
     }
@@ -389,6 +395,7 @@ export class Api {
         },
       })
 
+      const deploymentStarted = Date.now()
 
       await new Promise((resolve, reject) => {
         try {
@@ -397,6 +404,7 @@ export class Api {
               deployment?: {
                 status: 'started' | 'ongoing' | 'failed' | 'finished'
                 statusMessage: string
+                updatedAt: number
               }
             }) => {
               if (event.deployment) {
@@ -406,7 +414,10 @@ export class Api {
                     reject(event.deployment.statusMessage)
                     break
                   case 'finished':
-                    console.log(chalk.greenBright(`   finished: [${className}] -> ${event.deployment.statusMessage}`))
+                    const timeSinceDeploymentStarted = (event.deployment.updatedAt || Date.now()) - deploymentStarted
+                    if (timeSinceDeploymentStarted < 5000) break
+
+                    console.log(chalk.greenBright(`   finished: [${className}] -> ${event.deployment.statusMessage} ✅ ${(timeSinceDeploymentStarted / 1000).toFixed(1)} seconds`))
                     resolve(true)
                     break
                   case 'started':
@@ -427,12 +438,11 @@ export class Api {
       }).catch((error) => {
         throw error
       })
-
     } catch (error: any) {
       console.log(chalk.redBright('\n Error accured while setting models and files ! '))
 
       const res_status = error?.response?.status || ''
-      const res_statusText= error?.response?.statusText || ''
+      const res_statusText = error?.response?.statusText || ''
       const res_data = JSON.stringify(error?.response?.data || {})
 
       console.log(chalk.redBright(`status: ${res_status} statusText: ${res_statusText} data: ${res_data}`))
@@ -453,21 +463,23 @@ export class Api {
           ...item,
           classId: className,
           content: gunzipSync(Buffer.from(item.content, 'base64')).toString('utf-8'),
-        }})
+        }
+      })
 
-        const _files = files.map((item: any) => {
-          return {
-            ...item,
-            classId: className,
-            content: gunzipSync(Buffer.from(item.content, 'base64')).toString('utf-8'),
-          }})
+      const _files = files.map((item: any) => {
+        return {
+          ...item,
+          classId: className,
+          content: gunzipSync(Buffer.from(item.content, 'base64')).toString('utf-8'),
+        }
+      })
 
-          return { models: _models, files: _files }
+      return { models: _models, files: _files }
     } catch (error: any) {
       console.log(chalk.redBright('\n Error accured while setting models and files ! '))
 
       const res_status = error?.response?.status || ''
-      const res_statusText= error?.response?.statusText || ''
+      const res_statusText = error?.response?.statusText || ''
       const res_data = JSON.stringify(error?.response?.data || {})
 
       console.log(chalk.redBright(`status: ${res_status} statusText: ${res_statusText} data: ${res_data}`))
@@ -475,22 +487,22 @@ export class Api {
     }
   }
 
-  async setRemoteClassFilesAndModelsV2(className: string, files: object, models: object): Promise<{ success: boolean}> {
+  async setRemoteClassFilesAndModelsV2(className: string, files: object, models: object): Promise<{ success: boolean }> {
     const classInstance = await this.getClassInstance(className)
     try {
-      const response = await classInstance.call<{ success: boolean}>({
+      const response = await classInstance.call<{ success: boolean }>({
         method: 'setModelsAndFiles',
         body: {
           files,
           models,
-        }
+        },
       })
       return { success: response.data.success }
     } catch (error: any) {
       console.log(chalk.redBright('\n Error accured while setting models and files ! '))
 
       const res_status = error?.response?.status || ''
-      const res_statusText= error?.response?.statusText || ''
+      const res_statusText = error?.response?.statusText || ''
       const res_data = JSON.stringify(error?.response?.data || {})
 
       console.log(chalk.redBright(`status: ${res_status} statusText: ${res_statusText} data: ${res_data}`))

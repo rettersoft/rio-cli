@@ -29,6 +29,14 @@ function addAsterisks(string: string): string {
   return `${spaces}${line}${spaces}\n${spaces}${string}${spaces}\n${spaces}${line}${spaces}`;
 }
 
+// function addAsterisks(string: string): string {
+//   const totalLength = 60;
+//   const line = "*".repeat(string.length);
+//   const remainingLength = totalLength - string.length;
+//   const spaces = " ".repeat(remainingLength / 2);
+//   return `${line}${spaces}\n${string}${spaces}\n${line}${spaces}`;
+// }
+
 const processDeployV1 = async (api: Api, args: Input) => {
   const start = Date.now()
   console.log(chalk.yellow(`PRE-DEPLOYMENT started...`))
@@ -38,7 +46,7 @@ const processDeployV1 = async (api: Api, args: Input) => {
   console.log(chalk.greenBright(`PRE-DEPLOYMENT FINISHED ✅ ${pre_finish} seconds`))
 
   if (!args["skip-diff-check"] && !Deployment.isChanged(deploymentSummary)) {
-    ConsoleMessage.message(chalk.bold.red('No Changes') + chalk.bold.grey(" -> if you want to ignore diff check use 'skip-diff-check' flag"))
+    ConsoleMessage.message(chalk.bold.red('No Changes') + chalk.bold.grey(" -> if you want to ignore diff check use '--skip-diff-check' flag"))
     process.exit()
   }
 
@@ -75,13 +83,10 @@ const processDeployV2 = async (api: Api, args: Input) => {
 
   const pre_finish = ((Date.now() - start) / 1000).toFixed(1)
 
-  if (dontPerformComparization) {
-    console.log(chalk.blue(`Since you used '--skip-diff-check' flag, CLI will be deploying following classes even if there is nothing changed: [${args.classes || 'All Classes'}]  \n`))
-    console.log(chalk.greenBright(addAsterisks(`Gathered information ✅ ${pre_finish} seconds `)))
-  } else if (deploymentContents.comparization) {
-    if (!isChanged(deploymentContents.comparization)) {
-      console.log(chalk.greenBright(addAsterisks(`Gathered information ✅ ${pre_finish} seconds `)))
+  if (deploymentContents.comparization) {
+    if (!dontPerformComparization && !isChanged(deploymentContents.comparization)) {
       console.log(chalk.bold.redBright('No Changes') + chalk.bold.grey(" -> if you want to ignore diff check use '--skip-diff-check' flag\n"))
+      console.log(chalk.greenBright(addAsterisks(`Gathered information ✅ ${pre_finish} seconds `)))
       process.exit();
     }
     
@@ -92,7 +97,7 @@ const processDeployV2 = async (api: Api, args: Input) => {
   }
   
   console.log(chalk.yellow(addAsterisks('Starting deployment') + '\n\n'))
-  
+
   await deployV2(api, deploymentContents.classes, deploymentContents.dependencies, args.force)
   
   const finish = (Date.now() - start) / 1000

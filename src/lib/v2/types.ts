@@ -29,12 +29,15 @@ export interface ComparizationSummary {
       createdModels: string[]
       deletedFiles: string[]
       deletedModels: string[]
+      forcedFiles: string[]
+      forcedModels: string[]
       newClass: boolean
     }
   }
   dependencies: {
     [name: string]: {
       new?: boolean
+      forced?: boolean
     }
   }
 }
