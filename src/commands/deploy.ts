@@ -100,7 +100,7 @@ const processDeployV2 = async (api: Api, args: Input) => {
 
   await deployV2(api, deploymentContents.classes, deploymentContents.dependencies, args.force)
   
-  const finish = (Date.now() - start) / 1000
+  const finish = ((Date.now() - start) / 1000).toFixed(1)
   console.log(chalk.greenBright(addAsterisks(`Deployed ✅ ${finish} seconds `)))
 }
 
