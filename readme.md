@@ -1,62 +1,78 @@
-## Retter.io Command Line Tool
+# Retter.io Command Line Tool
 
-Rio Command Line Tool
+Rio CLI is a command-line tool that allows you to interact with the RIO platform. You can use it to deploy your RIO projects, generate class files, create new projects, and more.
 
-### Installation
+## Installation
 
 ```shell
 npm i -g @retter/rio-cli
 ```
 
-### Before Starting
+## Commands
 
-``Rbs Console > Right Top Dropdown Menu > Settings``
+### `rio --`
+* `--help`: Show help.
+* `--version`: Show version number.
 
-![img.png](docs/img.png)
----
-**NOTE**
+### `rio set-profile [sp]`
 
-You should set the admin profile using above credentials by ```rio set-profile``` command
-
----
-
-#### Example:
+Upsert admin profile in local storage.
 
 ```shell
-rio set-profile --profile-name PROFILE_NAME --secret-id SECRET_ID --secret-key SECRET_KEY --endpoint RIO_ENDPOINT
+rio set-profile --profile-name myProfile --secret-id mySecretId --secret-key mySecretKey --endpoint myRioDomain
+```
+
+#### Arguments
+
+* `--profile-name`: Name of this admin profile
+* `--secret-id`: Secrect id fetched from console
+* `--secret-key`: Secrect key fetched from console
+* `--endpoint`: URL to target rio console
+
+### `rio deploy [d]`
+
+Deploy the project.
+
+#### Arguments
+
+* `--project-id`: Project id for deployment (type: string).
+* `--classes`: Filtered classes for deployment (type: array).
+* `--ignore-approval`: Ignore deployment manual approval.
+* `--force`: Send deployment requests with force parameter to RIO.
+* `--skip-diff-check`: Skip and don't perform difference checks while deploying.
+
+```shell
+rio deploy --project-id myProject --classes class1 class2 --force
+```
+
+### `rio init [alias]` (`i`)
+
+Create a new project.
+```shell
+rio init myProject
+```
+### `rio list-profiles [lp]`
+
+List local admin profiles.
+```shell
 rio list-profiles
 ```
+### `rio generate [g]`
 
-### Project Initialization
-
-``rio init``
-
-Create a new project
-
-```shell
-rio init PROJECT_ALIAS
-```
-
-``rio generate``
-
-Create the rio file for each of classes
-
+Generate RIO class files.
 ```shell
 rio generate
 ```
+### `rio generate-docs [gd]`
 
-#### Example:
-
+Generate project documentation.
 ```shell
-rio init TEST
-cd TEST
-rio generate # optional
-rio deploy
+rio generate-docs
 ```
+### `rio console [con]`
 
-### Project Deployment
+Open project console.
 
 ```shell
-rio deploy
-rio d --profile PROFILE --project-id PROJECT_ID --classes CLASSES --ignore-approval --skip-diff-check --force
+rio console
 ```
