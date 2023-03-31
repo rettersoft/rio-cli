@@ -2,7 +2,7 @@ import {GlobalInput} from "./ICommand";
 import {AdminProfileSummary, CliConfig} from "../lib/CliConfig";
 import afterCommand from "./AfterCommand";
 import chalk from "chalk";
-import {ConsoleMessage} from "../lib/ConsoleMessage";
+import {ConsoleMessage} from "../lib/v1/ConsoleMessage";
 import {CommandModule} from "yargs";
 import Listr from "listr";
 

@@ -1,4 +1,4 @@
-import {RIO_CLI_DEPENDENCIES_FOLDER} from "../config";
+import {RIO_CLI_DEPENDENCIES_FOLDER} from "../../config";
 import * as path from "path";
 import * as fs from "fs";
 import AdmZip from "adm-zip"

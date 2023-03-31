@@ -1,10 +1,10 @@
 import {GlobalInput} from "./ICommand";
 import afterCommand from "./AfterCommand";
 import {CommandModule} from "yargs";
-import {Tmp} from "../lib/Tmp";
-import {FileExtra} from "../lib/FileExtra";
+import {Tmp} from "../lib/v1/Tmp";
+import {FileExtra} from "../lib/v1/FileExtra";
 import path from "path";
-import {ProjectManager} from "../lib/ProjectManager";
+import {ProjectManager} from "../lib/v1/ProjectManager";
 import {
     PROJECT_DOCUMENTATION_NAME,
     PROJECT_GENERATED_DOCS_FOLDER,

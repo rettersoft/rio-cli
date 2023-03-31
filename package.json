@@ -1,6 +1,6 @@
 {
   "name": "@retter/rio-cli",
-  "version": "1.14.8",
+  "version": "1.15.0",
   "description": "Retter.io Command Line Tool",
   "main": "./dist/index.js",
   "bin": {
@@ -33,6 +33,7 @@
     "jsonwebtoken": "8.5.1",
     "listr": "0.14.3",
     "lodash": "4.17.21",
+    "ora": "5.4.1",
     "prompts": "2.4.2",
     "table": "6.8.0",
     "yaml": "1.10.2",

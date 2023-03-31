@@ -3,9 +3,9 @@ import {PROJECT_RIO_CONFIG, RIO_CLI_COS_TEMPLATES_REPO_NAME} from "../config";
 import AdmZip from "adm-zip";
 import path from "path";
 import fs from "fs";
-import {FileExtra} from "./FileExtra";
-import {Tmp} from "./Tmp";
-import {Project} from "./Project";
+import {FileExtra} from "./v1/FileExtra";
+import {Tmp} from "./v1/Tmp";
+import {Project} from "./v1/Project";
 
 
 export class Repo {

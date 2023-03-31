@@ -3,7 +3,7 @@ import afterCommand from "./AfterCommand";
 import {CommandModule} from "yargs";
 import {RIO_CLI_ROOT_DOMAIN, RIO_CLI_STAGE} from "../config";
 import {execSync} from "child_process";
-import {Project} from "../lib/Project";
+import {Project} from "../lib/v1/Project";
 
 interface Input extends GlobalInput {
     out: string

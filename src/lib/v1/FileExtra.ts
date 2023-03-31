@@ -1,6 +1,6 @@
 import fse from "fs-extra";
 import * as path from "path";
-import {PROJECT_CLASSES_FOLDER} from "../config";
+import {PROJECT_CLASSES_FOLDER} from "../../config";
 import fs from "fs";
 
 export class FileExtra {

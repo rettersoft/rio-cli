@@ -4,14 +4,14 @@ import fs from "fs";
 import {Repo} from "../lib/Repo";
 import {Api} from "../lib/Api";
 import path from "path";
-import {CustomError} from "../lib/CustomError";
+import {CustomError} from "../lib/v1/CustomError";
 import {CommandModule} from "yargs";
 import Listr from "listr";
 import {IProjectDetail} from "../Interfaces/IProjectDetail";
 import afterCommand from "./AfterCommand";
-import {ConsoleMessage} from "../lib/ConsoleMessage";
+import {ConsoleMessage} from "../lib/v1/ConsoleMessage";
 import { CliConfig } from "../lib/CliConfig";
-import { Project } from "../lib/Project";
+import { Project } from "../lib/v1/Project";
 import { RIO_CLI_URL } from "../config";
 
 

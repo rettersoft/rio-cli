@@ -1,5 +1,5 @@
 import path from "path";
-import {RIO_CLI_CONFIG_PATH, RIO_CLI_TEMP_FOLDER} from "../config";
+import {RIO_CLI_CONFIG_PATH, RIO_CLI_TEMP_FOLDER} from "../../config";
 import fs, {existsSync} from "fs";
 
 

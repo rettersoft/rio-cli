@@ -1,17 +1,17 @@
 import { GlobalInput } from "./ICommand";
 import chalk from "chalk";
-import { ConsoleMessage } from "../lib/ConsoleMessage";
+import { ConsoleMessage } from "../lib/v1/ConsoleMessage";
 import prompts from "prompts";
-import { IPreDeploymentContext, ProjectManager } from "../lib/ProjectManager";
-import { IProjectRioConfig, Project } from "../lib/Project";
-import { Deployment } from "../lib/Deployment";
+import { IPreDeploymentContext, ProjectManager } from "../lib/v1/ProjectManager";
+import { IProjectRioConfig, Project } from "../lib/v1/Project";
+import { Deployment } from "../lib/v1/Deployment";
 import afterCommand from "./AfterCommand";
 import { CommandModule } from "yargs";
 import { RIO_CLI_PROJECT_ID_KEY, RIO_CLI_URL } from "../config";
 import { Api } from "../lib/Api";
 import { CliConfig } from "../lib/CliConfig";
 import { deployV2 } from "../lib/v2/deploy";
-import { fetchDeploymentContents, isChanged, printSummaryV2 } from "../lib/v2/pre-deployment";
+import { analyze, isChanged, printSummaryV2 } from "../lib/v2/analyze";
 
 interface Input extends GlobalInput {
   force: boolean;
@@ -19,6 +19,7 @@ interface Input extends GlobalInput {
   "project-id": string;
   "ignore-approval": boolean;
   "skip-diff-check": boolean;
+  'disable-ora': boolean;
 }
 
 function addAsterisks(string: string): string {
@@ -72,33 +73,39 @@ const processDeployV1 = async (api: Api, args: Input) => {
   ConsoleMessage.message(chalk.greenBright(`DEPLOYMENT Finished ✅ ${finish} seconds`))
 }
 
-const processDeployV2 = async (api: Api, args: Input) => {
-
-  const dontPerformComparization = args["skip-diff-check"]
+const processDeployV2 = async (api: Api, args: Input, projectId: string) => {
+  const oraDisabled = args['disable-ora']
+  const skipDiff = args["skip-diff-check"]
+  const force = args.force
 
   const start = Date.now()
   console.log(chalk.yellow(addAsterisks(`Gathering information`) + '\n'));
 
-  const deploymentContents = await fetchDeploymentContents(api, dontPerformComparization, args.classes);
+  const analyzationResult = await analyze({
+    api, 
+    skipDiff, 
+    classes: args.classes
+  });
 
   const pre_finish = ((Date.now() - start) / 1000).toFixed(1)
 
-  if (deploymentContents.comparization) {
-    if (!dontPerformComparization && !isChanged(deploymentContents.comparization)) {
-      console.log(chalk.bold.redBright('No Changes') + chalk.bold.grey(" -> if you want to ignore diff check use '--skip-diff-check' flag\n"))
-      console.log(chalk.greenBright(addAsterisks(`Gathered information ✅ ${pre_finish} seconds `)))
-      process.exit();
-    }
-    
-    await printSummaryV2(deploymentContents.comparization)
+  if (!skipDiff && !isChanged(analyzationResult.comparization)) {
+    console.log(chalk.bold.redBright('No Changes') + chalk.bold.grey(" -> if you want to ignore diff check use '--skip-diff-check' flag\n"))
     console.log(chalk.greenBright(addAsterisks(`Gathered information ✅ ${pre_finish} seconds `)))
-  } else {
-    throw new Error('User asked to compare but comparization is not available')
+    process.exit()
   }
+
+  await printSummaryV2(analyzationResult.comparization, skipDiff)
+  console.log(chalk.greenBright(addAsterisks(`Gathered information ✅ ${pre_finish} seconds `)))
   
   console.log(chalk.yellow(addAsterisks('Starting deployment') + '\n\n'))
 
-  await deployV2(api, deploymentContents.classes, deploymentContents.dependencies, args.force)
+  await deployV2({ 
+    api, 
+    analyzationResult, 
+    force, 
+    oraDisabled,
+  })
   
   const finish = ((Date.now() - start) / 1000).toFixed(1)
   console.log(chalk.greenBright(addAsterisks(`Deployed ✅ ${finish} seconds `)))
@@ -114,6 +121,7 @@ module.exports = {
     --ignore-approval: Ignore deployment manual approval. 
     --force: Send deployment requests with force parameter to rio.
     --skip-diff-check: Skip and dont perform difference checks while deploying.
+    --disable-ora: Disable ora spinner. (simpler console output for github actions etc...)
   `,    
   aliases: ["d"],
   builder: (yargs) => {
@@ -144,6 +152,12 @@ module.exports = {
       boolean: true,
       type: "boolean",
     });
+    yargs.options("disable-ora", {
+      describe: "Disable ora spinner output, simple console outputs",
+      default: false,
+      boolean: true,
+      type: "boolean",
+    });
     return yargs;
   },
   handler: async (args) => {
@@ -167,7 +181,7 @@ module.exports = {
     console.log(chalk.greenBright(`API CONNECTED ✅ ${api.v2 ? chalk.gray('v2') : ''}\n\n`));
     
     if (api.v2) {  
-      await processDeployV2(api, args)
+      await processDeployV2(api, args, config.projectId)
     } else {
       await processDeployV1(api, args)
     }

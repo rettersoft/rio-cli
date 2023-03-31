@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-import {RIO_CLI_IGNORE_FILE} from "../config";
+import {RIO_CLI_IGNORE_FILE} from "../../config";
 import ignore, { Ignore as OriginalIgnore} from "ignore";
 export class Ignore {
 

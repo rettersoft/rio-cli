@@ -6,12 +6,12 @@ import {
     PROJECT_MODELS_FOLDER,
     PROJECT_RIO_CONFIG,
     RIO_CLI_PROJECT_ID_KEY
-} from "../config";
+} from "../../config";
 import path from "path";
 import {FileExtra} from "./FileExtra";
 import * as process from "process";
 import YAML from "yaml"
-import {IProjectTemplate} from "../Interfaces/IProjectTemplate";
+import {IProjectTemplate} from "../../Interfaces/IProjectTemplate";
 
 export interface IProjectRioConfig {
     projectId: string

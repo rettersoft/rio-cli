@@ -1,16 +1,17 @@
 import Retter, { RetterCallResponse, RetterCloudObject, RetterCloudObjectState } from '@retter/sdk'
 import { RetterRootClasses, RetterRootMethods, authenticateCurrentSession, AuthenticateCurrentSessionResponse } from './Auth'
 import { IProjectDetail } from '../Interfaces/IProjectDetail'
-import { Project } from './Project'
+import { Project } from './v1/Project'
 import { gunzipSync } from 'zlib'
-import { ConsoleMessage, DeploymentMessageStatus } from './ConsoleMessage'
-import { Deployment, DeploymentObjectItemStatus, DeploymentObjectItemType } from './Deployment'
-import { IRemoteDependencyContent } from './Dependencies'
-import { IPreDeploymentContext } from './ProjectManager'
+import { ConsoleMessage, DeploymentMessageStatus } from './v1/ConsoleMessage'
+import { Deployment, DeploymentObjectItemStatus, DeploymentObjectItemType } from './v1/Deployment'
+import { IRemoteDependencyContent } from './v1/Dependencies'
+import { IPreDeploymentContext } from './v1/ProjectManager'
 import { CliConfig, IRIOCliConfigProfileItemData } from './CliConfig'
 import chalk from 'chalk'
 import { Transform } from 'stream'
 import { Console } from 'console'
+import { ProjectState } from './v2/types'
 export interface RemoteClassFileItem {
   classId: string
   name: string
@@ -385,86 +386,123 @@ export class Api {
     }
   }
 
-  async deployClassV2(className: string, force: boolean): Promise<void> {
-    const classInstance = await this.getClassInstance(className)
+  // V2
+  async deployProjectV2(force: boolean): Promise<boolean | void> {
     try {
-      await classInstance.call({
-        method: RetterRootMethods.deployClass,
+      const response = await this.projectInstance.call<any>({
+        method: 'deploy',
         body: {
           force,
         },
       })
 
-      const deploymentStarted = Date.now()
+      if (!response.data.success) {
+        throw new Error('Deployment failed')
+      }
 
-      await new Promise((resolve, reject) => {
-        try {
-          classInstance.state?.public?.subscribe(
-            (event: {
-              deployment?: {
-                status: 'started' | 'ongoing' | 'failed' | 'finished'
-                statusMessage: string
-                updatedAt: number
-              }
-            }) => {
-              if (event.deployment) {
-                switch (event.deployment.status) {
-                  case 'failed':
-                    console.log(chalk.redBright(` failed: [${className}]`))
-                    reject(event.deployment.statusMessage)
-                    break
-                  case 'finished':
-                    const timeSinceDeploymentStarted = (event.deployment.updatedAt || Date.now()) - deploymentStarted
-                    if (timeSinceDeploymentStarted < 5000) break
-
-                    console.log(chalk.greenBright(`   finished: [${className}] -> ${event.deployment.statusMessage} ✅ ${(timeSinceDeploymentStarted / 1000).toFixed(1)} seconds`))
-                    resolve(true)
-                    break
-                  case 'started':
-                    console.log(chalk.blue(`   started : [${className}] -> ${event.deployment.statusMessage}`))
-                    break
-                  case 'ongoing':
-                    console.log(chalk.blue(`   ongoin  : [${className}] -> ${event.deployment.statusMessage}`))
-                    break
-                  default:
-                    break
-                }
-              }
-            },
-          )
-        } catch (error) {
-          throw error
-        }
-      }).catch((error) => {
-        throw error
-      })
+      return response.data.success
     } catch (error: any) {
-      console.log(chalk.redBright('\n Error accured while setting models and files ! '))
+      console.log(chalk.redBright('\n Error accured while deploying ! '))
+
+      if (error?.message) {
+        console.log(chalk.redBright(`\n ${error.message} `))
+      }
+
+      if (error?.response) {
+        const res_status = error?.response?.status || ''
+        const res_statusText = error?.response?.statusText || ''
+        const res_data = JSON.stringify(error?.response?.data || {})
+
+        console.log(chalk.redBright(`\nstatus:\n ${res_status} \nstatusText:\n ${res_statusText} \ndata:\n ${res_data}`))
+      }
+
+      process.exit(1)
+    }
+  }
+
+  async waitDeployment(): Promise<boolean | void> {
+    try {
+      const deploymentStarted = new Date().getTime()
+      await new Promise((resolve, reject) => {
+        this.projectInstance.state?.public?.subscribe((event: any) => {
+          switch (event.deployment.status) {
+            case 'started': {
+              break
+            }
+            case 'finished': {
+              const timeSinceDeploymentStarted = (event.deployment.updatedAt || Date.now()) - deploymentStarted
+              if (timeSinceDeploymentStarted < 5000) break
+                     
+              console.log(chalk.greenBright(`         🟢 Deployed  Project ✅`))
+              resolve(true)
+             
+              break
+            }
+            case 'failed': {
+              console.log(chalk.redBright(`         🔴 Project Deployment Failed ❌`))
+              reject(event.deployment.statusMessage)
+              break
+            }
+            default: {
+              break
+            }
+          }
+        })
+      })
+
+      return true
+    } catch (error: any) {
+      console.log(chalk.redBright('\n Fatal error accured while waiting for deployment ! '))
+
+      if (error?.message) {
+        console.log(chalk.redBright(`\n ${error.message} `))
+      }
+
+      if (error?.response) {
+        const res_status = error?.response?.status || ''
+        const res_statusText = error?.response?.statusText || ''
+        const res_data = JSON.stringify(error?.response?.data || {})
+
+        console.log(chalk.redBright(`\nstatus:\n ${res_status} \nstatusText:\n ${res_statusText} \ndata:\n ${res_data}`))
+      }
+
+      process.exit(1)
+    }
+  }
+
+  // V2
+  async setProjectFiles({ files, models }: { files?: object; models?: object }): Promise<{ success: boolean }> {
+    try {
+      const response = await this.projectInstance.call<any>({
+        method: 'setFilesModels',
+        body: {
+          files,
+          models,
+        },
+      })
+
+      return { success: response.data.success }
+    } catch (error: any) {
+      console.log(chalk.redBright('\n Error accured while setFilesModels ! '))
 
       const res_status = error?.response?.status || ''
       const res_statusText = error?.response?.statusText || ''
       const res_data = JSON.stringify(error?.response?.data || {})
 
       console.log(chalk.redBright(`status: ${res_status} statusText: ${res_statusText} data: ${res_data}`))
+      return { success: false }
     }
   }
 
-  async getRemoteClassFilesAndModelsV2(className: string): Promise<GetFilesAndModelsResponse> {
+  // V2
+  async getRemoteClassFilesV2(className: string): Promise<GetFilesAndModelsResponse> {
     const classInstance = await this.getClassInstance(className)
     try {
       const response = await classInstance.call<GetFilesAndModelsResponse>({
-        method: 'getModelsAndFiles',
+        method: 'getClassFiles',
       })
 
-      const { models, files } = response.data
-
-      const _models = models.map((item: any) => {
-        return {
-          ...item,
-          classId: className,
-          content: gunzipSync(Buffer.from(item.content, 'base64')).toString('utf-8'),
-        }
-      })
+      const { files } = response.data
 
       const _files = files.map((item: any) => {
         return {
@@ -474,9 +512,9 @@ export class Api {
         }
       })
 
-      return { models: _models, files: _files }
+      return { models: [], files: _files }
     } catch (error: any) {
-      console.log(chalk.redBright('\n Error accured while setting models and files ! '))
+      console.log(chalk.redBright('\n Error accured while getting models and files ! '))
 
       const res_status = error?.response?.status || ''
       const res_statusText = error?.response?.statusText || ''
@@ -487,14 +525,14 @@ export class Api {
     }
   }
 
-  async setRemoteClassFilesAndModelsV2(className: string, files: object, models: object): Promise<{ success: boolean }> {
+  // V2
+  async setRemoteClassFilesV2(className: string, files: object): Promise<{ success: boolean }> {
     const classInstance = await this.getClassInstance(className)
     try {
       const response = await classInstance.call<{ success: boolean }>({
-        method: 'setModelsAndFiles',
+        method: 'setClassFiles',
         body: {
           files,
-          models,
         },
       })
       return { success: response.data.success }
