@@ -19,7 +19,6 @@ interface Input extends GlobalInput {
   "project-id": string;
   "ignore-approval": boolean;
   "skip-diff-check": boolean;
-  'disable-ora': boolean;
 }
 
 function addAsterisks(string: string): string {
@@ -29,14 +28,6 @@ function addAsterisks(string: string): string {
   const spaces = " ".repeat(remainingLength / 2);
   return `${spaces}${line}${spaces}\n${spaces}${string}${spaces}\n${spaces}${line}${spaces}`;
 }
-
-// function addAsterisks(string: string): string {
-//   const totalLength = 60;
-//   const line = "*".repeat(string.length);
-//   const remainingLength = totalLength - string.length;
-//   const spaces = " ".repeat(remainingLength / 2);
-//   return `${line}${spaces}\n${string}${spaces}\n${line}${spaces}`;
-// }
 
 const processDeployV1 = async (api: Api, args: Input) => {
   const start = Date.now()
@@ -74,7 +65,6 @@ const processDeployV1 = async (api: Api, args: Input) => {
 }
 
 const processDeployV2 = async (api: Api, args: Input, projectId: string) => {
-  const oraDisabled = args['disable-ora']
   const skipDiff = args["skip-diff-check"]
   const force = args.force
 
@@ -104,7 +94,6 @@ const processDeployV2 = async (api: Api, args: Input, projectId: string) => {
     api, 
     analyzationResult, 
     force, 
-    oraDisabled,
   })
   
   const finish = ((Date.now() - start) / 1000).toFixed(1)
@@ -152,12 +141,6 @@ module.exports = {
       boolean: true,
       type: "boolean",
     });
-    yargs.options("disable-ora", {
-      describe: "Disable ora spinner output, simple console outputs",
-      default: false,
-      boolean: true,
-      type: "boolean",
-    });
     return yargs;
   },
   handler: async (args) => {
@@ -166,7 +149,7 @@ module.exports = {
     
     const profile_config = CliConfig.getAdminConfig(args.profile);
     const config = Project.getProjectRioConfig()
-    
+
     const exampleArray = [{ 
       'Profile': args.profile, 
       'Classes': args.classes?.toString() || 'All Classes', 

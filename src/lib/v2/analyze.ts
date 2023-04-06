@@ -9,6 +9,14 @@ import { ComparizationSummary, Classes, AnalyzationResult, Dependencies, Project
 import { fetchLocalClassContents, fetchRemoteClassContents, listClassNames } from './contents-class'
 import { fetchLocalProjectFiles, fetchRemoteProjectFiles } from './contents-project'
 
+const headerColor = chalk.magentaBright.bold
+const subHeaderColor = chalk.cyanBright.bold
+const subHeaderColor2 = chalk.cyanBright.bold
+
+const subHeaderTab = '   '
+const subestHeaderTab = '     '
+const subHeaderNoChange = chalk.grey(': No Change')
+
 // ********* Comparization Summary *********
 
 function generateComparizationSummaryV2(
@@ -29,7 +37,7 @@ function generateComparizationSummaryV2(
   // *********** FILES ***********
   // *********** FILES ***********
 
-  // project files -> like package.json etc ...
+  // project files  like package.json etc ...
   for (const file in localProjectContents.files) {
     const remote = remoteProjectContents.files[file]
     const local = localProjectContents.files[file]
@@ -187,76 +195,73 @@ function generateComparizationSummaryV2(
 
 export const printSummaryV2 = async (summary: ComparizationSummary, skipDiff: boolean) => {
 
-  // *********** DEPENDENCIES ***********
-  // *********** DEPENDENCIES ***********
-  // *********** DEPENDENCIES ***********
-  console.log(chalk.magenta.bold('Project'))
-  console.log(chalk.cyanBright.bold('   [Dependencies]'))
+  // *********** PROJECT FILES ***********
+  // *********** PROJECT FILES ***********
+  // *********** PROJECT FILES ***********
 
-  for (const name in summary.dependencies) {
-    const dependency = summary.dependencies[name]
-    if (dependency.new) {
-      console.log(chalk.green(`         added : ${name}`))
-    } else if (dependency.forced) {
-      console.log(chalk.grey(`         forced: ${name}`))
-    } else if (dependency.edited) {
-      console.log(chalk.blue(`         edited: ${name}`))
-    }
-  }
+  console.log(headerColor('Project Summary'))
 
-  if (Object.keys(summary.dependencies).length === 0) {
-    console.log(chalk.gray('         No Changes '))
-  }
-
-  // *********** MODELS ***********
-  // *********** MODELS ***********
-  // *********** MODELS ***********
-
- 
-  console.log(chalk.cyanBright.bold('   [Models]'))
-
-  if (skipDiff) {
-    console.log(chalk.grey(`         forced: All ${Object.keys(summary.models).length} models are being forced`))
+  if (Object.keys(summary.files).length === 0) {
+    console.log(`${subHeaderTab}${subHeaderColor2(('[Files]').padEnd(20," "))}${subHeaderNoChange}`)
   } else {
-    for (const name in summary.models) {
-      const model = summary.models[name]
-      if (model.deleted) {
-        console.log(chalk.red(`         deleted : ${name}`))
-      } else if (model.forced) {
-        console.log(chalk.grey(`         forced: ${name}`))
-      } else if (model.created) {
-        console.log(chalk.green(`         created : ${name}`))
-      }  else if (model.edited) {
-        console.log(chalk.blue(`         edited: ${name}`))
+    console.log(`${subHeaderTab}${subHeaderColor2('[Files]')}`)
+
+    for (const name in summary.files) {
+      const file = summary.files[name]
+      if (file.deleted) {
+        console.log(chalk.red(`${subestHeaderTab}${('deleted').padEnd(8, ' ')}: ${name}`))
+      } else if (file.forced) {
+        console.log(chalk.grey(`${subestHeaderTab}${('forced').padEnd(8, ' ')}: ${name}`))
+      } else if (file.created) {
+        console.log(chalk.green(`${subestHeaderTab}${('created').padEnd(8, ' ')}: ${name}`))
+      } else if (file.edited) {
+        console.log(chalk.blue(`${subestHeaderTab}${('edited').padEnd(8, ' ')}: ${name}`))
       }
     }
   }
 
+  // *********** PROJECT MODELS ***********
+  // *********** PROJECT MODELS ***********
+  // *********** PROJECT MODELS ***********
+
   if (Object.keys(summary.models).length === 0) {
-    console.log(chalk.gray('         No Changes '))
-  }
-
-  // *********** FILES ***********
-  // *********** FILES ***********
-  // *********** FILES ***********
-
-  console.log(chalk.cyanBright.bold('   [Files]'))
-
-  for (const name in summary.files) {
-    const file = summary.files[name]
-    if (file.deleted) {
-      console.log(chalk.red(`         deleted : ${name}`))
-    } else if (file.forced) {
-      console.log(chalk.grey(`         forced: ${name}`))
-    } else if (file.created) {
-      console.log(chalk.green(`         created : ${name}`))
-    } else if (file.edited) {
-      console.log(chalk.blue(`         edited: ${name}`))
+    console.log(`${subHeaderTab}${subHeaderColor2(('[Models]').padEnd(20," "))}${subHeaderNoChange}`)
+  } else {
+    console.log(`${subHeaderTab}${subHeaderColor2('[Models]')}`)
+    for (const name in summary.models) {
+      const model = summary.models[name]
+      if (model.deleted) {
+        console.log(chalk.red(`${subestHeaderTab}${('deleted').padEnd(8, ' ')}: ${name}`))
+      } else if (model.forced) {
+        console.log(chalk.grey(`${subestHeaderTab}${('forced').padEnd(8, ' ')}: ${name}`))
+      } else if (model.created) {
+        console.log(chalk.green(`${subestHeaderTab}${('created').padEnd(8, ' ')}: ${name}`))
+      } else if (model.edited) {
+        console.log(chalk.blue(`${subestHeaderTab}${('edited').padEnd(8, ' ')}: ${name}`))
+      }
     }
   }
 
-  if (Object.keys(summary.files).length === 0) {
-    console.log(chalk.gray('         No Changes '))
+  // *********** PROJECT DEPENDENCIES ***********
+  // *********** PROJECT DEPENDENCIES ***********
+  // *********** PROJECT DEPENDENCIES ***********
+
+
+  if (Object.keys(summary.dependencies).length === 0) {
+    console.log(`${subHeaderTab}${subHeaderColor2(('[Dependencies]').padEnd(20," "))}${subHeaderNoChange}`)
+  } else {
+    console.log(`${subHeaderTab}${subHeaderColor2('[Dependencies]')}`)
+
+    for (const name in summary.dependencies) {
+      const dependency = summary.dependencies[name]
+      if (dependency.new) {
+        console.log(chalk.green(`${subestHeaderTab}${('created').padEnd(8, ' ')}: ${name}`))
+      } else if (dependency.forced) {
+        console.log(chalk.grey(`${subestHeaderTab}${('forced').padEnd(8, ' ')}: ${name}`))
+      } else if (dependency.edited) {
+        console.log(chalk.blue(`${subestHeaderTab}${('edited').padEnd(8, ' ')}: ${name}`))
+      }
+    }
   }
 
   // *********** CLASSES ***********
@@ -264,7 +269,7 @@ export const printSummaryV2 = async (summary: ComparizationSummary, skipDiff: bo
   // *********** CLASSES ***********
   // *********** CLASSES ***********
 
-  console.log(chalk.magenta.bold('Classes'))
+  console.log(headerColor('Classes Summary'))
 
   for (const className in summary.classes) {
 
@@ -274,27 +279,28 @@ export const printSummaryV2 = async (summary: ComparizationSummary, skipDiff: bo
       continue
     }
 
-    console.log(chalk.cyanBright.bold('   [' + className + ']'))
+    console.log(`${subHeaderTab}${subHeaderColor(`[${className}]`)}`)
+
     if (createdFiles.length === 0 && editedFiles.length === 0 && deletedFiles.length === 0 && forcedFiles.length === 0) {
       console.log(chalk.dim('         None'))
     } else {
       for (const fileName of createdFiles) {
-        console.log(chalk.green(`         added  : ${fileName}`))
+        console.log(chalk.green(`${subestHeaderTab}${('added').padEnd(8, ' ')}: ${fileName}`))
       }
       for (const fileName of editedFiles) {
-        console.log(chalk.blue(`         edited : ${fileName}`))
+        console.log(chalk.blue(`${subestHeaderTab}${('edited').padEnd(8, ' ')}: ${fileName}`))
       }
       for (const fileName of deletedFiles) {
-        console.log(chalk.red(`         deleted: ${fileName}`))
+        console.log(chalk.red(`${subestHeaderTab}${('deleted').padEnd(8, ' ')}: ${fileName}`))
       }
       for (const fileName of forcedFiles) {
-        console.log(chalk.grey(`         forced : ${fileName}`))
+        console.log(chalk.grey(`${subestHeaderTab}${('forced').padEnd(8, ' ')}: ${fileName}`))
       }
     }
   }
 
   if (Object.keys(summary.classes).length === 0) {
-    console.log(chalk.gray('   No Changes \n'))
+    console.log(chalk.gray('   No changes occurred in any class \n'))
   }
 
   console.log('\n')

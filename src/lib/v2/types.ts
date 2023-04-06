@@ -112,7 +112,6 @@ export interface ProjectState extends RetterCloudObjectState {
     api: Api
     analyzationResult: AnalyzationResult
     force: boolean
-    oraDisabled: boolean
   }
 
   export interface AnalyzeInput {

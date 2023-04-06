@@ -82,7 +82,7 @@ export const fetchLocalModelContents = async (directoryPath: string): Promise<Fi
   try {
     await fs.promises.access(directoryPath, fs.constants.R_OK)
   } catch (err: any) {
-    console.log('err', err.message)
+    //console.log('err', err.message)
     return {}
   }
 
@@ -98,9 +98,16 @@ export const fetchLocalModelContents = async (directoryPath: string): Promise<Fi
 // ****** FILES ******
 // ****** FILES ******
 
+// for now only package.json
 export async function fetchLocalFiles(projectPath: string): Promise<Files> {
+  const packageJSONpath = path.join(projectPath, 'package.json')
+  try {
+    await fs.promises.access(packageJSONpath, fs.constants.R_OK)
+  } catch (err: any) {
+    throw new Error('No package.json found in project')
+  }
   return {
-    'package.json': (await fs.promises.readFile(path.join(projectPath, 'package.json'))).toString()
+    'package.json': (await fs.promises.readFile(packageJSONpath)).toString(),
   }
 }
 

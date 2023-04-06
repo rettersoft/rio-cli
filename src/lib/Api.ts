@@ -12,6 +12,7 @@ import chalk from 'chalk'
 import { Transform } from 'stream'
 import { Console } from 'console'
 import { ProjectState } from './v2/types'
+import { RIO_CLI_VERSION } from '../config'
 export interface RemoteClassFileItem {
   classId: string
   name: string
@@ -129,6 +130,7 @@ export class Api {
     throw error
   }
 
+  // v1 & v2
   async getClassInstance(className: string): Promise<RetterCloudObject> {
     if (this.classInstances[className]) {
       return this.classInstances[className]
@@ -145,6 +147,7 @@ export class Api {
     return this.classInstances[className]
   }
 
+  // v1 & v2
   async createClass(className: string, templateId?: string): Promise<void> {
     try {
       await this.projectInstance.call({
@@ -152,12 +155,96 @@ export class Api {
         body: {
           classId: className,
         },
+        headers: {
+          'cli-version': RIO_CLI_VERSION,
+        },
       })
     } catch (error) {
       Api.handleError(error)
     }
   }
 
+  // v1 & v2
+  async createNewProject(alias: string): Promise<{ projectId: string; detail: IProjectDetail }> {
+    try {
+      const projectInstance = await this.retter.getCloudObject({
+        classId: RetterRootClasses.Project,
+        body: {
+          alias,
+        },
+        headers: {
+          'cli-version': RIO_CLI_VERSION,
+        },
+      })
+
+      const state = (await projectInstance.getState()).data
+
+      return {
+        projectId: projectInstance.instanceId,
+        detail: state.public as any,
+      }
+    } catch (error) {
+      console.log('createNewProject error')
+      Api.handleError(error)
+      return { projectId: '', detail: {} as any }
+    }
+  }
+
+  // v1 & v2
+  async getProjectState(): Promise<RetterCloudObjectState> {
+    try {
+      if (!this.projectState) {
+        const state = await this.projectInstance.getState()
+        this.projectState = state.data
+      }
+    } catch (error) {
+      Api.handleError(error)
+    }
+    return this.projectState
+  }
+
+  // v1 & v2
+  async upsertDependency(dependencyName: string): Promise<string> {
+    try {
+      const result = await this.projectInstance.call<any>({
+        method: RetterRootMethods.upsertDependency,
+        body: {
+          dependencyName,
+        },
+        headers: {
+          'cli-version': RIO_CLI_VERSION,
+        },
+      })
+      return result.data.url
+    } catch (error) {
+      Api.handleError(error)
+      return ''
+    }
+  }
+
+  // v1 & v2
+  async commitUpsertDependency(dependencyName: string, hash: string): Promise<void> {
+    try {
+      await this.projectInstance.call<any>({
+        method: RetterRootMethods.upsertDependency,
+        body: {
+          dependencyName,
+          commit: true,
+          hash,
+        },
+      })
+    } catch (error) {
+      Api.handleError(error)
+    }
+  }
+
+  // *************** V1 *****************
+  // *************** V1 *****************
+  // *************** V1 *****************
+  // *************** V1 *****************
+  // *************** V1 *****************
+
+  // v1
   async saveClassFiles(className: string, input: ISaveClassFilesInput[]): Promise<void> {
     const classInstance = await this.getClassInstance(className)
     try {
@@ -166,12 +253,16 @@ export class Api {
         body: {
           files: input,
         },
+        headers: {
+          'cli-version': RIO_CLI_VERSION,
+        },
       })
     } catch (error) {
       Api.handleError(error)
     }
   }
 
+  // v1
   async saveAndDeployClass(className: string, input: ISaveClassFilesInput[], deploymentStatus: IPreDeploymentContext, force: boolean): Promise<void> {
     if (input.length) {
       await this.saveClassFiles(className, input)
@@ -181,6 +272,7 @@ export class Api {
     }
   }
 
+  // v1
   async deployClass(className: string, force: boolean): Promise<void> {
     const classInstance = await this.getClassInstance(className)
     try {
@@ -188,6 +280,9 @@ export class Api {
         method: RetterRootMethods.deployClass,
         body: {
           force,
+        },
+        headers: {
+          'cli-version': RIO_CLI_VERSION,
         },
       })
     } catch (error) {
@@ -262,6 +357,7 @@ export class Api {
     })
   }
 
+  // v1
   async upsertModel(modelName: string, modelDefinition?: object): Promise<void> {
     try {
       await this.projectInstance.call({
@@ -270,12 +366,16 @@ export class Api {
           modelName,
           modelDefinition,
         },
+        headers: {
+          'cli-version': RIO_CLI_VERSION,
+        },
       })
     } catch (error) {
       Api.handleError(error)
     }
   }
 
+  // v1
   async upsertModels(models: { modelName: string; modelDefinition?: object }[]): Promise<void> {
     try {
       await this.projectInstance.call({
@@ -283,46 +383,16 @@ export class Api {
         body: {
           models,
         },
-      })
-    } catch (error) {
-      Api.handleError(error)
-    }
-  }
-
-  async createNewProject(alias: string): Promise<{ projectId: string; detail: IProjectDetail }> {
-    try {
-      const projectInstance = await this.retter.getCloudObject({
-        classId: RetterRootClasses.Project,
-        body: {
-          alias,
+        headers: {
+          'cli-version': RIO_CLI_VERSION,
         },
       })
-
-      const state = (await projectInstance.getState()).data
-
-      return {
-        projectId: projectInstance.instanceId,
-        detail: state.public as any,
-      }
-    } catch (error) {
-      console.log('createNewProject error')
-      Api.handleError(error)
-      return { projectId: '', detail: {} as any }
-    }
-  }
-
-  async getProjectState(): Promise<RetterCloudObjectState> {
-    try {
-      if (!this.projectState) {
-        const state = await this.projectInstance.getState()
-        this.projectState = state.data
-      }
     } catch (error) {
       Api.handleError(error)
     }
-    return this.projectState
   }
 
+  // v1
   async getRemoteClassFiles(className: string): Promise<RemoteClassFileItem[]> {
     const classInstance = await this.getClassInstance(className)
     try {
@@ -343,6 +413,7 @@ export class Api {
     }
   }
 
+  // v1
   async getRemoteDependencies(): Promise<IRemoteDependencyContent[]> {
     const state = await this.getProjectState()
     if (!state.public.layers) return []
@@ -356,43 +427,22 @@ export class Api {
     })
   }
 
-  async upsertDependency(dependencyName: string): Promise<string> {
-    try {
-      const result = await this.projectInstance.call<any>({
-        method: RetterRootMethods.upsertDependency,
-        body: {
-          dependencyName,
-        },
-      })
-      return result.data.url
-    } catch (error) {
-      Api.handleError(error)
-      return ''
-    }
-  }
+  // *************** V2 *****************
+  // *************** V2 *****************
+  // *************** V2 *****************
+  // *************** V2 *****************
+  // *************** V2 *****************
 
-  async commitUpsertDependency(dependencyName: string, hash: string): Promise<void> {
-    try {
-      await this.projectInstance.call<any>({
-        method: RetterRootMethods.upsertDependency,
-        body: {
-          dependencyName,
-          commit: true,
-          hash,
-        },
-      })
-    } catch (error) {
-      Api.handleError(error)
-    }
-  }
-
-  // V2
+  // v2
   async deployProjectV2(force: boolean): Promise<boolean | void> {
     try {
       const response = await this.projectInstance.call<any>({
         method: 'deploy',
         body: {
           force,
+        },
+        headers: {
+          'cli-version': RIO_CLI_VERSION,
         },
       })
 
@@ -420,7 +470,8 @@ export class Api {
     }
   }
 
-  async waitDeployment(): Promise<boolean | void> {
+  // v2
+  async waitDeploymentV2(): Promise<boolean | void> {
     try {
       const deploymentStarted = new Date().getTime()
       await new Promise((resolve, reject) => {
@@ -432,13 +483,15 @@ export class Api {
             case 'finished': {
               const timeSinceDeploymentStarted = (event.deployment.updatedAt || Date.now()) - deploymentStarted
               if (timeSinceDeploymentStarted < 5000) break
-                     
+
               console.log(chalk.greenBright(`         🟢 Deployed  Project ✅`))
               resolve(true)
-             
+
               break
             }
             case 'failed': {
+              const timeSinceDeploymentStarted = (event.deployment.updatedAt || Date.now()) - deploymentStarted
+              if (timeSinceDeploymentStarted < 1000) break
               console.log(chalk.redBright(`         🔴 Project Deployment Failed ❌`))
               reject(event.deployment.statusMessage)
               break
@@ -470,14 +523,17 @@ export class Api {
     }
   }
 
-  // V2
-  async setProjectFiles({ files, models }: { files?: object; models?: object }): Promise<{ success: boolean }> {
+  // v2
+  async setProjectFilesV2({ files, models }: { files?: object; models?: object }): Promise<{ success: boolean }> {
     try {
       const response = await this.projectInstance.call<any>({
-        method: 'setFilesModels',
+        method: 'setContents',
         body: {
           files,
           models,
+        },
+        headers: {
+          'cli-version': RIO_CLI_VERSION,
         },
       })
 
@@ -494,12 +550,15 @@ export class Api {
     }
   }
 
-  // V2
+  // v2
   async getRemoteClassFilesV2(className: string): Promise<GetFilesAndModelsResponse> {
     const classInstance = await this.getClassInstance(className)
     try {
       const response = await classInstance.call<GetFilesAndModelsResponse>({
         method: 'getClassFiles',
+        headers: {
+          'cli-version': RIO_CLI_VERSION,
+        },
       })
 
       const { files } = response.data
@@ -525,7 +584,7 @@ export class Api {
     }
   }
 
-  // V2
+  // v2
   async setRemoteClassFilesV2(className: string, files: object): Promise<{ success: boolean }> {
     const classInstance = await this.getClassInstance(className)
     try {
@@ -533,6 +592,9 @@ export class Api {
         method: 'setClassFiles',
         body: {
           files,
+        },
+        headers: {
+          'cli-version': RIO_CLI_VERSION,
         },
       })
       return { success: response.data.success }
