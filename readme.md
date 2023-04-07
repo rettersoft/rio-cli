@@ -38,7 +38,7 @@ Save local changes and deploy the project.
 * `--profile [p]`: Profile name for deployment (type: string)
 * `--project-id [pid]`: Project id for deployment (type: string).
 * `--classes [c]`: Filtered classes for deployment (type: array) (optional).
-* `--ignore-approval [c]`: Ignore deployment manual approval (optional).
+* `--ignore-approval [i]`: Ignore deployment manual approval (optional).
 * `--force [f]`: Send deployment requests with force parameter to RIO (optional).
 * `--skip-diff-check [s]`: Skip and don't perform difference checks while deploying (optional).
 
@@ -55,7 +55,7 @@ Save local changes to but do not deploy the project.
 * `--profile [p]`: Profile name for deployment (type: string)
 * `--project-id [pid]`: Project id for deployment (type: string).
 * `--classes [c]`: Filtered classes for deployment (type: array)(optional).
-* `--ignore-approval [c]`: Ignore deployment manual approval (optional).
+* `--ignore-approval [i]`: Ignore deployment manual approval (optional).
 * `--skip-diff-check [s]`: Skip and don't perform difference checks while deploying (optional).
 
 ```shell
