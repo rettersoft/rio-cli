@@ -37,6 +37,14 @@ module.exports = {
       boolean: true,
       type: "boolean",
     });
+    yargs.options("ignore-approval", {
+      alias: "i",
+      describe:
+        "Ignore deployment manual approval \n Example: rio deploy --ignore-approval",
+      default: false,
+      boolean: true,
+      type: "boolean",
+    });
     return yargs;
   },
   handler: async (args) => {
@@ -45,11 +53,7 @@ module.exports = {
     
     // Only difference with 'deployment' is this line:
     args["save-only"] = true;
-    
-    // These are not used in 'save' command: but we need to set them to avoid errors
-    args["force"] = false;
-    args["ignore-approval"] = true;
-    
+        
     await saveAndDeploy(args)
      
     afterCommand()

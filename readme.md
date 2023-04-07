@@ -55,11 +55,12 @@ Save local changes to but do not deploy the project.
 * `--profile [p]`: Profile name for deployment (type: string)
 * `--project-id [pid]`: Project id for deployment (type: string).
 * `--classes [c]`: Filtered classes for deployment (type: array)(optional).
+* `--ignore-approval [c]`: Ignore deployment manual approval (optional).
 * `--skip-diff-check [s]`: Skip and don't perform difference checks while deploying (optional).
 
 ```shell
-rio save --profile admin --project-id 77bb3924k --classes Order Product --skip-diff-check 
-rio s --p admin --pid 77bb3924k --c Order Product --s
+rio save --profile admin --project-id 77bb3924k --classes Order Product --skip-diff-check --ignore-approval
+rio s --p admin --pid 77bb3924k --c Order Product --s --i
 ```
 
 ### `rio init [alias]` (`i`)
