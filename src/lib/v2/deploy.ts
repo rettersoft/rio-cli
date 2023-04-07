@@ -12,6 +12,7 @@ const subHeaderColor2 = chalk.cyanBright.bold
 
 const subHeaderTab = '   '
 const subHeaderSucces = chalk.greenBright(': Saved ✅')
+const subHeaderSuccesCreate = chalk.greenBright(': Created ✅')
 const subHeaderNoChange = chalk.grey(': None')
 
 interface RioFiles {
@@ -118,7 +119,7 @@ const deployProject = async (api: Api, force: boolean) => {
 
 const createClass = async (api: Api, className: string) => {
   await api.createClass(className)
-  console.log(chalk.green(`   Project class created: [${className}]`))
+  console.log(`${subHeaderTab}${subHeaderColor(className.padEnd(20," "))}${subHeaderSuccesCreate}`)
 }
 
 export const deployV2 = async ({ api, analyzationResult, force, deploy }: DeployInput): Promise<void> => {

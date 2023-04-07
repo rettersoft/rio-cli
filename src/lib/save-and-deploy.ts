@@ -91,6 +91,7 @@ const processV2 = async (api: Api, args: Input) => {
   console.log(chalk.greenBright(addAsterisks(`Gathered information ✅ ${pre_finish} seconds `)))
 
   if (!args['ignore-approval']) {
+    console.log('\n')
     const response = await prompts({
       type: 'confirm',
       name: 'value',
@@ -101,6 +102,7 @@ const processV2 = async (api: Api, args: Input) => {
       console.log(chalk.redBright(`Changes are not approved, project deployment canceled ❌`))
       process.exit()
     }
+    console.log('\n')
   }
 
   const msg = deploy ? 'Deployment': 'Saving'

@@ -61,7 +61,6 @@ export async function fetchLocalDependencies(directoryPath: string): Promise<Dep
 
     if (dependencyFolder.name === '.DS_Store') return null
 
-
     const dependencyName = dependencyFolder.name
     const dependencyPath = join(directoryPath, dependencyName)
     const zipContent = await zipFolder(dependencyPath)
@@ -82,7 +81,6 @@ export const fetchLocalModelContents = async (directoryPath: string): Promise<Fi
   try {
     await fs.promises.access(directoryPath, fs.constants.R_OK)
   } catch (err: any) {
-    //console.log('err', err.message)
     return {}
   }
 

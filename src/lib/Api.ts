@@ -20,7 +20,6 @@ export interface RemoteClassFileItem {
 }
 export interface GetFilesAndModelsResponse {
   files: RemoteClassFileItem[]
-  models: RemoteClassFileItem[]
 }
 
 export interface ISaveClassFilesInput {
@@ -452,7 +451,7 @@ export class Api {
 
       return response.data.success
     } catch (error: any) {
-      console.log(chalk.redBright('\n Error accured while deploying ! '))
+      console.log(chalk.redBright('\n Fatal error occured while deploying ! '))
 
       if (error?.message) {
         console.log(chalk.redBright(`\n ${error.message} `))
@@ -505,7 +504,7 @@ export class Api {
 
       return true
     } catch (error: any) {
-      console.log(chalk.redBright('\n Fatal error accured while waiting for deployment ! '))
+      console.log(chalk.redBright('\n Fatal error occured while waiting for deployment ! '))
 
       if (error?.message) {
         console.log(chalk.redBright(`\n ${error.message} `))
@@ -539,13 +538,19 @@ export class Api {
 
       return { success: response.data.success }
     } catch (error: any) {
-      console.log(chalk.redBright('\n Error accured while setFilesModels ! '))
+      console.log(chalk.redBright('\n Error occured while executing setContents ! '))
+      
+      if (error?.message) {
+        console.log(chalk.redBright(`\n ${error.message} `))
+      }
 
-      const res_status = error?.response?.status || ''
-      const res_statusText = error?.response?.statusText || ''
-      const res_data = JSON.stringify(error?.response?.data || {})
+      if (error?.response) {
+        const res_status = error?.response?.status || ''
+        const res_statusText = error?.response?.statusText || ''
+        const res_data = JSON.stringify(error?.response?.data || {})
 
-      console.log(chalk.redBright(`status: ${res_status} statusText: ${res_statusText} data: ${res_data}`))
+        console.log(chalk.redBright(`\nstatus:\n ${res_status} \nstatusText:\n ${res_statusText} \ndata:\n ${res_data}`))
+      }
       return { success: false }
     }
   }
@@ -571,16 +576,22 @@ export class Api {
         }
       })
 
-      return { models: [], files: _files }
+      return { files: _files }
     } catch (error: any) {
-      console.log(chalk.redBright('\n Error accured while getting models and files ! '))
+      console.log(chalk.redBright('\n Error occured while executing getClassFiles ! '))
 
-      const res_status = error?.response?.status || ''
-      const res_statusText = error?.response?.statusText || ''
-      const res_data = JSON.stringify(error?.response?.data || {})
+      if (error?.message) {
+        console.log(chalk.redBright(`\n ${error.message} `))
+      }
 
-      console.log(chalk.redBright(`status: ${res_status} statusText: ${res_statusText} data: ${res_data}`))
-      return { models: [], files: [] }
+      if (error?.response) {
+        const res_status = error?.response?.status || ''
+        const res_statusText = error?.response?.statusText || ''
+        const res_data = JSON.stringify(error?.response?.data || {})
+
+        console.log(chalk.redBright(`\nstatus:\n ${res_status} \nstatusText:\n ${res_statusText} \ndata:\n ${res_data}`))
+      }
+      return { files: [] }
     }
   }
 
@@ -599,13 +610,20 @@ export class Api {
       })
       return { success: response.data.success }
     } catch (error: any) {
-      console.log(chalk.redBright('\n Error accured while setting models and files ! '))
+      console.log(chalk.redBright('\n Error occured while executing setClassFiles ! '))
 
-      const res_status = error?.response?.status || ''
-      const res_statusText = error?.response?.statusText || ''
-      const res_data = JSON.stringify(error?.response?.data || {})
+      if (error?.message) {
+        console.log(chalk.redBright(`\n ${error.message} `))
+      }
 
-      console.log(chalk.redBright(`status: ${res_status} statusText: ${res_statusText} data: ${res_data}`))
+      if (error?.response) {
+        const res_status = error?.response?.status || ''
+        const res_statusText = error?.response?.statusText || ''
+        const res_data = JSON.stringify(error?.response?.data || {})
+
+        console.log(chalk.redBright(`\nstatus:\n ${res_status} \nstatusText:\n ${res_statusText} \ndata:\n ${res_data}`))
+      }
+
       return { success: false }
     }
   }
