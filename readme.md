@@ -43,8 +43,8 @@ Save local changes and deploy the project.
 * `--skip-diff-check [s]`: Skip and don't perform difference checks while deploying (optional).
 
 ```shell
-rio deploy --profile admin --project-id myProject --classes Order Product --force --skip-diff-check --ignore-approval
-rio d --p admin --pid myProject --c Order Product --f --s --i
+rio deploy --profile admin --project-id 77bb3924k --classes Order Product --force --skip-diff-check --ignore-approval
+rio d --p admin --pid 77bb3924k --c Order Product --f --s --i
 ```
 
 ### `rio save [s]`
@@ -58,8 +58,8 @@ Save local changes to but do not deploy the project.
 * `--skip-diff-check [s]`: Skip and don't perform difference checks while deploying (optional).
 
 ```shell
-rio save --profile admin --project-id myProject --classes Order Product --skip-diff-check 
-rio s --p admin --pid myProject --c Order Product --s
+rio save --profile admin --project-id 77bb3924k --classes Order Product --skip-diff-check 
+rio s --p admin --pid 77bb3924k --c Order Product --s
 ```
 
 ### `rio init [alias]` (`i`)
