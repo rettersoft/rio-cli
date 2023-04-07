@@ -492,6 +492,7 @@ export class Api {
               const timeSinceDeploymentStarted = (event.deployment.updatedAt || Date.now()) - deploymentStarted
               if (timeSinceDeploymentStarted < 1000) break
               console.log(chalk.redBright(`         🔴 Project Deployment Failed ❌`))
+              console.log(chalk.redBright(event.deployment.statusMessage || 'no error message provided from rio'))
               reject(event.deployment.statusMessage)
               break
             }
@@ -523,7 +524,7 @@ export class Api {
   }
 
   // v2
-  async setProjectFilesV2({ files, models }: { files?: object; models?: object }): Promise<{ success: boolean }> {
+  async setProjectFilesV2({ files, models }: { files?: object; models?: object }): Promise<{ success: boolean } | void> {
     try {
       const response = await this.projectInstance.call<any>({
         method: 'setContents',
@@ -538,7 +539,7 @@ export class Api {
 
       return { success: response.data.success }
     } catch (error: any) {
-      console.log(chalk.redBright('\n Error occured while executing setContents ! '))
+      console.log(chalk.redBright('\n Fatal error occured while executing setContents ! '))
       
       if (error?.message) {
         console.log(chalk.redBright(`\n ${error.message} `))
@@ -551,7 +552,8 @@ export class Api {
 
         console.log(chalk.redBright(`\nstatus:\n ${res_status} \nstatusText:\n ${res_statusText} \ndata:\n ${res_data}`))
       }
-      return { success: false }
+
+      process.exit(1)
     }
   }
 
@@ -578,7 +580,7 @@ export class Api {
 
       return { files: _files }
     } catch (error: any) {
-      console.log(chalk.redBright('\n Error occured while executing getClassFiles ! '))
+      console.log(chalk.redBright(`\n Fatal error occured while executing getClassFiles for ${className}! `))
 
       if (error?.message) {
         console.log(chalk.redBright(`\n ${error.message} `))
@@ -591,12 +593,13 @@ export class Api {
 
         console.log(chalk.redBright(`\nstatus:\n ${res_status} \nstatusText:\n ${res_statusText} \ndata:\n ${res_data}`))
       }
+      process.exit(1)
       return { files: [] }
     }
   }
 
   // v2
-  async setRemoteClassFilesV2(className: string, files: object): Promise<{ success: boolean }> {
+  async setRemoteClassFilesV2(className: string, files: object): Promise<{ success: boolean } | void> {
     const classInstance = await this.getClassInstance(className)
     try {
       const response = await classInstance.call<{ success: boolean }>({
@@ -610,7 +613,7 @@ export class Api {
       })
       return { success: response.data.success }
     } catch (error: any) {
-      console.log(chalk.redBright('\n Error occured while executing setClassFiles ! '))
+      console.log(chalk.redBright(`\n Fatal error occured while executing setClassFiles for ${className}! `))
 
       if (error?.message) {
         console.log(chalk.redBright(`\n ${error.message} `))
@@ -624,7 +627,7 @@ export class Api {
         console.log(chalk.redBright(`\nstatus:\n ${res_status} \nstatusText:\n ${res_statusText} \ndata:\n ${res_data}`))
       }
 
-      return { success: false }
+      process.exit(1)
     }
   }
 }
