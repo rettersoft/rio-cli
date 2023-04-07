@@ -121,7 +121,7 @@ const createClass = async (api: Api, className: string) => {
   console.log(chalk.green(`   Project class created: [${className}]`))
 }
 
-export const deployV2 = async ({ api, analyzationResult, force }: DeployInput): Promise<void> => {
+export const deployV2 = async ({ api, analyzationResult, force, deploy }: DeployInput): Promise<void> => {
   const fileWorkers = []
 
   // ********* FILES *********<
@@ -181,10 +181,12 @@ export const deployV2 = async ({ api, analyzationResult, force }: DeployInput): 
   // ********* PROJECT FILES *********
   // ********* PROJECT FILES *********
 
-  console.log(headerColor('\nProject Deployment'))
-  console.log('\n')
-
-  await deployProject(api, force)
+  if (deploy) {
+    console.log(headerColor('\nProject Deployment'))
+    console.log('\n')
+  
+    await deployProject(api, force)
+  }
 
   console.log('\n\n')
 }

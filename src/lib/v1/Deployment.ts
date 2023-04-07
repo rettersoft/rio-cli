@@ -117,7 +117,7 @@ export class Deployment {
     return false
   }
 
-  static async deploy(api: Api, deploymentSummary: IPreDeploymentContext, skip_diff: boolean, rio_force: boolean) {
+  static async deploy(api: Api, deploymentSummary: IPreDeploymentContext, skip_diff: boolean, rio_force: boolean, deploy: boolean) {
     const models = []
     const modelItems = []
 
@@ -291,12 +291,11 @@ export class Deployment {
       if (preparedData.length) {
         await api.saveClassFiles(className, preparedData)
       }
-
       for (const item of changedFileDeployments) {
         ConsoleMessage.deploymentMessage(item, DeploymentMessageStatus.SAVED)
       }
 
-      if (skip_diff || Deployment.isClassChanged(deploymentSummary, className)) {
+      if (deploy && (skip_diff || Deployment.isClassChanged(deploymentSummary, className))) {
         ConsoleMessage.deploymentMessage(currentClassDeploymentItem, DeploymentMessageStatus.DEPLOYING)
         await api.deployClass(className, rio_force)
         ConsoleMessage.deploymentMessage(currentClassDeploymentItem, DeploymentMessageStatus.DEPLOYED)

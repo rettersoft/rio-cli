@@ -4,18 +4,16 @@ import { RIO_CLI_PROJECT_ID_KEY } from "../config";
 import { Input, saveAndDeploy } from "../lib/save-and-deploy";
 
 module.exports = {
-  command: "deploy",
+  command: "save",
   description: `
-  Description: Deploy the changes to the rio cloud.
+  Description: Just save the changes to the rio cloud without deploying them.
     Arguments:
     --profile [p]: Profile name for deployment (type: string)
     --project-id [pid]: Project id for deployment (type: string)
     --classes [c]: Filtered classes for deployment (type: array)
-    --ignore-approval [i]: Ignore deployment manual approval. 
-    --force [f]: Send deployment requests with force parameter to rio.
     --skip-diff-check [s]: Skip and dont perform difference checks while deploying.
   `,    
-  aliases: ["d"],
+  aliases: ["s"],
   builder: (yargs) => {
     yargs.options("profile", {
       alias: "p",
@@ -24,28 +22,13 @@ module.exports = {
     });
     yargs.options("project-id", {
       alias: "pid",
-      describe: "Project id for deployment (type: string)",
+      describe: "Project id for Save",
       type: "string",
     });
     yargs.options("classes", {
       alias: "c",
-      describe: "Filtered classes for deployment (type: array)",
+      describe: "Filtered classes for saving",
       type: "array",
-    });
-    yargs.options("ignore-approval", {
-      alias: "i",
-      describe:
-        "Ignore deployment manual approval \n Example: rio deploy --ignore-approval",
-      default: false,
-      boolean: true,
-      type: "boolean",
-    });
-    yargs.options("force", {
-      alias: "f",
-      describe: "This will be used when pushing deployment requests to RIO, its used for forcing rio to deploy even if class already in a state of deployment, \n Example: rio deploy --force",
-      default: false,
-      boolean: true,
-      type: "boolean",
     });
     yargs.options("skip-diff-check", {
       alias: "s",
@@ -60,11 +43,15 @@ module.exports = {
 
     process.env[RIO_CLI_PROJECT_ID_KEY] = args["project-id"];
     
-     // Only difference with 'save' is this line:
-     args["save-only"] = false;
-         
-     await saveAndDeploy(args)
-
+    // Only difference with 'deployment' is this line:
+    args["save-only"] = true;
+    
+    // These are not used in 'save' command: but we need to set them to avoid errors
+    args["force"] = false;
+    args["ignore-approval"] = true;
+    
+    await saveAndDeploy(args)
+     
     afterCommand()
   },
 } as CommandModule<Input, Input>;

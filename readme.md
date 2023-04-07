@@ -35,14 +35,16 @@ Deploy the project.
 
 #### Arguments
 
-* `--project-id`: Project id for deployment (type: string).
-* `--classes`: Filtered classes for deployment (type: array).
-* `--ignore-approval`: Ignore deployment manual approval.
-* `--force`: Send deployment requests with force parameter to RIO.
-* `--skip-diff-check`: Skip and don't perform difference checks while deploying.
+* `--profile [p]`: Profile name for deployment (type: string)
+* `--project-id [pid]`: Project id for deployment (type: string).
+* `--classes [c]`: Filtered classes for deployment (type: array).
+* `--ignore-approval [c]`: Ignore deployment manual approval.
+* `--force [f]`: Send deployment requests with force parameter to RIO.
+* `--skip-diff-check [s]`: Skip and don't perform difference checks while deploying.
 
 ```shell
-rio deploy --project-id myProject --classes class1 class2 --force
+rio deploy --profile admin --project-id myProject --classes Order Product --force --skip-diff-check --ignore-approval
+rio d --p admin --pid myProject --c Order Product --f --s --i
 ```
 
 ### `rio init [alias]` (`i`)
