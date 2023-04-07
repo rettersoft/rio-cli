@@ -31,20 +31,35 @@ rio set-profile --profile-name myProfile --secret-id mySecretId --secret-key myS
 
 ### `rio deploy [d]`
 
-Deploy the project.
+Save local changes and deploy the project.
 
 #### Arguments
 
 * `--profile [p]`: Profile name for deployment (type: string)
 * `--project-id [pid]`: Project id for deployment (type: string).
-* `--classes [c]`: Filtered classes for deployment (type: array).
-* `--ignore-approval [c]`: Ignore deployment manual approval.
-* `--force [f]`: Send deployment requests with force parameter to RIO.
-* `--skip-diff-check [s]`: Skip and don't perform difference checks while deploying.
+* `--classes [c]`: Filtered classes for deployment (type: array) (optional).
+* `--ignore-approval [c]`: Ignore deployment manual approval (optional).
+* `--force [f]`: Send deployment requests with force parameter to RIO (optional).
+* `--skip-diff-check [s]`: Skip and don't perform difference checks while deploying (optional).
 
 ```shell
 rio deploy --profile admin --project-id myProject --classes Order Product --force --skip-diff-check --ignore-approval
 rio d --p admin --pid myProject --c Order Product --f --s --i
+```
+
+### `rio save [s]`
+
+Save local changes to but do not deploy the project.
+
+#### Arguments
+* `--profile [p]`: Profile name for deployment (type: string)
+* `--project-id [pid]`: Project id for deployment (type: string).
+* `--classes [c]`: Filtered classes for deployment (type: array)(optional).
+* `--skip-diff-check [s]`: Skip and don't perform difference checks while deploying (optional).
+
+```shell
+rio save --profile admin --project-id myProject --classes Order Product --skip-diff-check 
+rio s --p admin --pid myProject --c Order Product --s
 ```
 
 ### `rio init [alias]` (`i`)
