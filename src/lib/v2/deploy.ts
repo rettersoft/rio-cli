@@ -112,8 +112,12 @@ const setProjectFiles = async (api: Api, analyzationResult: AnalyzationResult) =
 }
 
 const deployProject = async (api: Api, force: boolean) => {
-  console.log(chalk.yellow(`         🟡 Deploying Project ... (might take a few minutes)`))
+  const tab = '         '
+  
+  console.log(chalk.yellow(`${tab}🟡 Deployment STARTED`))
   await api.deployProjectV2(force)
+
+  console.log(chalk.yellow(`\n${tab}${tab}🔸 provisioning... (~1 munite)`))
   await api.waitDeploymentV2()
 }
 
@@ -189,5 +193,5 @@ export const deployV2 = async ({ api, analyzationResult, force, deploy }: Deploy
     await deployProject(api, force)
   }
 
-  console.log('\n\n')
+  console.log('\n')
 }

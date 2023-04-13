@@ -129,6 +129,26 @@ export class Api {
     throw error
   }
 
+  handleV2Error(error: any, message: string) {
+    const tab = '         '
+    console.log(chalk.redBright(`\n${tab}🔴 Deployment FAILED ❌`))
+    console.log(chalk.redBright(`\n${tab}${tab}${message} `))
+
+    if (error?.message) {
+      console.log(chalk.redBright(`\n${tab}${tab}${error.message} `))
+    }
+
+    if (error?.response) {
+      const res_status = error?.response?.status || ''
+      const res_statusText = error?.response?.statusText || ''
+      const res_data = JSON.stringify(error?.response?.data || {})
+
+      console.log(chalk.redBright(`\n${tab}${tab}status: \n${tab}${tab}${res_status} \n${tab}${tab}statusText: \n${tab}${tab}${res_statusText} \n${tab}${tab}data: \n${res_data}`))
+    }
+
+    process.exit(1)
+  }
+
   // v1 & v2
   async getClassInstance(className: string): Promise<RetterCloudObject> {
     if (this.classInstances[className]) {
@@ -434,6 +454,7 @@ export class Api {
 
   // v2
   async deployProjectV2(force: boolean): Promise<boolean | void> {
+    const tab = '         '
     try {
       const response = await this.projectInstance.call<any>({
         method: 'deploy',
@@ -445,56 +466,48 @@ export class Api {
         },
       })
 
-      if (!response.data.success) {
-        throw new Error('Deployment failed')
+      if (response.data.success === false) {
+        console.log(chalk.redBright(`\n${tab}🔴 Deployment FAILED ❌`))
+        console.log(chalk.redBright(`\n${tab}${tab} ${response.data.message}`))
+        for (const line of (response.data.error_stack || [])) {
+          console.log(chalk.redBright(`${tab}${tab} ${line}`))
+        }
+        process.exit(1)
       }
 
       return response.data.success
     } catch (error: any) {
-      console.log(chalk.redBright('\n Fatal error occured while deploying ! '))
-
-      if (error?.message) {
-        console.log(chalk.redBright(`\n ${error.message} `))
-      }
-
-      if (error?.response) {
-        const res_status = error?.response?.status || ''
-        const res_statusText = error?.response?.statusText || ''
-        const res_data = JSON.stringify(error?.response?.data || {})
-
-        console.log(chalk.redBright(`\nstatus:\n ${res_status} \nstatusText:\n ${res_statusText} \ndata:\n ${res_data}`))
-      }
-
-      process.exit(1)
+      this.handleV2Error(error, 'Fatal error occurred while deploying project')
     }
   }
 
   // v2
   async waitDeploymentV2(): Promise<boolean | void> {
+    const tab = '         '
     try {
       const deploymentStarted = new Date().getTime()
       await new Promise((resolve, reject) => {
         this.projectInstance.state?.public?.subscribe((event: any) => {
+          const timeSinceDeploymentStarted = (event.deployment.updatedAt || Date.now()) - deploymentStarted
+              if (timeSinceDeploymentStarted < 1000) return
+
           switch (event.deployment.status) {
-            case 'started': {
+            case 'ongoing': {
+              console.log(chalk.yellow(`\n${tab}${tab}🔸 ${event.deployment.statusMessage}`))
               break
             }
             case 'finished': {
-              const timeSinceDeploymentStarted = (event.deployment.updatedAt || Date.now()) - deploymentStarted
-              if (timeSinceDeploymentStarted < 5000) break
-
-              console.log(chalk.greenBright(`         🟢 Deployed  Project ✅`))
+              console.log(chalk.greenBright(`\n${tab}🟢 Deployment FINISHED ✅`))
               resolve(true)
-
               break
             }
             case 'failed': {
-              const timeSinceDeploymentStarted = (event.deployment.updatedAt || Date.now()) - deploymentStarted
-              if (timeSinceDeploymentStarted < 1000) break
-              console.log(chalk.redBright(`         🔴 Project Deployment Failed ❌`))
-              console.log(chalk.redBright(event.deployment.statusMessage || 'no error message provided from rio'))
-              reject(event.deployment.statusMessage)
-              break
+              console.log(chalk.redBright(`\n${tab}🔴 Deployment FAILED ❌`))
+              console.log(chalk.redBright(`\n${tab}${tab} ${event.deployment.statusMessage}`))
+              for (const line of (event.deployment.error_stack || [])) {
+                console.log(chalk.redBright(`${tab}${tab} ${line}`))
+              }
+              process.exit(1)
             }
             default: {
               break
@@ -505,21 +518,7 @@ export class Api {
 
       return true
     } catch (error: any) {
-      console.log(chalk.redBright('\n Fatal error occured while waiting for deployment ! '))
-
-      if (error?.message) {
-        console.log(chalk.redBright(`\n ${error.message} `))
-      }
-
-      if (error?.response) {
-        const res_status = error?.response?.status || ''
-        const res_statusText = error?.response?.statusText || ''
-        const res_data = JSON.stringify(error?.response?.data || {})
-
-        console.log(chalk.redBright(`\nstatus:\n ${res_status} \nstatusText:\n ${res_statusText} \ndata:\n ${res_data}`))
-      }
-
-      process.exit(1)
+      this.handleV2Error(error, 'Fatal error occurred while waiting for deployment')
     }
   }
 
@@ -539,21 +538,7 @@ export class Api {
 
       return { success: response.data.success }
     } catch (error: any) {
-      console.log(chalk.redBright('\n Fatal error occured while executing setContents ! '))
-      
-      if (error?.message) {
-        console.log(chalk.redBright(`\n ${error.message} `))
-      }
-
-      if (error?.response) {
-        const res_status = error?.response?.status || ''
-        const res_statusText = error?.response?.statusText || ''
-        const res_data = JSON.stringify(error?.response?.data || {})
-
-        console.log(chalk.redBright(`\nstatus:\n ${res_status} \nstatusText:\n ${res_statusText} \ndata:\n ${res_data}`))
-      }
-
-      process.exit(1)
+      this.handleV2Error(error, 'Fatal error occured while executing setContents')
     }
   }
 
@@ -580,20 +565,7 @@ export class Api {
 
       return { files: _files }
     } catch (error: any) {
-      console.log(chalk.redBright(`\n Fatal error occured while executing getClassFiles for ${className}! `))
-
-      if (error?.message) {
-        console.log(chalk.redBright(`\n ${error.message} `))
-      }
-
-      if (error?.response) {
-        const res_status = error?.response?.status || ''
-        const res_statusText = error?.response?.statusText || ''
-        const res_data = JSON.stringify(error?.response?.data || {})
-
-        console.log(chalk.redBright(`\nstatus:\n ${res_status} \nstatusText:\n ${res_statusText} \ndata:\n ${res_data}`))
-      }
-      process.exit(1)
+      this.handleV2Error(error, `Fatal error occured while executing getClassFiles for ${className}! `)
       return { files: [] }
     }
   }
@@ -613,21 +585,7 @@ export class Api {
       })
       return { success: response.data.success }
     } catch (error: any) {
-      console.log(chalk.redBright(`\n Fatal error occured while executing setClassFiles for ${className}! `))
-
-      if (error?.message) {
-        console.log(chalk.redBright(`\n ${error.message} `))
-      }
-
-      if (error?.response) {
-        const res_status = error?.response?.status || ''
-        const res_statusText = error?.response?.statusText || ''
-        const res_data = JSON.stringify(error?.response?.data || {})
-
-        console.log(chalk.redBright(`\nstatus:\n ${res_status} \nstatusText:\n ${res_statusText} \ndata:\n ${res_data}`))
-      }
-
-      process.exit(1)
+      this.handleV2Error(error, `Fatal error occured while executing setClassFiles for ${className}! `)
     }
   }
 }

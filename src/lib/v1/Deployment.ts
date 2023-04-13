@@ -10,7 +10,6 @@ import process from 'process'
 import { PROJECT_MODEL_FILE_EXTENSION, PROJECT_MODELS_FOLDER } from '../../config'
 import { IDependencyContent, IRemoteDependencyContent } from './Dependencies'
 import axios from 'axios'
-import { chunk } from 'lodash'
 import * as crypto from 'crypto'
 
 export enum DeploymentObjectItemStatus {
@@ -400,37 +399,37 @@ export class Deployment {
     const classesFileChanges: IFileChangesByClassName = {}
 
     // for deleted
-    // Object.keys(remoteClasses).forEach((className) => {
-    //   if (!localClasses[className])
-    //     classDeleted.push({
-    //       path: className,
-    //       type: DeploymentObjectItemType.CLASS,
-    //       status: DeploymentObjectItemStatus.DELETED,
-    //     });
-    //   Object.keys(remoteClasses[className]).forEach((fileName) => {
-    //     if (
-    //       !localClasses[className] ||
-    //       localClasses[className][fileName] === undefined
-    //     ) {
-    //       if (!classesFileChanges[className]) {
-    //         classesFileChanges[className] = {
-    //           fileNone: [],
-    //           fileEdited: [],
-    //           fileCreated: [],
-    //           fileDeleted: [],
-    //         };
-    //       }
-    //       classesFileChanges[className].fileDeleted.push({
-    //         path: [className, fileName].join("/"),
-    //         type: DeploymentObjectItemType.CLASS_FILE,
-    //         status: DeploymentObjectItemStatus.DELETED,
-    //         oldContent: remoteClasses[className][fileName],
-    //       });
-    //     }
-    //   });
-    // });
+    Object.keys(remoteClasses).forEach((className) => {
+      if (!localClasses[className])
+        classDeleted.push({
+          path: className,
+          type: DeploymentObjectItemType.CLASS,
+          status: DeploymentObjectItemStatus.DELETED,
+        });
+      Object.keys(remoteClasses[className]).forEach((fileName) => {
+        if (
+          !localClasses[className] ||
+          localClasses[className][fileName] === undefined
+        ) {
+          if (!classesFileChanges[className]) {
+            classesFileChanges[className] = {
+              fileNone: [],
+              fileEdited: [],
+              fileCreated: [],
+              fileDeleted: [],
+            };
+          }
+          classesFileChanges[className].fileDeleted.push({
+            path: [className, fileName].join("/"),
+            type: DeploymentObjectItemType.CLASS_FILE,
+            status: DeploymentObjectItemStatus.DELETED,
+            oldContent: remoteClasses[className][fileName],
+          });
+        }
+      });
+    });
 
-    // for created
+    // for created and edited
     Object.keys(localClasses).forEach((className) => {
       if (!remoteClasses[className]) {
         classCreated.push({

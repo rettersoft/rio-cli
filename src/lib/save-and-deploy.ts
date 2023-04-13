@@ -105,10 +105,10 @@ const processV2 = async (api: Api, args: Input) => {
     console.log('\n')
   }
 
-  const msg = deploy ? 'Deployment': 'Saving'
+  const msg = deploy ? 'Starting Deployment': 'Started Saving'
   const msg2 = deploy ? 'Deployed': 'Saved'
 
-  console.log(chalk.yellow(addAsterisks(`Started ${msg}`) + '\n\n'))
+  console.log(chalk.yellow(addAsterisks(msg) + '\n\n'))
 
   await deployV2({
     api,
