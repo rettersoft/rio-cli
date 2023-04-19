@@ -57,6 +57,10 @@ export class Project {
     static getModelFolderContents(modelsPath: string, exclude: string[]): Record<string, any> {
         const modelContents: Record<string, any> = {}
 
+        if (!fs.existsSync(modelsPath)) {
+            return modelContents
+        }
+
         if (!fs.lstatSync(modelsPath).isDirectory()) return modelContents
             
         const models = fs.readdirSync(modelsPath, { withFileTypes: true })
@@ -93,6 +97,10 @@ export class Project {
 
     static getUsedModelFolderContents(modelsPath: string, usedModels: string[]): Record<string, any> {
         const modelContents: Record<string, any> = {}
+
+        if (!fs.existsSync(modelsPath)) {
+            return modelContents
+        }
 
         if (!fs.lstatSync(modelsPath).isDirectory()) return modelContents
             

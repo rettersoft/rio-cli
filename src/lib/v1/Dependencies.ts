@@ -35,6 +35,10 @@ export class Dependencies {
     }
 
     static checkDependenciesFileTypes(): boolean {
+        if (!fs.existsSync(path.join(process.cwd(), RIO_CLI_DEPENDENCIES_FOLDER))) {
+            return false
+        }
+
         const dependencies = fs.readdirSync(path.join(process.cwd(), RIO_CLI_DEPENDENCIES_FOLDER), { withFileTypes: true })
 
         for (const name of dependencies) {

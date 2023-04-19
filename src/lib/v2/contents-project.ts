@@ -31,12 +31,12 @@ async function generateHashForPath(path: string): Promise<string> {
   }
 }
 
-function zipFolder(pathToFolder: string): Promise<Buffer> {
+function zipFolder(dependencyPath: string, dependencyName: string): Promise<Buffer> {
   return new Promise<Buffer>((resolve, reject) => {
     const zip = new AdmZip();
     
     // Add all files and directories inside the given folder to the archive
-    zip.addLocalFolder(pathToFolder, 'nodejs/node_modules');
+    zip.addLocalFolder(dependencyPath, `nodejs/node_modules/${dependencyName}`);
 
     // Get the zip buffer
     const zipBuffer = zip.toBuffer();
@@ -63,7 +63,7 @@ export async function fetchLocalDependencies(directoryPath: string): Promise<Dep
 
     const dependencyName = dependencyFolder.name
     const dependencyPath = join(directoryPath, dependencyName)
-    const zipContent = await zipFolder(dependencyPath)
+    const zipContent = await zipFolder(dependencyPath, dependencyName)
     const hash = await generateHashForPath(dependencyPath)
 
     return { [dependencyName]: { hash, zipContent } }

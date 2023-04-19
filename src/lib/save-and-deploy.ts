@@ -37,7 +37,7 @@ const processV1 = async (api: Api, args: Input) => {
   console.log(chalk.greenBright(`PRE-DEPLOYMENT FINISHED ✅ ${pre_finish} seconds`))
 
   if (!args['skip-diff-check'] && !Deployment.isChanged(deploymentSummary)) {
-    ConsoleMessage.message(chalk.bold.red('No Changes') + chalk.bold.grey(" -> if you want to ignore diff check use '--skip-diff-check' flag"))
+    ConsoleMessage.message(chalk.bold.red('No Changes') + chalk.bold.grey(" -> if you want to ignore diff check use '--skip-diff-check, --s' flag"))
     process.exit()
   }
 
@@ -82,7 +82,7 @@ const processV2 = async (api: Api, args: Input) => {
   const pre_finish = ((Date.now() - start) / 1000).toFixed(1)
 
   if (!skipDiff && !isChanged(analyzationResult.comparization)) {
-    console.log(chalk.bold.redBright('No Changes') + chalk.bold.grey(" -> if you want to ignore diff check use '--skip-diff-check' flag\n"))
+    console.log(chalk.bold.redBright('No Changes') + chalk.bold.grey(" -> if you want to ignore diff check use '--skip-diff-check, --s' flag\n"))
     console.log(chalk.greenBright(addAsterisks(`Gathered information ✅ ${pre_finish} seconds `)))
     process.exit()
   }

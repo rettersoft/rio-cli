@@ -1,8 +1,9 @@
 import Retter, { RetterRegion } from '@retter/sdk'
 import { RIO_CLI_PLATFORM, RIO_CLI_ROOT_DOMAIN, RIO_CLI_ROOT_PROJECT_ID, RIO_CLI_STAGE, RIO_CLI_URL } from '../config'
 import axios from 'axios'
-import { CliConfig, IRIOCliConfigProfileItemData } from './CliConfig'
+import { IRIOCliConfigProfileItemData } from './CliConfig'
 import jwt from 'jsonwebtoken'
+import { Api } from './Api'
 
 export enum RetterRootClasses {
   Project = 'Project',
@@ -47,16 +48,16 @@ function prepareRootUrlByKeyValue(classId: string, methodName: string, options: 
 }
 
 async function getRootAdminCustomToken(config: IRIOCliConfigProfileItemData) {
-  const token = jwt.sign(
-    {
-      projectId: RIO_CLI_ROOT_PROJECT_ID,
-      secretId: config.secretId,
-      expiresIn: 30,
-    },
-    config.secretKey,
-  )
-
   try {
+    const token = jwt.sign(
+      {
+        projectId: RIO_CLI_ROOT_PROJECT_ID,
+        secretId: config.secretId,
+        expiresIn: 30,
+      },
+      config.secretKey,
+    )
+
     const byKeyValue = {
       key: 'secretId',
       value: config.secretId,
@@ -76,8 +77,8 @@ async function getRootAdminCustomToken(config: IRIOCliConfigProfileItemData) {
         root_version: result.data.version || '',
       }
     }
-  } catch (e: any) {
-    throw new Error(e.toString())
+  } catch (error: any) {
+    throw error
   }
 }
 
@@ -95,8 +96,8 @@ export async function authenticateCurrentSession(profile_config: IRIOCliConfigPr
     await sdk.authenticateWithCustomToken(customAuth.customToken)
 
     return { retter: sdk, root_version: customAuth.root_version }
-  } catch (e: any) {
-    const customMessage = e.response && e.response.data ? (typeof e.response.data === 'object' ? JSON.stringify(e.response.data) : e.response.data) : ''
-    throw new Error('Authentication error (' + e.toString() + ') :: ' + customMessage)
+  } catch (error: any) {
+    Api.handleError(error)
+    throw error
   }
 }
