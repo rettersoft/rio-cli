@@ -1,7 +1,6 @@
 import axios from 'axios'
 import chalk from 'chalk'
 import { gzipSync } from 'zlib'
-import ora from 'ora'
 
 import { Api } from '../Api'
 import { Classes, DeployInput, AnalyzationResult, ProjectContents } from './types'
@@ -128,6 +127,11 @@ const createClass = async (api: Api, className: string) => {
 
 export const deployV2 = async ({ api, analyzationResult, force, deploy }: DeployInput): Promise<void> => {
   const fileWorkers = []
+
+  if (analyzationResult.deploymentCount > 0) {
+      console.log(`${subHeaderTab}${chalk.grey(`📌 Your deployment started but there is ${analyzationResult.deploymentCount} more deployment(s) happening in paralel`)}`)
+      console.log(`\n`)
+  }
 
   // ********* FILES *********<
   // ********* MODELS *********

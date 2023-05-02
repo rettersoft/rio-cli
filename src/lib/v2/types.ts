@@ -71,6 +71,7 @@ export interface AnalyzationResult {
   remoteClasses: Classes
   localClasses: Classes
   comparization: ComparizationSummary
+  deploymentCount: number
 }
 
 export interface ProjectState extends RetterCloudObjectState {
@@ -85,7 +86,8 @@ export interface ProjectState extends RetterCloudObjectState {
       classes: {
         classId: string
       }[],
-      alias: string
+      alias: string,
+      deployments: any[]
     },
     private: {
       files: {

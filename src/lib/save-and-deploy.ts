@@ -87,7 +87,7 @@ const processV2 = async (api: Api, args: Input) => {
     process.exit()
   }
 
-  await printSummaryV2(analyzationResult.comparization, skipDiff)
+  await printSummaryV2(analyzationResult.comparization)
   console.log(chalk.greenBright(addAsterisks(`Gathered information ✅ ${pre_finish} seconds `)))
 
   if (!args['ignore-approval']) {

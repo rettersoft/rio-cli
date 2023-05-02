@@ -193,7 +193,7 @@ function generateComparizationSummaryV2(
   return summary
 }
 
-export const printSummaryV2 = async (summary: ComparizationSummary, skipDiff: boolean) => {
+export const printSummaryV2 = async (summary: ComparizationSummary) => {
 
   // *********** PROJECT FILES ***********
   // *********** PROJECT FILES ***********
@@ -317,7 +317,9 @@ export const analyze = async ({ api, skipDiff, classes }: AnalyzeInput): Promise
   if (classes && !Array.isArray(classes)) throw new Error('invalid classes input')
 
   const projectState = (await api.getProjectState()) as ProjectState
-  
+
+  const deploymentCount = Object.values(projectState.public.deployments || {}).filter((d) => d.status === 'ongoing').length
+
   const [localProjectContents, remoteProjectContents] = await Promise.all([fetchLocalProjectFiles(process.cwd()), fetchRemoteProjectFiles(projectState)])
 
   let targetClassNames = classes || listClassNames()
@@ -327,5 +329,5 @@ export const analyze = async ({ api, skipDiff, classes }: AnalyzeInput): Promise
 
   const comparization = generateComparizationSummaryV2(localProjectContents, remoteProjectContents, remoteClasses, localClasses, skipDiff)
 
-  return { localProjectContents, remoteProjectContents, remoteClasses, localClasses, comparization }
+  return { localProjectContents, remoteProjectContents, remoteClasses, localClasses, comparization, deploymentCount }
 }

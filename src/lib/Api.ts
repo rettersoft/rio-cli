@@ -145,7 +145,7 @@ export class Api {
 
       console.log(chalk.redBright(`\n${tab}${tab}status: \n${tab}${tab}${res_status} \n${tab}${tab}statusText: \n${tab}${tab}${res_statusText} \n${tab}${tab}data: \n${res_data}`))
     }
-
+    // TODO throw to main thread
     process.exit(1)
   }
 
@@ -488,11 +488,11 @@ export class Api {
   }
 
   // v2
-  async waitDeploymentV2(deploymentId: string): Promise<any[] | void> {
+  async waitDeploymentV2(deploymentId: string): Promise<boolean | void> {
     const tab = '         '
     let lastMessage = ''
     try {
-      const res = await new Promise((resolve, reject) => {
+      await new Promise((resolve, reject) => {
         this.projectInstance.state?.public?.subscribe((event: any) => {
 
           if (!event.deployments) return
@@ -510,9 +510,14 @@ export class Api {
               break
             }
             case 'finished': {
-              console.log(chalk.greenBright(`\n${tab}🟢 Deployment FINISHED ✅`))
               const otherDeployments = Object.values(event.deployments).filter((d: any) => d.status !== 'finished' && d.status !== 'failed') as any[]
-              resolve(otherDeployments) 
+
+              if (otherDeployments.length > 0) {
+                console.log(chalk.grey(`\n${tab}${tab}📌 Your deployment completed but there are ${otherDeployments.length} more deployment(s) that are still ongoing`))
+              }
+
+              console.log(chalk.greenBright(`\n${tab}🟢 Deployment FINISHED ✅`))
+              resolve(true) 
               break
             }
             case 'failed': {
@@ -521,6 +526,8 @@ export class Api {
               for (const line of (deployment.error_stack || [])) {
                 console.log(chalk.redBright(`${tab}${tab} ${line}`))
               }
+
+              // THROW MAIN THREAD
               process.exit(1)
             }
             default: {
@@ -528,9 +535,9 @@ export class Api {
             }
           }
         })
-      }) as any[]
+      })
 
-      return res
+      return true
     } catch (error: any) {
       this.handleV2Error(error, 'Fatal error occurred while waiting for deployment')
     }
