@@ -115,10 +115,10 @@ const deployProject = async (api: Api, force: boolean) => {
   const tab = '         '
   
   console.log(chalk.yellow(`${tab}🟡 Deployment STARTED`))
-  await api.deployProjectV2(force)
+  const deploymentId = await api.deployProjectV2(force)
 
-  console.log(chalk.yellow(`\n${tab}${tab}🔸 provisioning... (~1 munite)`))
-  await api.waitDeploymentV2()
+  console.log(chalk.yellow(`\n${tab}${tab}🔸 Deployment ID: ${deploymentId}`))
+  await api.waitDeploymentV2(deploymentId as string)
 }
 
 const createClass = async (api: Api, className: string) => {

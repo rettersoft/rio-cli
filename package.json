@@ -1,6 +1,6 @@
 {
   "name": "@retter/rio-cli",
-  "version": "1.16.6",
+  "version": "1.17.0-development",
   "description": "Retter.io Command Line Tool",
   "main": "./dist/index.js",
   "bin": {

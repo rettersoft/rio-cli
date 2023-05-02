@@ -177,6 +177,11 @@ export class Api {
         headers: {
           'cli-version': RIO_CLI_VERSION,
         },
+        retryConfig: {
+          count: 30,
+          delay: 2000,
+          rate: 1,
+        }
       })
     } catch (error) {
       Api.handleError(error)
@@ -233,6 +238,11 @@ export class Api {
         headers: {
           'cli-version': RIO_CLI_VERSION,
         },
+        retryConfig: {
+          count: 30,
+          delay: 2000,
+          rate: 1,
+        }
       })
       return result.data.url
     } catch (error) {
@@ -453,8 +463,7 @@ export class Api {
   // *************** V2 *****************
 
   // v2
-  async deployProjectV2(force: boolean): Promise<boolean | void> {
-    const tab = '         '
+  async deployProjectV2(force: boolean): Promise<string | void> {
     try {
       const response = await this.projectInstance.call<any>({
         method: 'deploy',
@@ -466,45 +475,50 @@ export class Api {
         },
       })
 
-      if (response.data.success === false) {
-        console.log(chalk.redBright(`\n${tab}🔴 Deployment FAILED ❌`))
-        console.log(chalk.redBright(`\n${tab}${tab} ${response.data.message}`))
-        for (const line of (response.data.error_stack || [])) {
-          console.log(chalk.redBright(`${tab}${tab} ${line}`))
-        }
-        process.exit(1)
+      const deploymentId = response.data.requestId as string
+
+      if (!deploymentId) {
+        throw new Error('Deployment failed: no deployment id received')
       }
 
-      return response.data.success
+      return deploymentId
     } catch (error: any) {
       this.handleV2Error(error, 'Fatal error occurred while deploying project')
     }
   }
 
   // v2
-  async waitDeploymentV2(): Promise<boolean | void> {
+  async waitDeploymentV2(deploymentId: string): Promise<any[] | void> {
     const tab = '         '
+    let lastMessage = ''
     try {
-      const deploymentStarted = new Date().getTime()
-      await new Promise((resolve, reject) => {
+      const res = await new Promise((resolve, reject) => {
         this.projectInstance.state?.public?.subscribe((event: any) => {
-          const timeSinceDeploymentStarted = (event.deployment.updatedAt || Date.now()) - deploymentStarted
-              if (timeSinceDeploymentStarted < 1000) return
 
-          switch (event.deployment.status) {
+          if (!event.deployments) return
+          if (!event.deployments[deploymentId]) return
+
+          const deployment = event.deployments[deploymentId]
+
+          // prevent other deployments from triggering our deployment listener
+          if (deployment.statusMessage === lastMessage) return
+          lastMessage = deployment.statusMessage
+     
+          switch (deployment.status) {
             case 'ongoing': {
-              console.log(chalk.yellow(`\n${tab}${tab}🔸 ${event.deployment.statusMessage}`))
+              console.log(chalk.yellow(`\n${tab}${tab}🔸 ${deployment.statusMessage}`))
               break
             }
             case 'finished': {
               console.log(chalk.greenBright(`\n${tab}🟢 Deployment FINISHED ✅`))
-              resolve(true)
+              const otherDeployments = Object.values(event.deployments).filter((d: any) => d.status !== 'finished' && d.status !== 'failed') as any[]
+              resolve(otherDeployments) 
               break
             }
             case 'failed': {
               console.log(chalk.redBright(`\n${tab}🔴 Deployment FAILED ❌`))
-              console.log(chalk.redBright(`\n${tab}${tab} ${event.deployment.statusMessage}`))
-              for (const line of (event.deployment.error_stack || [])) {
+              console.log(chalk.redBright(`\n${tab}${tab} ${deployment.statusMessage}`))
+              for (const line of (deployment.error_stack || [])) {
                 console.log(chalk.redBright(`${tab}${tab} ${line}`))
               }
               process.exit(1)
@@ -514,9 +528,9 @@ export class Api {
             }
           }
         })
-      })
+      }) as any[]
 
-      return true
+      return res
     } catch (error: any) {
       this.handleV2Error(error, 'Fatal error occurred while waiting for deployment')
     }
@@ -534,6 +548,11 @@ export class Api {
         headers: {
           'cli-version': RIO_CLI_VERSION,
         },
+        retryConfig: {
+          count: 30,
+          delay: 2000,
+          rate: 1,
+        }
       })
 
       return { success: response.data.success }
@@ -581,7 +600,7 @@ export class Api {
         },
         headers: {
           'cli-version': RIO_CLI_VERSION,
-        },
+        }
       })
       return { success: response.data.success }
     } catch (error: any) {
