@@ -11,7 +11,7 @@ import { CliConfig, IRIOCliConfigProfileItemData } from './CliConfig'
 import chalk from 'chalk'
 import { Transform } from 'stream'
 import { Console } from 'console'
-import { ProjectState } from './v2/types'
+import { LogAdapter, ProjectState, StateStreamTarget } from './v2/types'
 import { RIO_CLI_VERSION } from '../config'
 export interface RemoteClassFileItem {
   classId: string
@@ -104,15 +104,30 @@ export class Api {
 
   sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
-  static handleError(error: any) {
-    console.log(chalk.redBright('\nUPS ! Something went wrong ! ' + error?.message || ''))
+  static handleError(error: any, message?: string) {
+    if (error?.message) {
+      const msgData = [
+        {
+          message: error?.message
+        },
+      ]
+    
+      console.log(chalk.redBright('Message: '))
+      table(msgData)
+    }
 
-    if (error?.request && error?.response) {
+    if (error?.request) {
       const reqdata = [
         {
           req_path: error?.request?.host + error?.request?.path.split('?')[0],
         },
       ]
+    
+      console.log(chalk.redBright('Request: '))
+      table(reqdata)
+    }
+
+    if (error?.response) {
       const resdata = [
         {
           res_status: error?.response?.status,
@@ -121,32 +136,14 @@ export class Api {
         },
       ]
 
-      console.log(chalk.redBright('\nRequest: '))
-      table(reqdata)
-      console.log(chalk.redBright('\nResponse: '))
+      console.log(chalk.redBright('Response: '))
       table(resdata)
     }
+
+    if (message) {
+      console.log(message)
+    }
     throw error
-  }
-
-  handleV2Error(error: any, message: string) {
-    const tab = '         '
-    console.log(chalk.redBright(`\n${tab}🔴 Deployment FAILED ❌`))
-    console.log(chalk.redBright(`\n${tab}${tab}${message} `))
-
-    if (error?.message) {
-      console.log(chalk.redBright(`\n${tab}${tab}${error.message} `))
-    }
-
-    if (error?.response) {
-      const res_status = error?.response?.status || ''
-      const res_statusText = error?.response?.statusText || ''
-      const res_data = JSON.stringify(error?.response?.data || {})
-
-      console.log(chalk.redBright(`\n${tab}${tab}status: \n${tab}${tab}${res_status} \n${tab}${tab}statusText: \n${tab}${tab}${res_statusText} \n${tab}${tab}data: \n${res_data}`))
-    }
-    // TODO throw to main thread
-    process.exit(1)
   }
 
   // v1 & v2
@@ -483,7 +480,7 @@ export class Api {
 
       return deploymentId
     } catch (error: any) {
-      this.handleV2Error(error, 'Fatal error occurred while deploying project')
+      Api.handleError(error, 'Fatal error occurred while deploying project V2 ❌')
     }
   }
 
@@ -492,7 +489,8 @@ export class Api {
     const tab = '         '
     let lastMessage = ''
     try {
-      await new Promise((resolve, reject) => {
+
+      const racer1 = new Promise((resolve, reject) => {
         this.projectInstance.state?.public?.subscribe((event: any) => {
 
           if (!event.deployments) return
@@ -537,9 +535,19 @@ export class Api {
         })
       })
 
+      const racer2 = new Promise((resolve, reject) => {
+        setTimeout(() => {
+          console.log(chalk.redBright(`\n${tab}🔴 Deployment FAILED ❌`))
+          console.log(chalk.redBright(`\n${tab}${tab} Deployment timed out after 30 minutes`))
+          process.exit(1)
+        }, 1000 * 60 * 30)
+      })
+
+      await Promise.race([racer1, racer2])
+
       return true
     } catch (error: any) {
-      this.handleV2Error(error, 'Fatal error occurred while waiting for deployment')
+      Api.handleError(error, 'Fatal error occurred while waiting for deployment V2 ❌')
     }
   }
 
@@ -564,7 +572,53 @@ export class Api {
 
       return { success: response.data.success }
     } catch (error: any) {
-      this.handleV2Error(error, 'Fatal error occured while executing setContents')
+      Api.handleError(error, 'Fatal error occured while setContents for project ❌')
+    }
+  }
+
+  async setLogginAdaptors({ loggingAdapters }: { loggingAdapters?: LogAdapter[] }): Promise<{ success: boolean, data: any } | void> {
+    try {
+      const response = await this.projectInstance.call<any>({
+        method: 'updateLogAdaptors',
+        body: {
+          loggingAdapters
+        },
+        headers: {
+          'cli-version': RIO_CLI_VERSION,
+        },
+        retryConfig: {
+          count: 30,
+          delay: 2000,
+          rate: 1,
+        }
+      })
+
+      return { success: response.data.success, data: response.data }
+    } catch (error: any) {
+      Api.handleError(error, 'Fatal error occured while updating Log Adapters ❌')
+    }
+  }
+
+  async setStateStreamTargets({ targets }: { targets?: StateStreamTarget[] }): Promise<{ success: boolean, data: any } | void> {
+    try {
+      const response = await this.projectInstance.call<any>({
+        method: 'updateStateStreamTargets',
+        body: {
+          targets
+        },
+        headers: {
+          'cli-version': RIO_CLI_VERSION,
+        },
+        retryConfig: {
+          count: 30,
+          delay: 2000,
+          rate: 1,
+        }
+      })
+
+      return { success: response.data.success, data: response.data }
+    } catch (error: any) {
+      Api.handleError(error, 'Fatal error occured while updating StateStreamTargets ❌')
     }
   }
 
@@ -591,7 +645,7 @@ export class Api {
 
       return { files: _files }
     } catch (error: any) {
-      this.handleV2Error(error, `Fatal error occured while executing getClassFiles for ${className}! `)
+      Api.handleError(error, 'Fatal error occured while getting RemoteClassFiles for V2 ❌')
       return { files: [] }
     }
   }
@@ -611,7 +665,7 @@ export class Api {
       })
       return { success: response.data.success }
     } catch (error: any) {
-      this.handleV2Error(error, `Fatal error occured while executing setClassFiles for ${className}! `)
+      Api.handleError(error, 'Fatal error occured while setClassFiles ❌')
     }
   }
 }

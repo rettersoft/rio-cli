@@ -1,6 +1,6 @@
 {
   "name": "@retter/rio-cli",
-  "version": "1.17.1",
+  "version": "1.17.2",
   "description": "Retter.io Command Line Tool",
   "main": "./dist/index.js",
   "bin": {
@@ -36,7 +36,8 @@
     "prompts": "2.4.2",
     "table": "6.8.0",
     "yaml": "1.10.2",
-    "yargs": "17.3.0"
+    "yargs": "17.3.0",
+    "zod": "3.19.1"
   },
   "devDependencies": {
     "@types/adm-zip": "0.4.34",

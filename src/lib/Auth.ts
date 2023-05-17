@@ -4,6 +4,7 @@ import axios from 'axios'
 import { IRIOCliConfigProfileItemData } from './CliConfig'
 import jwt from 'jsonwebtoken'
 import { Api } from './Api'
+import chalk from 'chalk'
 
 export enum RetterRootClasses {
   Project = 'Project',
@@ -97,7 +98,7 @@ export async function authenticateCurrentSession(profile_config: IRIOCliConfigPr
 
     return { retter: sdk, root_version: customAuth.root_version }
   } catch (error: any) {
-    Api.handleError(error)
+    Api.handleError(error, chalk.redBright(`There has been a problem with your credentials ❌`))
     throw error
   }
 }
