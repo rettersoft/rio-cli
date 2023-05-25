@@ -49,7 +49,7 @@ rio d --p admin --pid 77bb3924k --c Order Product --f --s --i
 
 ### `rio save [s]`
 
-Save local changes to but do not deploy the project.
+Save local changes to the rio cloud without deploying them
 
 #### Arguments
 * `--profile [p]`: Profile name for deployment (type: string)

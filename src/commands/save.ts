@@ -6,7 +6,7 @@ import { Input, saveAndDeploy } from "../lib/save-and-deploy";
 module.exports = {
   command: "save",
   description: `
-  Description: Just save the changes to the rio cloud without deploying them.
+  Description: Save local changes to the rio cloud without deploying them.
     Arguments:
     --profile [p]: Profile name for deployment (type: string)
     --project-id [pid]: Project id for deployment (type: string)
