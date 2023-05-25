@@ -19,7 +19,7 @@ npm i -g @retter/rio-cli
 Upsert admin profile in local storage.
 
 ```shell
-rio set-profile --profile-name myProfile --secret-id mySecretId --secret-key mySecretKey --endpoint myRioDomain
+rio set-profile --profile-name <PROFILE_NAME> --secret-id <SECRET> --secret-key <SECRETKEY> --endpoint <DOMAIN>
 ```
 
 #### Arguments
