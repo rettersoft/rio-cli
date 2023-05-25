@@ -31,7 +31,7 @@ rio set-profile --profile-name myProfile --secret-id mySecretId --secret-key myS
 
 ### `rio deploy [d]`
 
-Save local changes and deploy the project.
+Save local changes to the rio cloud and deploy the project.
 
 #### Arguments
 
