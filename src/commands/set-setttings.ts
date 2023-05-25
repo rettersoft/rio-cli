@@ -14,7 +14,7 @@ import { ProjectState, V2ProjectConfig } from '../lib/v2/types'
 module.exports = {
   command: 'set-settings',
   description: `
-  Description: Retrieve and synchronize your local project configuration with the remote project, enabling you to effortlessly create or update log adapters, state stream targets, and more..
+  Description: Synchronize your local project configuration with the remote project, enabling you to effortlessly create or update log adapters, state stream targets, and more.
     Arguments:
     --profile [p]: Profile name for target rio environment (type: string)
     --project-id [pid]: Project id for target project (type: string)

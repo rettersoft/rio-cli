@@ -75,7 +75,7 @@ rio gs --p <profile_name> --pid <project_id>
 ```
 ### `rio set-settings [ss]`
 
-Retrieve and synchronize your local project configuration with the remote project, enabling you to effortlessly create or update log adapters, state stream targets, and more.
+Synchronize your local project configuration with the remote project, enabling you to effortlessly create or update log adapters, state stream targets, and more.
 
 #### Arguments
 * `--profile [p]`: Profile name for target rio environment (type: string)

@@ -16,8 +16,8 @@ module.exports = {
   description: `
   Description: Fetches project data and generates a project configuration file on your local disk
     Arguments:
-    --profile [p]: Profile name for deployment (type: string)
-    --project-id [pid]: Project id for deployment (type: string)
+    --profile [p]: Profile name for target rio environment (type: string)
+    --project-id [pid]: Project id for target project (type: string)
     Usage: 
     rio get-settings --profile <profile_name> --project-id <project_id>
     rio gs --p <profile_name> --pid <project_id>
