@@ -14,10 +14,10 @@ import { ProjectState, V2ProjectConfig } from '../lib/v2/types'
 module.exports = {
   command: 'set-settings',
   description: `
-  Description: Reads your local project config and updates it to remote project. With this command you can update log adapters, state stream targets, etc.
+  Description: Retrieve and synchronize your local project configuration with the remote project, enabling you to effortlessly create or update log adapters, state stream targets, and more..
     Arguments:
-    --profile [p]: Profile name for deployment (type: string)
-    --project-id [pid]: Project id for deployment (type: string)
+    --profile [p]: Profile name for target rio environment (type: string)
+    --project-id [pid]: Project id for target project (type: string)
 
     Usage: 
     rio set-settings --profile <profile_name> --project-id <project_id>
@@ -103,7 +103,7 @@ module.exports = {
     
     const projectState = (await api.getProjectState()) as ProjectState
 
-    const mappedStateStreamTargets = settings.data.stateStreamTargets?.map((target) => {
+    const mappedStateStreamTargets = settings.data.stateStreamTargets?.map((target: any) => {
       const existed = projectState.public.projectConfig.stateStreamTargets.find((t) => t.id === target.id)
 
       if (!existed) return target
@@ -114,7 +114,7 @@ module.exports = {
       }
     })
 
-    const mappedLogAdaptors = settings.data.loggingAdapters?.map((target) => {
+    const mappedLogAdaptors = settings.data.loggingAdapters?.map((target: any) => {
       const existed = projectState.public.projectConfig.loggingAdapters.find((t) => t.id === target.id)
 
       if (!existed) return target

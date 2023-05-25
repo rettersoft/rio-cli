@@ -63,6 +63,29 @@ rio save --profile admin --project-id 77bb3924k --classes Order Product --skip-d
 rio s --p admin --pid 77bb3924k --c Order Product --s --i
 ```
 
+### `rio get-settings [gs]`
+Fetches project data and generates a project configuration file on your local disk
+#### Arguments
+* `--profile [p]`: Profile name for target rio environment (type: string)
+* `--project-id [pid]`: Project id for target project (type: string).
+
+```shell
+rio get-settings --profile <profile_name> --project-id <project_id>
+rio gs --p <profile_name> --pid <project_id>
+```
+### `rio set-settings [ss]`
+
+Retrieve and synchronize your local project configuration with the remote project, enabling you to effortlessly create or update log adapters, state stream targets, and more.
+
+#### Arguments
+* `--profile [p]`: Profile name for target rio environment (type: string)
+* `--project-id [pid]`: Project id for target project (type: string).
+
+```shell
+rio set-settings --profile <profile_name> --project-id <project_id>
+rio ss --p <profile_name> --pid <project_id>
+```
+
 ### `rio init [alias]` (`i`)
 
 Create a new project.

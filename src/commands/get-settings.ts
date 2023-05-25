@@ -14,7 +14,7 @@ import { ProjectState, V2ProjectConfig } from '../lib/v2/types'
 module.exports = {
   command: 'get-settings',
   description: `
-  Description: Fetches project data and creates project configuration file on local disk.
+  Description: Fetches project data and generates a project configuration file on your local disk
     Arguments:
     --profile [p]: Profile name for deployment (type: string)
     --project-id [pid]: Project id for deployment (type: string)
