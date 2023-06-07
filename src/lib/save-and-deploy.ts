@@ -4,7 +4,7 @@ import prompts from 'prompts'
 import { ProjectManager } from '../lib/v1/ProjectManager'
 import { Project } from '../lib/v1/Project'
 import { Deployment } from '../lib/v1/Deployment'
-import { RIO_CLI_URL } from '../config'
+import { RIO_CLI_URL, RIO_CLI_VERSION } from '../config'
 import { Api } from '../lib/Api'
 import { CliConfig } from '../lib/CliConfig'
 import { deployV2 } from '../lib/v2/deploy'
@@ -128,6 +128,7 @@ export const saveAndDeploy = async (args: Input) => {
 
   const exampleArray = [
     {
+      "CLI Version": RIO_CLI_VERSION,
       Profile: args.profile,
       Classes: args.classes?.toString() || 'All Classes',
       ProjectId: config.projectId,
@@ -142,9 +143,9 @@ export const saveAndDeploy = async (args: Input) => {
 
   console.log(chalk.yellow(`API connecting...`))
   const api = await Api.createAPI(profile_config, config.projectId)
-  console.log(chalk.greenBright(`API CONNECTED ✅ ${api.v2 ? chalk.gray('v2') : ''}\n\n`))
+  console.log(chalk.greenBright(`API CONNECTED ✅ ${api.isV2 ? chalk.gray(`v${api.version}`) : ''}\n\n`))
 
-  if (api.v2) {
+  if (api.isV2) {
     await processV2(api, args)
   } else {
     await processV1(api, args)

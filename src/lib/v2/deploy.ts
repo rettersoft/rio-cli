@@ -4,6 +4,7 @@ import { gzipSync } from 'zlib'
 
 import { Api } from '../Api'
 import { Classes, DeployInput, AnalyzationResult, ProjectContents } from './types'
+import _ from 'lodash'
 
 const headerColor = chalk.magentaBright.bold
 const subHeaderColor = chalk.cyanBright.bold
@@ -184,7 +185,11 @@ export const deployV2 = async ({ api, analyzationResult, force, deploy }: Deploy
       fileWorkers.push(setClassFiles(api, className, analyzationResult))
     }
 
-    await Promise.all(fileWorkers)
+    const chucks = _.chunk(fileWorkers, 10)
+
+    for (const chunk of chucks) {
+      await Promise.all(chunk)
+    }
   }
 
   // ********* PROJECT FILES *********

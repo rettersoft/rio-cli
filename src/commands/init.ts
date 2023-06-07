@@ -12,7 +12,7 @@ import afterCommand from "./AfterCommand";
 import {ConsoleMessage} from "../lib/v1/ConsoleMessage";
 import { CliConfig } from "../lib/CliConfig";
 import { Project } from "../lib/v1/Project";
-import { RIO_CLI_URL } from "../config";
+import { RIO_CLI_URL, RIO_CLI_VERSION } from "../config";
 
 
 interface Input extends GlobalInput {
@@ -40,16 +40,16 @@ module.exports = {
             type: 'string',
             demandOption: true,
         })
-        yargs.options('template', {
-            type: 'string',
-            default: 'Default',
-            describe: 'Cloud objects template name \n Example: rio init --template Default',
-        })
         return yargs
     },
     handler: async (args) => {
-        if (!args["alias"]) {
-            CustomError.throwError(chalk.redBright('alias argument is required'))
+        const { alias, profile } = args
+        if (!alias) {
+            CustomError.throwError(chalk.redBright('--alias argument is required'))
+        }
+
+        if (!profile) {
+            CustomError.throwError(chalk.redBright('--profile argument is required'))
         }
 
         if (fs.existsSync(path.join(process.cwd(), args["alias"]))) {
@@ -58,22 +58,28 @@ module.exports = {
 
         console.log(`[${chalk.greenBright.bold(args["alias"])}] Creating`)
 
-        const profile_config = CliConfig.getAdminConfig(args.profile)
+        const profile_config = CliConfig.getAdminConfig(profile)
 
-        const exampleArray = [{ Profile: args.profile, alias: args['alias'], Endpoint: profile_config.endpoint || RIO_CLI_URL }]
+        const exampleArray = [{ Profile: profile, ProjetName: alias, Endpoint: profile_config.endpoint, "CLI Version": RIO_CLI_VERSION }]
         ConsoleMessage.fancyTable(exampleArray, 'Deployment Configuration:')
 
+        console.log(chalk.yellow(`API connecting...`))
         const api = await Api.createAPI(profile_config)
-        const project = await api.createNewProject(args['alias'])
+        console.log(chalk.greenBright(`API CONNECTED ✅ ${api.version ? chalk.gray(`v${api.version}`) : ''}\n\n`))
 
-        console.log(`[${chalk.greenBright.bold(args["alias"])}] Preparing Folders`)
+        const project = await api.createNewProject(alias)
 
-        fs.mkdirSync(args["alias"])
-        process.chdir(args["alias"])
+        console.log(`[${chalk.greenBright.bold(alias)}] Preparing Folders`)
 
-        console.log(`[${chalk.greenBright.bold(args["alias"])}] Cloning Template`)
+        fs.mkdirSync(alias)
+        process.chdir(alias)
 
-        await Repo.downloadAndExtractGitRepo(project.projectId, args.template)
+        console.log(`[${chalk.greenBright.bold(alias)}] Cloning Template`)
+
+        if (api.isV2)
+            await Repo.downloadAndExtractGitRepoV2(project.projectId)
+        else
+            await Repo.downloadAndExtractGitRepo(project.projectId, args["template"])
 
         ConsoleMessage.table([
             ["Project Id", "Alias"],

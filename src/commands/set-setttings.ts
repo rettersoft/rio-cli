@@ -95,16 +95,16 @@ module.exports = {
 
     console.log(chalk.yellow(`API connecting...`))
     const api = await Api.createAPI(profile_config, projectId)
-    console.log(chalk.greenBright(`API CONNECTED ✅ ${api.v2 ? chalk.gray('v2') : ''}\n\n`))
+    console.log(chalk.greenBright(`API CONNECTED ✅ ${api.version ? chalk.gray(`v${api.version}`) : ''}\n\n`))
 
-    if (!api.v2) {
+    if (!api.isV2) {
       throw new Error(`This command is only available for v2 projects.`)
     }
     
-    const projectState = (await api.getProjectState()) as ProjectState
+    const [stateStreamTargets, loggingAdapters] = await Promise.all([api.getStateStreamTargets(false), api.getLoggingAdapters(false)])
 
     const mappedStateStreamTargets = settings.data.stateStreamTargets?.map((target: any) => {
-      const existed = projectState.public.projectConfig.stateStreamTargets.find((t) => t.id === target.id)
+      const existed = stateStreamTargets!.find((t) => t.id === target.id)
 
       if (!existed) return target
 
@@ -115,7 +115,7 @@ module.exports = {
     })
 
     const mappedLogAdaptors = settings.data.loggingAdapters?.map((target: any) => {
-      const existed = projectState.public.projectConfig.loggingAdapters.find((t) => t.id === target.id)
+      const existed = loggingAdapters!.find((t) => t.id === target.id)
 
       if (!existed) return target
 

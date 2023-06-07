@@ -56,22 +56,22 @@ export class Api {
   private projectState: any
   private classInstances: { [key: string]: RetterCloudObject } = {}
 
-  private root_version: string
+  private core_version?: string
   private profile_config: IRIOCliConfigProfileItemData
   // ***********************
   // *  CONSTRUCTOR
   // ***********************
 
-  constructor(retter: Retter, projectInstance: RetterCloudObject, profile_config: any, root_version: string) {
+  constructor(retter: Retter, projectInstance: RetterCloudObject, profile_config: any, core_version?: string) {
     this.retter = retter
     this.projectInstance = projectInstance
     this.profile_config = profile_config
-    this.root_version = root_version
+    this.core_version = core_version
   }
 
   static async createAPI(profile_config: IRIOCliConfigProfileItemData, projectId?: string) {
     // Use await to perform async operations
-    const { retter, root_version } = await authenticateCurrentSession(profile_config)
+    const { retter, core_version } = await authenticateCurrentSession(profile_config)
 
     let projectInstance: RetterCloudObject | undefined
 
@@ -87,7 +87,7 @@ export class Api {
       Api.handleError(error)
     }
 
-    return new Api(retter, projectInstance as RetterCloudObject, profile_config, root_version)
+    return new Api(retter, projectInstance as RetterCloudObject, profile_config, core_version)
   }
 
   // ***********************
@@ -98,8 +98,18 @@ export class Api {
     return this.profile_config
   }
 
-  get v2() {
-    return this.root_version === '2.0.0'
+  get version() {
+    return this.core_version
+  }
+
+  get isV2() {
+    if (!this.core_version) return false
+
+    const [major, minor, patch] = this.core_version.split('.').map((v) => parseInt(v))
+
+    if (Number.isNaN(major) || Number.isNaN(minor)) return false
+
+    return major === 2
   }
 
   sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
@@ -108,10 +118,10 @@ export class Api {
     if (error?.message) {
       const msgData = [
         {
-          message: error?.message
+          message: error?.message,
         },
       ]
-    
+
       console.log(chalk.redBright('Message: '))
       table(msgData)
     }
@@ -122,7 +132,7 @@ export class Api {
           req_path: error?.request?.host + error?.request?.path.split('?')[0],
         },
       ]
-    
+
       console.log(chalk.redBright('Request: '))
       table(reqdata)
     }
@@ -172,13 +182,13 @@ export class Api {
           classId: className,
         },
         headers: {
-          'cli-version': RIO_CLI_VERSION,
+          'x-cli-version': RIO_CLI_VERSION,
         },
         retryConfig: {
           count: 30,
           delay: 2000,
           rate: 1,
-        }
+        },
       })
     } catch (error) {
       Api.handleError(error)
@@ -194,7 +204,7 @@ export class Api {
           alias,
         },
         headers: {
-          'cli-version': RIO_CLI_VERSION,
+          'x-cli-version': RIO_CLI_VERSION,
         },
       })
 
@@ -233,13 +243,13 @@ export class Api {
           dependencyName,
         },
         headers: {
-          'cli-version': RIO_CLI_VERSION,
+          'x-cli-version': RIO_CLI_VERSION,
         },
         retryConfig: {
           count: 30,
           delay: 2000,
           rate: 1,
-        }
+        },
       })
       return result.data.url
     } catch (error) {
@@ -280,7 +290,7 @@ export class Api {
           files: input,
         },
         headers: {
-          'cli-version': RIO_CLI_VERSION,
+          'x-cli-version': RIO_CLI_VERSION,
         },
       })
     } catch (error) {
@@ -308,7 +318,7 @@ export class Api {
           force,
         },
         headers: {
-          'cli-version': RIO_CLI_VERSION,
+          'x-cli-version': RIO_CLI_VERSION,
         },
       })
     } catch (error) {
@@ -393,7 +403,7 @@ export class Api {
           modelDefinition,
         },
         headers: {
-          'cli-version': RIO_CLI_VERSION,
+          'x-cli-version': RIO_CLI_VERSION,
         },
       })
     } catch (error) {
@@ -410,7 +420,7 @@ export class Api {
           models,
         },
         headers: {
-          'cli-version': RIO_CLI_VERSION,
+          'x-cli-version': RIO_CLI_VERSION,
         },
       })
     } catch (error) {
@@ -468,7 +478,8 @@ export class Api {
           force,
         },
         headers: {
-          'cli-version': RIO_CLI_VERSION,
+          'cli-version': RIO_CLI_VERSION, // TODO delete this after 6 months
+          'x-cli-version': RIO_CLI_VERSION,
         },
       })
 
@@ -489,10 +500,8 @@ export class Api {
     const tab = '         '
     let lastMessage = ''
     try {
-
       const racer1 = new Promise((resolve, reject) => {
         this.projectInstance.state?.public?.subscribe((event: any) => {
-
           if (!event.deployments) return
           if (!event.deployments[deploymentId]) return
 
@@ -501,7 +510,7 @@ export class Api {
           // prevent other deployments from triggering our deployment listener
           if (deployment.statusMessage === lastMessage) return
           lastMessage = deployment.statusMessage
-     
+
           switch (deployment.status) {
             case 'ongoing': {
               console.log(chalk.yellow(`\n${tab}${tab}🔸 ${deployment.statusMessage}`))
@@ -515,13 +524,13 @@ export class Api {
               }
 
               console.log(chalk.greenBright(`\n${tab}🟢 Deployment FINISHED ✅`))
-              resolve(true) 
+              resolve(true)
               break
             }
             case 'failed': {
               console.log(chalk.redBright(`\n${tab}🔴 Deployment FAILED ❌`))
               console.log(chalk.redBright(`\n${tab}${tab} ${deployment.statusMessage}`))
-              for (const line of (deployment.error_stack || [])) {
+              for (const line of deployment.error_stack || []) {
                 console.log(chalk.redBright(`${tab}${tab} ${line}`))
               }
 
@@ -561,13 +570,13 @@ export class Api {
           models,
         },
         headers: {
-          'cli-version': RIO_CLI_VERSION,
+          'x-cli-version': RIO_CLI_VERSION,
         },
         retryConfig: {
           count: 30,
           delay: 2000,
           rate: 1,
-        }
+        },
       })
 
       return { success: response.data.success }
@@ -576,21 +585,21 @@ export class Api {
     }
   }
 
-  async setLogginAdaptors({ loggingAdapters }: { loggingAdapters?: LogAdapter[] }): Promise<{ success: boolean, data: any } | void> {
+  async setLogginAdaptors({ loggingAdapters }: { loggingAdapters?: LogAdapter[] }): Promise<{ success: boolean; data: any } | void> {
     try {
       const response = await this.projectInstance.call<any>({
         method: 'updateLogAdaptors',
         body: {
-          loggingAdapters
+          loggingAdapters,
         },
         headers: {
-          'cli-version': RIO_CLI_VERSION,
+          'x-cli-version': RIO_CLI_VERSION,
         },
         retryConfig: {
           count: 30,
           delay: 2000,
           rate: 1,
-        }
+        },
       })
 
       return { success: response.data.success, data: response.data }
@@ -599,21 +608,21 @@ export class Api {
     }
   }
 
-  async setStateStreamTargets({ targets }: { targets?: StateStreamTarget[] }): Promise<{ success: boolean, data: any } | void> {
+  async setStateStreamTargets({ targets }: { targets?: StateStreamTarget[] }): Promise<{ success: boolean; data: any } | void> {
     try {
       const response = await this.projectInstance.call<any>({
         method: 'updateStateStreamTargets',
         body: {
-          targets
+          targets,
         },
         headers: {
-          'cli-version': RIO_CLI_VERSION,
+          'x-cli-version': RIO_CLI_VERSION,
         },
         retryConfig: {
           count: 30,
           delay: 2000,
           rate: 1,
-        }
+        },
       })
 
       return { success: response.data.success, data: response.data }
@@ -629,7 +638,7 @@ export class Api {
       const response = await classInstance.call<GetFilesAndModelsResponse>({
         method: 'getClassFiles',
         headers: {
-          'cli-version': RIO_CLI_VERSION,
+          'x-cli-version': RIO_CLI_VERSION,
         },
       })
 
@@ -660,12 +669,60 @@ export class Api {
           files,
         },
         headers: {
-          'cli-version': RIO_CLI_VERSION,
-        }
+          'x-cli-version': RIO_CLI_VERSION,
+        },
       })
       return { success: response.data.success }
     } catch (error: any) {
       Api.handleError(error, 'Fatal error occured while setClassFiles ❌')
+    }
+  }
+
+  // v2
+  async getStateStreamTargets(cleanMappingId: boolean = true): Promise<StateStreamTarget[] | undefined> {
+    try {
+      const response = await this.projectInstance.call<StateStreamTarget[]>({
+        method: 'getStateStreamTargets',
+        body: {},
+        headers: {
+          'x-cli-version': RIO_CLI_VERSION,
+        },
+      })
+
+      if (!cleanMappingId) return response.data
+
+      return response.data.map((item: any) => {
+        return {
+          ...item,
+          mappingId: undefined,
+        }
+      })
+    } catch (error: any) {
+      Api.handleError(error, 'Fatal error occured while getStateStreamTargets ❌ (ps: this function exists only in rio v2.0.8+)')
+    }
+  }
+
+  // v2
+  async getLoggingAdapters(cleanMappingId: boolean = true): Promise<LogAdapter[] | undefined> {
+    try {
+      const response = await this.projectInstance.call<LogAdapter[]>({
+        method: 'getLoggingAdapters',
+        body: {},
+        headers: {
+          'x-cli-version': RIO_CLI_VERSION,
+        },
+      })
+
+      if (!cleanMappingId) return response.data
+
+      return response.data.map((item: any) => {
+        return {
+          ...item,
+          mappingId: undefined,
+        }
+      })
+    } catch (error: any) {
+      Api.handleError(error, 'Fatal error occured while getLoggingAdapters ❌ (ps: this function exists only in rio v2.0.8+)')
     }
   }
 }

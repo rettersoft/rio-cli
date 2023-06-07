@@ -66,20 +66,20 @@ module.exports = {
 
     console.log(chalk.yellow(`API connecting...`))
     const api = await Api.createAPI(profile_config, projectId)
-    console.log(chalk.greenBright(`API CONNECTED ✅ ${api.v2 ? chalk.gray('v2') : ''}\n\n`))
+    console.log(chalk.greenBright(`API CONNECTED ✅ ${api.version ? chalk.gray(`v${api.version}`) : ''}\n\n`))
 
-    if (!api.v2) {
-      throw new Error(`This command is only available for v2 projects.`)
+    if (!api.isV2) {
+      throw new Error(`This command is only available for v2 & v projects`)
     }
 
     console.log(chalk.yellow(`Creating project configuration file, please wait...`))
 
-    const projectState = (await api.getProjectState()) as ProjectState
+    const [stateStreamTargets, loggingAdapters] = await Promise.all([api.getStateStreamTargets(), api.getLoggingAdapters()])
 
     const remote_config = {
       projectId,
-      loggingAdapters: projectState.public.projectConfig?.loggingAdapters,
-      stateStreamTargets: projectState.public.projectConfig?.stateStreamTargets,
+      loggingAdapters: loggingAdapters,
+      stateStreamTargets: stateStreamTargets,
     }
 
     const parsed_config = V2ProjectConfig.safeParse(remote_config)
