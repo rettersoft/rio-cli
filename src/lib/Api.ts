@@ -698,7 +698,7 @@ export class Api {
         }
       })
     } catch (error: any) {
-      Api.handleError(error, 'Fatal error occured while getStateStreamTargets ❌ (ps: this function exists only in rio v2.0.8+)')
+      Api.handleError(error, 'Fatal error occured while getStateStreamTargets ❌ (ps: this function exists only in rio v2.0.9+)')
     }
   }
 
@@ -722,7 +722,7 @@ export class Api {
         }
       })
     } catch (error: any) {
-      Api.handleError(error, 'Fatal error occured while getLoggingAdapters ❌ (ps: this function exists only in rio v2.0.8+)')
+      Api.handleError(error, 'Fatal error occured while getLoggingAdapters ❌ (ps: this function exists only in rio v2.0.9+)')
     }
   }
 }
