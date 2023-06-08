@@ -140,6 +140,7 @@ export const LogAdapter = z.object({
   apiKey: z.string().min(1).optional(),
   pfactor: z.number().min(0).optional(),
   retryConfig: RetryConfig.default({ count: 3, delay: 50, rate: 1.5 }),
+  mappingId: z.any().optional(),
 })
 export type LogAdapter = z.infer<typeof LogAdapter>
 
@@ -152,6 +153,7 @@ export const stateStreamTarget = z.object({
   pfactor: z.number().min(0).optional(),
   retryConfig: RetryConfig.default({ count: 3, delay: 50, rate: 1.5 }),
   transformationTemplate: z.string().optional(),
+  mappingId: z.any().optional(),
 })
 export type StateStreamTarget = z.infer<typeof stateStreamTarget>
 
