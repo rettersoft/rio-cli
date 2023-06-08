@@ -90,7 +90,7 @@ rio ss --p <profile_name> --pid <project_id>
 
 Create a new project.
 ```shell
-rio init myProject
+rio init <PROJECTNAME> --profile <profile_name>
 ```
 ### `rio list-profiles [lp]`
 
@@ -109,11 +109,4 @@ rio generate
 Generate project documentation.
 ```shell
 rio generate-docs
-```
-### `rio console [con]`
-
-Open project console.
-
-```shell
-rio console
 ```

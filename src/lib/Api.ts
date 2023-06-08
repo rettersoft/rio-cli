@@ -151,6 +151,7 @@ export class Api {
     }
 
     if (message) {
+      console.log('/n')
       console.log(message)
     }
     throw error
