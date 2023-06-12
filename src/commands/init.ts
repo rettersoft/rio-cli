@@ -60,7 +60,7 @@ module.exports = {
 
         const profile_config = CliConfig.getAdminConfig(profile)
 
-        const exampleArray = [{ Profile: profile, ProjetName: alias, Endpoint: profile_config.endpoint, "CLI Version": RIO_CLI_VERSION }]
+        const exampleArray = [{ "CLI Version": RIO_CLI_VERSION, Profile: profile, ProjetName: alias, Endpoint: profile_config.endpoint,  }]
         ConsoleMessage.fancyTable(exampleArray, 'Deployment Configuration:')
 
         console.log(chalk.yellow(`API connecting...`))
@@ -76,8 +76,8 @@ module.exports = {
 
         console.log(`[${chalk.greenBright.bold(alias)}] Cloning Template`)
 
-        if (api.isV2)
-            await Repo.downloadAndExtractGitRepoV2(project.projectId)
+        if (api.isV2) 
+            await Repo.downloadAndExtractGitRepoV2(profile, alias, project.projectId)
         else
             await Repo.downloadAndExtractGitRepo(project.projectId, args["template"])
 
