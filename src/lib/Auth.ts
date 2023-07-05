@@ -70,7 +70,7 @@ export async function authenticateCurrentSession(profile_config: IRIOCliConfigPr
     const sdk = Retter.getInstance({
       projectId: RIO_CLI_ROOT_PROJECT_ID,
       url: profile_config.endpoint || RIO_CLI_URL,
-      region: RIO_CLI_STAGE === 'PROD' ? RetterRegion.euWest1 : RetterRegion.euWest1Beta,
+      region: RetterRegion.euWest1,
       platform: RIO_CLI_PLATFORM,
       logLevel: 'silent',
     })
