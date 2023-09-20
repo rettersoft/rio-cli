@@ -1,11 +1,5 @@
-import path from 'path'
-import { PROJECT_CLASSES_FOLDER, RIO_CLI_DEPENDENCIES_FOLDER } from '../../config'
-import { Api } from '../Api'
-import fs from 'fs'
-import { ConsoleMessage } from '../v1/ConsoleMessage'
 import chalk from 'chalk'
-import { RetterCloudObjectState } from '@retter/sdk'
-import { ComparizationSummary, Classes, AnalyzationResult, Dependencies, ProjectContents, ProjectState, AnalyzeInput } from './types'
+import { ComparizationSummary, Classes, AnalyzationResult, ProjectContents, ProjectState, AnalyzeInput } from './types'
 import { fetchLocalClassContents, fetchRemoteClassContents, listClassNames } from './contents-class'
 import { fetchLocalProjectFiles, fetchRemoteProjectFiles } from './contents-project'
 
@@ -109,23 +103,20 @@ function generateComparizationSummaryV2(
   // *********** DEPENDENCIES ***********
 
   for (const dependencyName in localProjectContents.dependencies) {
+    const localDep = localProjectContents.dependencies[dependencyName]
     const remoteDep = remoteProjectContents.dependencies[dependencyName]
-
+    summary.dependencies[dependencyName] = {
+      isTS: localDep.isTS,
+    }
     if (skipDiff) {
-      summary.dependencies[dependencyName] = {
-        forced: true,
-      }
-      localProjectContents.dependencies[dependencyName].shouldDeploy = true
+      summary.dependencies[dependencyName].forced = true
+      localDep.shouldDeploy = true
     } else if (!remoteDep) {
-      summary.dependencies[dependencyName] = {
-        new: true,
-      }
-      localProjectContents.dependencies[dependencyName].shouldDeploy = true
-    } else if (localProjectContents.dependencies[dependencyName].hash !== remoteDep.hash) {
-      summary.dependencies[dependencyName] = {
-        edited: true,
-      }
-      localProjectContents.dependencies[dependencyName].shouldDeploy = true
+      summary.dependencies[dependencyName].new = true
+      localDep.shouldDeploy = true
+    } else if (localDep.hash !== remoteDep.hash) {
+      summary.dependencies[dependencyName].edited = true
+      localDep.shouldDeploy = true
     }
   }
 
@@ -178,16 +169,16 @@ function generateComparizationSummaryV2(
           deletedFiles.push(fileName)
       }
     }
-  
-    if (forcedFiles.length > 0 || createdFiles.length > 0 || editedFiles.length > 0 || deletedFiles.length > 0) {
-      summary.classes[className] = {
-        createdFiles,
-        editedFiles,
-        deletedFiles,
-        forcedFiles,
-      }
-      localClass.shouldDeploy = true
+
+    summary.classes[className] = {
+      createdFiles,
+      editedFiles,
+      deletedFiles,
+      forcedFiles,
     }
+
+    const someThingChanged = forcedFiles.length > 0 || createdFiles.length > 0 || editedFiles.length > 0 || deletedFiles.length > 0
+    localClass.shouldDeploy = someThingChanged 
   }
 
   return summary
@@ -225,19 +216,19 @@ export const printSummaryV2 = async (summary: ComparizationSummary) => {
   // *********** PROJECT MODELS ***********
 
   if (Object.keys(summary.models).length === 0) {
-    console.log(`${subHeaderTab}${subHeaderColor2(('[Models]').padEnd(20," "))}${subHeaderNoChange}`)
+    console.log(`${subHeaderTab}${subHeaderColor2('[Models]'.padEnd(20, ' '))}${subHeaderNoChange}`)
   } else {
     console.log(`${subHeaderTab}${subHeaderColor2('[Models]')}`)
     for (const name in summary.models) {
       const model = summary.models[name]
       if (model.deleted) {
-        console.log(chalk.red(`${subestHeaderTab}${('deleted').padEnd(8, ' ')}: ${name}`))
+        console.log(chalk.red(`${subestHeaderTab}${'deleted'.padEnd(8, ' ')}: ${name}`))
       } else if (model.forced) {
-        console.log(chalk.grey(`${subestHeaderTab}${('forced').padEnd(8, ' ')}: ${name}`))
+        console.log(chalk.grey(`${subestHeaderTab}${'forced'.padEnd(8, ' ')}: ${name}`))
       } else if (model.created) {
-        console.log(chalk.green(`${subestHeaderTab}${('created').padEnd(8, ' ')}: ${name}`))
+        console.log(chalk.green(`${subestHeaderTab}${'created'.padEnd(8, ' ')}: ${name}`))
       } else if (model.edited) {
-        console.log(chalk.blue(`${subestHeaderTab}${('edited').padEnd(8, ' ')}: ${name}`))
+        console.log(chalk.blue(`${subestHeaderTab}${'edited'.padEnd(8, ' ')}: ${name}`))
       }
     }
   }
@@ -246,22 +237,21 @@ export const printSummaryV2 = async (summary: ComparizationSummary) => {
   // *********** PROJECT DEPENDENCIES ***********
   // *********** PROJECT DEPENDENCIES ***********
 
+  if (Object.keys(summary.dependencies).length > 0) {
+    console.log(headerColor('Dependencies Summary'))
+  }
 
-  if (Object.keys(summary.dependencies).length === 0) {
-    console.log(`${subHeaderTab}${subHeaderColor2(('[Dependencies]').padEnd(20," "))}${subHeaderNoChange}`)
-  } else {
-    console.log(`${subHeaderTab}${subHeaderColor2('[Dependencies]')}`)
-
-    for (const name in summary.dependencies) {
-      const dependency = summary.dependencies[name]
-      if (dependency.new) {
-        console.log(chalk.green(`${subestHeaderTab}${('created').padEnd(8, ' ')}: ${name}`))
-      } else if (dependency.forced) {
-        console.log(chalk.grey(`${subestHeaderTab}${('forced').padEnd(8, ' ')}: ${name}`))
-      } else if (dependency.edited) {
-        console.log(chalk.blue(`${subestHeaderTab}${('edited').padEnd(8, ' ')}: ${name}`))
-      }
+  for (const name in summary.dependencies) {
+    const dependency = summary.dependencies[name]
+    let text = subHeaderNoChange
+    if (dependency.new) {
+      text = chalk.green(': Created')
+    } else if (dependency.forced) {
+      text = chalk.grey(': Forced')
+    } else if (dependency.edited) {
+      text = chalk.blue(': Edited')
     }
+    console.log(`${subHeaderTab}${subHeaderColor2(`${name} ${dependency.isTS ? '(TS)' : '(JS)'}`.padEnd(20, ' '))}${text}`)
   }
 
   // *********** CLASSES ***********
@@ -272,42 +262,40 @@ export const printSummaryV2 = async (summary: ComparizationSummary) => {
   console.log(headerColor('Classes Summary'))
 
   for (const className in summary.classes) {
-
     const { createdFiles, editedFiles, deletedFiles, forcedFiles } = summary.classes[className]
 
-    if (createdFiles.length === 0 && editedFiles.length === 0 && deletedFiles.length === 0 && forcedFiles.length === 0) {
-      continue
-    }
+    const someThingChanged = forcedFiles.length > 0 || createdFiles.length > 0 || editedFiles.length > 0 || deletedFiles.length > 0
 
-    console.log(`${subHeaderTab}${subHeaderColor(`[${className}]`)}`)
-
-    if (createdFiles.length === 0 && editedFiles.length === 0 && deletedFiles.length === 0 && forcedFiles.length === 0) {
-      console.log(chalk.dim('         None'))
+    if (!someThingChanged) {
+      console.log(`${subHeaderTab}${subHeaderColor2(`${className}`.padEnd(20, ' '))}${subHeaderNoChange}`)
     } else {
+      console.log(`${subHeaderTab}${subHeaderColor(`${className}`)}`)
+
       for (const fileName of createdFiles) {
-        console.log(chalk.green(`${subestHeaderTab}${('added').padEnd(8, ' ')}: ${fileName}`))
+        console.log(chalk.green(`${subestHeaderTab}${'added'.padEnd(8, ' ')}: ${fileName}`))
       }
       for (const fileName of editedFiles) {
-        console.log(chalk.blue(`${subestHeaderTab}${('edited').padEnd(8, ' ')}: ${fileName}`))
+        console.log(chalk.blue(`${subestHeaderTab}${'edited'.padEnd(8, ' ')}: ${fileName}`))
       }
       for (const fileName of deletedFiles) {
-        console.log(chalk.red(`${subestHeaderTab}${('deleted').padEnd(8, ' ')}: ${fileName}`))
+        console.log(chalk.red(`${subestHeaderTab}${'deleted'.padEnd(8, ' ')}: ${fileName}`))
       }
       for (const fileName of forcedFiles) {
-        console.log(chalk.grey(`${subestHeaderTab}${('forced').padEnd(8, ' ')}: ${fileName}`))
+        console.log(chalk.grey(`${subestHeaderTab}${'forced'.padEnd(8, ' ')}: ${fileName}`))
       }
     }
-  }
-
-  if (Object.keys(summary.classes).length === 0) {
-    console.log(chalk.gray('   No changes occurred in any class \n'))
   }
 
   console.log('\n')
 }
 
 export const isChanged = (comparization: ComparizationSummary) => {
-  return Object.keys(comparization.classes).length > 0 || Object.keys(comparization.models).length > 0 || Object.keys(comparization.dependencies).length > 0 ||   Object.keys(comparization.files).length > 0
+  return (
+    Object.keys(comparization.models).length > 0 ||
+    Object.keys(comparization.files).length > 0 ||
+    Object.values(comparization.dependencies).some((dep) => dep.new || dep.edited || dep.forced) ||
+    Object.values(comparization.classes).some((cls) => cls.createdFiles.length > 0 || cls.editedFiles.length > 0 || cls.forcedFiles.length > 0 || cls.deletedFiles.length > 0)
+  )
 }
 // ********* END OF Comparization Summary *********
 

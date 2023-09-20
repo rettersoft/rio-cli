@@ -53,3 +53,5 @@ export async function getProjectConfig(): Promise<V2ProjectConfig> {
     return {} as V2ProjectConfig
   }
 }
+
+export const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))

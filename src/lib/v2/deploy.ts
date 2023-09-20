@@ -13,7 +13,7 @@ const subHeaderColor2 = chalk.cyanBright.bold
 const subHeaderTab = '   '
 const subHeaderSucces = chalk.greenBright(': Saved ✅')
 const subHeaderSuccesCreate = chalk.greenBright(': Created ✅')
-const subHeaderNoChange = chalk.grey(': None')
+const subHeaderNoChange = chalk.gray(': No Action')
 
 interface RioFiles {
   [fileName: string]: { name: string; content?: string }
@@ -114,7 +114,7 @@ const setProjectFiles = async (api: Api, analyzationResult: AnalyzationResult) =
 const deployProject = async (api: Api, force: boolean) => {
   const tab = '         '
   
-  console.log(chalk.yellow(`${tab}🟡 Deployment STARTED`))
+  console.log(chalk.yellow(`\n${tab}🟡 Deployment STARTED`))
   const deploymentId = await api.deployProjectV2(force)
 
   console.log(chalk.yellow(`\n${tab}${tab}🔸 Deployment ID: ${deploymentId}`))
@@ -167,19 +167,20 @@ export const deployV2 = async ({ api, analyzationResult, force, deploy }: Deploy
   // ********* CLASSES *********
   // ********* CLASSES *********
 
-  console.log(headerColor('Classes'))
+  const changed = Object.values(analyzationResult.localClasses).some((e) => e.shouldDeploy || e.newClass)
 
-  for (const [className, classValues] of Object.entries(analyzationResult.localClasses)) {
-    if (!classValues.newClass) continue
-
-    await createClass(api, className)
-  }
-
-  // *****
-
-  if (Object.values(analyzationResult.localClasses).every((e) => !e.shouldDeploy && !e.newClass)) {
-    console.log(chalk.gray('   No class requires deployment.'))
+  if (!changed) {
+    console.log(`${subHeaderTab}${subHeaderColor2('[Classes]'.padEnd(20, ' '))}${subHeaderNoChange}`)
   } else {
+    console.log(headerColor('Classes'))
+
+    for (const [className, classValues] of Object.entries(analyzationResult.localClasses)) {
+      if (!classValues.newClass) continue
+
+      await createClass(api, className)
+    }
+
+    // *****
     for (const [className, classValues] of Object.entries(analyzationResult.localClasses)) {
       if (!classValues.shouldDeploy) continue
       fileWorkers.push(setClassFiles(api, className, analyzationResult))
@@ -196,9 +197,6 @@ export const deployV2 = async ({ api, analyzationResult, force, deploy }: Deploy
   // ********* PROJECT FILES *********
 
   if (deploy) {
-    console.log(headerColor('\nProject Deployment'))
-    console.log('\n')
-  
     await deployProject(api, force)
   }
 
