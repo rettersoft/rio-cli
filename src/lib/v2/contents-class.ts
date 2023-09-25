@@ -1,17 +1,16 @@
 import path from 'path'
-import { PROJECT_CLASSES_FOLDER } from '../../config'
 import { Api } from '../Api'
 import fs from 'fs'
-import { Classes, FileInfo } from './types'
+import { Classes } from './types'
 import { listFilesRecursively, readFilesParallelly } from './utils'
 
 export function listClassNames(): string[] {
-  const classesFolder = fs.readdirSync(PROJECT_CLASSES_FOLDER, { withFileTypes: true })
+  const classesFolder = fs.readdirSync("classes", { withFileTypes: true })
   const classesFolderDirectories = classesFolder.filter((l) => l.isDirectory())
   return classesFolderDirectories.map((dir) => dir.name)
 }
 
-export const fetchLocalClassContents = async (targetClassNames: string[]): Promise<Classes> => {
+export const fetchLocalClassContents = async (targetClassNames: string[], projectPath = process.cwd()): Promise<Classes> => {
   const classesContents: Classes = {}
 
   if (!targetClassNames.length) {
@@ -19,7 +18,13 @@ export const fetchLocalClassContents = async (targetClassNames: string[]): Promi
   }
 
   const promises = targetClassNames.map(async (className) => {
-    const classPath = path.join(process.cwd(), PROJECT_CLASSES_FOLDER, className)
+    const classPath = path.join(projectPath, "classes", className)
+
+    try {
+      await fs.promises.access(path.join(classPath, "template.yml") , fs.constants.R_OK)
+    } catch (err: any) {
+      return Promise.resolve()
+    }
 
     const { files } = listFilesRecursively(classPath, classPath)
 

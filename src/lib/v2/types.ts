@@ -20,6 +20,7 @@ export interface ComparizationSummary {
       new?: boolean
       edited?: boolean
       forced?: boolean
+      isTS?: boolean
     }
   }
   models: {
@@ -50,6 +51,7 @@ export interface DependenciesContent {
   hash: string
   zipContent?: Buffer
   shouldDeploy?: boolean
+  isTS?: boolean
 }
 
 export interface Classes {

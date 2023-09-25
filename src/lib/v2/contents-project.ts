@@ -63,10 +63,16 @@ export async function fetchLocalDependencies(directoryPath: string): Promise<Dep
 
     const dependencyName = dependencyFolder.name
     const dependencyPath = join(directoryPath, dependencyName)
+
+    const isTS = await fs.promises
+      .access(join(dependencyPath, 'tsconfig.json'), fs.constants.R_OK)
+      .then(() => true)
+      .catch(() => false)
+
     const zipContent = await zipFolder(dependencyPath, dependencyName)
     const hash = await generateHashForPath(dependencyPath)
 
-    return { [dependencyName]: { hash, zipContent } }
+    return { [dependencyName]: { hash, zipContent, isTS } }
   })
 
   const dependencies = await Promise.all(dependenciesPromises)

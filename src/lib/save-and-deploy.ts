@@ -9,6 +9,7 @@ import { Api } from '../lib/Api'
 import { CliConfig } from '../lib/CliConfig'
 import { deployV2 } from '../lib/v2/deploy'
 import { analyze, isChanged, printSummaryV2 } from '../lib/v2/analyze'
+import { getProjectConfig } from './v2/utils'
 
 export interface Input {
   profile: string
@@ -80,15 +81,13 @@ const processV2 = async (api: Api, args: Input) => {
   })
 
   const pre_finish = ((Date.now() - start) / 1000).toFixed(1)
+  await printSummaryV2(analyzationResult.comparization)
+  console.log(chalk.greenBright(addAsterisks(`Gathered information ✅ ${pre_finish} seconds`)))
 
-  if (!skipDiff && !isChanged(analyzationResult.comparization)) {
-    console.log(chalk.bold.redBright('No Changes') + chalk.bold.grey(" -> if you want to ignore diff check use '--skip-diff-check, --s' flag\n"))
-    console.log(chalk.greenBright(addAsterisks(`Gathered information ✅ ${pre_finish} seconds `)))
+  if (!isChanged(analyzationResult.comparization)) {
+    console.log(chalk.bold.redBright('\nNo Changes detected in this project since last deploy it was') + chalk.bold.grey(" -> if you want to ignore diff check use '--skip-diff-check, --s' flag\n"))
     process.exit()
   }
-
-  await printSummaryV2(analyzationResult.comparization)
-  console.log(chalk.greenBright(addAsterisks(`Gathered information ✅ ${pre_finish} seconds `)))
 
   if (!args['ignore-approval']) {
     console.log('\n')
@@ -124,14 +123,20 @@ const processV2 = async (api: Api, args: Input) => {
 
 export const saveAndDeploy = async (args: Input) => {
   const profile_config = CliConfig.getAdminConfig(args.profile)
-  const config = Project.getProjectRioConfig()
+  const config = await getProjectConfig()
+  const projectId = args['project-id'] || config.projectId
+
+  if (!projectId) {
+    console.log(chalk.redBright(`Project ID is not provided!`))
+    process.exit()
+  }
 
   const exampleArray = [
     {
       "CLI Version": RIO_CLI_VERSION,
       Profile: args.profile,
       Classes: args.classes?.toString() || 'All Classes',
-      ProjectId: config.projectId,
+      ProjectId: projectId,
       Endpoint: profile_config.endpoint || RIO_CLI_URL,
       'Skip Diff Check': args['skip-diff-check'] ? 'Yes' : 'No',
       Force: args.force ? 'Yes' : 'No',
@@ -139,10 +144,10 @@ export const saveAndDeploy = async (args: Input) => {
     },
   ]
 
-  ConsoleMessage.fancyTable(exampleArray, 'Deployment Configuration:')
+  ConsoleMessage.fancyTable(exampleArray, 'Command Configuration:')
 
   console.log(chalk.yellow(`API connecting...`))
-  const api = await Api.createAPI(profile_config, config.projectId)
+  const api = await Api.createAPI(profile_config, projectId)
   console.log(chalk.greenBright(`API CONNECTED ✅ ${api.isV2 ? chalk.gray(`v${api.version}`) : ''}\n\n`))
 
   if (api.isV2) {
