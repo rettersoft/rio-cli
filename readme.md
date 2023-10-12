@@ -8,6 +8,15 @@ Rio CLI is a command-line tool that allows you to interact with the RIO platform
 npm i -g @retter/rio-cli
 ```
 
+## Dependency Support
+
+The RIO CLI supports both `TypeScript` and `JavaScript` dependencies. 
+
+ - Make sure your typescript dependency has `tsconfig.json` file on its path.  
+ - If you have a dynamic dependency (a dependency created at runtime) and you want the CLI to ignore that dependency during deployment, add an `.ignore` file to its path
+
+Example: https://github.com/retterio/v2-dependency-example
+
 ## Commands
 
 ### `rio --`
