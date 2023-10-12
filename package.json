@@ -1,6 +1,6 @@
 {
   "name": "@retter/rio-cli",
-  "version": "1.18.4",
+  "version": "1.18.5",
   "description": "Retter.io Command Line Tool",
   "main": "./dist/index.js",
   "bin": {
@@ -52,9 +52,7 @@
     "@types/readable-stream": "2.3.13",
     "@types/urijs": "1.19.18",
     "@types/yargs": "17.0.7",
-    "ts-jest": "27.1.3",
-    "ts-node": "10.4.0",
-    "typescript": "4.3.5"
+    "typescript": "5.1.6"
   },
   "repository": {
     "type": "git",

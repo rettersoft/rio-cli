@@ -69,6 +69,13 @@ export async function fetchLocalDependencies(directoryPath: string): Promise<Dep
       .then(() => true)
       .catch(() => false)
 
+    const shouldIgnore = await fs.promises
+      .access(join(dependencyPath, '.ignore'), fs.constants.R_OK)
+      .then(() => true)
+      .catch(() => false)
+
+    if (shouldIgnore) return null
+
     const zipContent = await zipFolder(dependencyPath, dependencyName)
     const hash = await generateHashForPath(dependencyPath)
 
