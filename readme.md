@@ -99,7 +99,9 @@ rio ss --p <profile_name> --pid <project_id>
 
 Create a new project.
 ```shell
-rio init <PROJECTNAME> --profile <profile_name>
+rio init --alias <project_name> --profile <profile_name>
+rio i --a <project_name> --p <profile_name>
+
 ```
 ### `rio list-profiles [lp]`
 
@@ -109,7 +111,7 @@ rio list-profiles
 ```
 ### `rio generate [g]`
 
-Generate RIO class files.
+Generate RIO class files. (deprecated)
 ```shell
 rio generate
 ```

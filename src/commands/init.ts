@@ -28,14 +28,16 @@ module.exports = {
     command: 'init [alias]',
     aliases: ['i'],
     description: `Create a new project
-    Usage: init [alias]`,
+    Usage: init --alias <project_alias> --profile <profile_name>`,
     builder: yargs => {
         yargs.positional('alias', {
+            alias: "a",
             describe: 'Project alias',
             type: 'string',
             demandOption: true
         })
         yargs.positional('profile', {
+            alias: "p",
             describe: 'CLI profile name',
             type: 'string',
             demandOption: true,

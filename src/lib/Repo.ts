@@ -52,7 +52,6 @@ export class Repo {
 
         // remove zip & folder
         fs.rmdirSync(path.join(process.cwd(), 'rio-cos-templates-2'), {recursive: true})
-        fs.rmdirSync(path.join(process.cwd(), 'rio-cos-templates-2.zip'), {recursive: true})
         
         const config = {
             projectId,
@@ -63,19 +62,18 @@ export class Repo {
         // create config file
         const configPath = path.join(process.cwd(), 'rio.json')
         fs.writeFileSync(configPath, JSON.stringify(config, null, 2))
-
         console.log(`[${chalk.greenBright.bold(alias)}] rio.json created`)
 
         // create deploy script
         const packageJsonPath = path.join(process.cwd(), 'package.json')
         const deployScript = `rio d --p ${profile} --pid ${projectId} --i`
         const currentPackageJson = JSON.parse(fs.readFileSync(packageJsonPath).toString())
+        currentPackageJson.name = alias
         currentPackageJson.scripts = {
             ...currentPackageJson.scripts,
             deploy: deployScript
         }
         fs.writeFileSync(packageJsonPath, JSON.stringify(currentPackageJson, null, 2))
-
 
         console.log(`[${chalk.greenBright.bold(alias)}] package.json updated (deploy script added)`)
     }
