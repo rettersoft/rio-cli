@@ -109,15 +109,3 @@ List local admin profiles.
 ```shell
 rio list-profiles
 ```
-### `rio generate [g]`
-
-Generate RIO class files. (deprecated)
-```shell
-rio generate
-```
-### `rio generate-docs [gd]`
-
-Generate project documentation.
-```shell
-rio generate-docs
-```
