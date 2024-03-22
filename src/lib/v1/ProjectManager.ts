@@ -1,4 +1,3 @@
-import { generator as rioGenerator } from '@retter/rio-generator'
 import { FileExtra } from './FileExtra'
 import path from 'path'
 import { PROJECT_CLASSES_FOLDER, PROJECT_CLASS_TEMPLATE_FILE, PROJECT_RIO_CLASS_FILE } from '../../config'
@@ -165,24 +164,24 @@ export class ProjectManager {
     }
   }
 
-  static async generateAndSaveRioFiles() {
-    const rioFile = await ProjectManager.generateRioFile()
-    await Promise.all(
-      Project.listClassNames().map((className) => {
-        return FileExtra.writeFile(path.join(process.cwd(), PROJECT_CLASSES_FOLDER, className, PROJECT_RIO_CLASS_FILE), rioFile)
-      }),
-    )
-  }
+  // static async generateAndSaveRioFiles() {
+  //   // const rioFile = await ProjectManager.generateRioFile()
+  //   await Promise.all(
+  //     Project.listClassNames().map((className) => {
+  //       return FileExtra.writeFile(path.join(process.cwd(), PROJECT_CLASSES_FOLDER, className, PROJECT_RIO_CLASS_FILE), rioFile)
+  //     }),
+  //   )
+  // }
 
-  static async generateRioFile() {
-    const classNames = Project.listClassNames()
+  // static async generateRioFile() {
+  //   const classNames = Project.listClassNames()
 
-    return await rioGenerator({
-      classes: classNames.reduce<{ [className: string]: string }>((acc, className) => {
-        acc[className] = Project.readClassTemplateString(className)
-        return acc
-      }, {}),
-      models: Project.getLocalModelsContents(),
-    })
-  }
+  //   return await rioGenerator({
+  //     classes: classNames.reduce<{ [className: string]: string }>((acc, className) => {
+  //       acc[className] = Project.readClassTemplateString(className)
+  //       return acc
+  //     }, {}),
+  //     models: Project.getLocalModelsContents(),
+  //   })
+  // }
 }
