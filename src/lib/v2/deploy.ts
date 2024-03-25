@@ -5,6 +5,7 @@ import { gzipSync } from 'zlib'
 import { Api } from '../Api'
 import { Classes, DeployInput, AnalyzationResult, ProjectContents } from './types'
 import _ from 'lodash'
+import { sleep } from './utils'
 
 const headerColor = chalk.magentaBright.bold
 const subHeaderColor = chalk.cyanBright.bold
@@ -192,6 +193,8 @@ export const deployV2 = async ({ api, analyzationResult, force, deploy }: Deploy
       await Promise.all(chunk)
     }
   }
+
+  await sleep(5000)
 
   // ********* PROJECT FILES *********
   // ********* PROJECT FILES *********
