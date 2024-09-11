@@ -1,6 +1,6 @@
 {
   "name": "@retter/rio-cli",
-  "version": "1.23.0",
+  "version": "1.24.0",
   "description": "Retter.io Command Line Tool",
   "main": "./dist/index.js",
   "bin": {
@@ -19,12 +19,13 @@
     "major-release": "npm version major && npm run build && npm publish --access public",
     "postinstall": "node ./dist/bootstrap.js postinstall",
     "preuninstall": "node ./dist/bootstrap.js preuninstall",
-    "link": "npm run build && npm link"
+    "link": "npm run build && npm link",
+    "clean-install": "npm cache clean --force && rm -rf node_modules package-lock.json && npm install"
   },
   "dependencies": {
-    "@retter/sdk": "0.5.4",
+    "@retter/sdk": "0.7.4",
     "adm-zip": "0.5.9",
-    "axios": "0.24.0",
+    "axios": "1.7.7",
     "chalk": "4.1.2",
     "chokidar": "3.5.3",
     "fs-extra": "10.0.0",
@@ -34,9 +35,9 @@
     "lodash": "4.17.21",
     "prompts": "2.4.2",
     "table": "6.8.0",
-    "yaml": "1.10.2",
+    "yaml": "2.5.1",
     "yargs": "17.3.0",
-    "zod": "3.22.4"
+    "zod": "3.23.8"
   },
   "devDependencies": {
     "@types/adm-zip": "0.4.34",
