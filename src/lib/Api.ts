@@ -577,7 +577,10 @@ export class Api {
             break
           } else if (deployment?.status === 'failed') {
             console.log(chalk.redBright(`\n${tab}🔴 Deployment FAILED ❌ (captured by stall timer)`))
-            console.log(chalk.redBright(`\n${tab}${tab} ${deployment.error_stack.join('\n')}`))
+            console.log(chalk.redBright(`\n${tab}${tab} ${deployment.statusMessage}`))
+            for (const line of deployment.error_stack || []) {
+              console.log(chalk.redBright(`${tab}${tab} ${line}`))
+            }
             await new Promise(r => setTimeout(r, 50)) // inside async loop could cut off logs
             process.exit(1)
           }

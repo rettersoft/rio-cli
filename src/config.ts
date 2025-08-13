@@ -1,7 +1,7 @@
 import path from 'path';
 import os from 'os';
 
-export const RIO_CLI_VERSION = '1.24.0'
+export const RIO_CLI_VERSION = '1.26.0' // TODO Get rid of this just read package.json
 export const RIO_CLI_ROOT_PROJECT_ID = 'root'
 export const RIO_CLI_ROOT_DOMAIN = 'retter.io'
 export const RIO_CLI_URL = process.env.RIO_CLI_URL
