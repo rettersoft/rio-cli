@@ -223,9 +223,9 @@ export class Api {
   }
 
   // v1 & v2
-  async getProjectState(): Promise<RetterCloudObjectState> {
+  async getProjectState(useCache: boolean = true): Promise<RetterCloudObjectState> {
     try {
-      if (!this.projectState) {
+      if (!this.projectState || !useCache) {
         const state = await this.projectInstance.getState()
         this.projectState = state.data
       }
@@ -566,7 +566,7 @@ export class Api {
       const racer3 = new Promise(async (resolve, reject) => {
         while (true) {
           await this.sleep(3000 * 60) // check every 3 minutes, until racer2 is triggered since it does terminates the process
-          const state = await this.getProjectState()
+          const state = await this.getProjectState(false)
           const deployment = state?.public?.deployments?.[deploymentId]
 
           if (!deployment) continue
