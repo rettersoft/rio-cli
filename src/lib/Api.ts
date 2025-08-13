@@ -501,55 +501,64 @@ export class Api {
     const tab = '         '
     let lastMessage = ''
     try {
-      const racer1 = new Promise((resolve, reject) => {
-        this.projectInstance.state?.public?.subscribe((event: any) => {
-          if (!event.deployments) return
-          if (!event.deployments[deploymentId]) return
+      const racer1 = new Promise(async (resolve, reject) => {
+        try {
+          const subscription = this.projectInstance.state?.public?.subscribe((event: any) => {
+            if (!event.deployments) return
+            if (!event.deployments[deploymentId]) return
 
-          const deployment = event.deployments[deploymentId]
+            const deployment = event.deployments[deploymentId]
 
-          // prevent other deployments from triggering our deployment listener
-          if (deployment.statusMessage === lastMessage) return
-          lastMessage = deployment.statusMessage
+            // prevent other deployments from triggering our deployment listener
+            if (deployment.statusMessage === lastMessage) return
+            lastMessage = deployment.statusMessage
 
-          switch (deployment.status) {
-            case 'ongoing': {
-              console.log(chalk.yellow(`\n${tab}${tab}🔸 ${deployment.statusMessage}`))
-              break
-            }
-            case 'finished': {
-              const otherDeployments = Object.values(event.deployments).filter((d: any) => d.status !== 'finished' && d.status !== 'failed') as any[]
-
-              if (otherDeployments.length > 0) {
-                console.log(chalk.grey(`\n${tab}${tab}📌 Your deployment completed but there are ${otherDeployments.length} more deployment(s) that are still ongoing`))
+            switch (deployment.status) {
+              case 'ongoing': {
+                console.log(chalk.yellow(`\n${tab}${tab}🔸 ${deployment.statusMessage}`))
+                break
               }
+              case 'finished': {
+                const otherDeployments = Object.values(event.deployments).filter((d: any) => d.status !== 'finished' && d.status !== 'failed') as any[]
 
-              console.log(chalk.greenBright(`\n${tab}🟢 Deployment FINISHED ✅`))
-              resolve(true)
-              break
-            }
-            case 'failed': {
-              console.log(chalk.redBright(`\n${tab}🔴 Deployment FAILED ❌`))
-              console.log(chalk.redBright(`\n${tab}${tab} ${deployment.statusMessage}`))
-              for (const line of deployment.error_stack || []) {
-                console.log(chalk.redBright(`${tab}${tab} ${line}`))
+                if (otherDeployments.length > 0) {
+                  console.log(chalk.grey(`\n${tab}${tab}📌 Your deployment completed but there are ${otherDeployments.length} more deployment(s) that are still ongoing`))
+                }
+
+                console.log(chalk.greenBright(`\n${tab}🟢 Deployment FINISHED ✅`))
+                resolve(true)
+                break
               }
+              case 'failed': {
+                console.log(chalk.redBright(`\n${tab}🔴 Deployment FAILED ❌`))
+                console.log(chalk.redBright(`\n${tab}${tab} ${deployment.statusMessage}`))
+                for (const line of deployment.error_stack || []) {
+                  console.log(chalk.redBright(`${tab}${tab} ${line}`))
+                }
 
-              // THROW MAIN THREAD
-              process.exit(1)
+                // THROW MAIN THREAD
+                process.exit(1)
+              }
+              default: {
+                break
+              }
             }
-            default: {
-              break
-            }
+          })
+
+          if (!subscription) {
+            throw new Error('Deployment state subscription is unavailable')
           }
-        })
+        } catch (err) {
+          console.error(chalk.redBright(`\n${tab}🔴 Subscription setup failed, we cannot monitor the deployment at the moment. ❌`))
+          console.error(err)
+          process.exit(1)
+        }
       })
 
       const racer2 = new Promise((resolve, reject) => {
         setTimeout(async () => {
           console.log(chalk.redBright(`\n${tab}🔴 Deployment FAILED ❌`))
           console.log(chalk.redBright(`\n${tab}${tab} Deployment timed out after 30 minutes`))
-          await new Promise(r => setTimeout(r, 50)) // inside async loop could cut off logs
           process.exit(1)
         }, 1000 * 60 * 30)
       })
