@@ -546,14 +546,36 @@ export class Api {
       })
 
       const racer2 = new Promise((resolve, reject) => {
-        setTimeout(() => {
+        setTimeout(async () => {
           console.log(chalk.redBright(`\n${tab}🔴 Deployment FAILED ❌`))
           console.log(chalk.redBright(`\n${tab}${tab} Deployment timed out after 30 minutes`))
+          await new Promise(r => setTimeout(r, 50)) // inside async loop could cut off logs
           process.exit(1)
         }, 1000 * 60 * 30)
       })
 
-      await Promise.race([racer1, racer2])
+      const racer3 = new Promise(async (resolve, reject) => {
+        while (true) {
+          await this.sleep(3000 * 60) // check every 3 minutes, until racer2 is triggered since it does terminates the process
+          const state = await this.getProjectState()
+          const deployment = state?.public?.deployments?.[deploymentId]
+
+          if (!deployment) continue
+
+          if (deployment?.status === 'finished') {
+            console.log(chalk.greenBright(`\n${tab}🟢 Deployment FINISHED ✅ (captured by stall timer)`)) // calling it stall timer in the honor of mustafa
+            resolve(true)
+            break
+          } else if (deployment?.status === 'failed') {
+            console.log(chalk.redBright(`\n${tab}🔴 Deployment FAILED ❌ (captured by stall timer)`))
+            console.log(chalk.redBright(`\n${tab}${tab} ${deployment.error_stack.join('\n')}`))
+            await new Promise(r => setTimeout(r, 50)) // inside async loop could cut off logs
+            process.exit(1)
+          }
+        }
+      })
+
+      await Promise.race([racer1, racer2, racer3])
 
       return true
     } catch (error: any) {
