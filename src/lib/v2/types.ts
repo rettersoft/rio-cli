@@ -43,6 +43,7 @@ export interface ComparizationSummary {
 
 export interface ClassContent {
   files: Files
+  zodModels: Files
   newClass?: boolean
   shouldDeploy?: boolean
 }
