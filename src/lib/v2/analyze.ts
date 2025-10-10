@@ -20,6 +20,7 @@ function generateComparizationSummaryV2(
   localClasses: Classes,
   skipDiff: boolean,
 ): ComparizationSummary {
+  
   const summary: ComparizationSummary = {
     classes: {},
     dependencies: {},
@@ -314,6 +315,16 @@ export const analyze = async ({ api, skipDiff, classes }: AnalyzeInput): Promise
   const targetRemoteClassNames = targetClassNames.filter((className: string) => projectState.public.classes.some((c) => c.classId === className))
 
   const [remoteClasses, localClasses] = await Promise.all([fetchRemoteClassContents(api, targetRemoteClassNames), fetchLocalClassContents(targetClassNames)])
+
+  const jsonModels = localProjectContents.models
+  const zodModels = Object.values(localClasses).reduce((acc, cls) => ({ ...acc, ...cls.zodModels }), {})
+  
+  // Combine JSON models and ZOD models
+  localProjectContents.models = { ...jsonModels, ...zodModels }
+
+  // TESTSTSTTS
+  console.log(JSON.parse(JSON.stringify(localProjectContents.models)))
+  process.exit(0)
 
   const comparization = generateComparizationSummaryV2(localProjectContents, remoteProjectContents, remoteClasses, localClasses, skipDiff)
 
