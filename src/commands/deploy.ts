@@ -14,6 +14,7 @@ module.exports = {
     --ignore-approval [i]: Ignore deployment manual approval. 
     --force [f]: Send deployment requests with force parameter to rio.
     --skip-diff-check [s]: Skip and dont perform difference checks while deploying.
+    --test [t]: Deploy to test environment.
   `,    
   aliases: ["d"],
   builder: (yargs) => {
@@ -50,6 +51,13 @@ module.exports = {
     yargs.options("skip-diff-check", {
       alias: "s",
       describe: "This parameter could be used to deploy target classes, even if there have been no changes since the last deployment.  \n Example: rio deploy --skip-diff-check",
+      default: false,
+      boolean: true,
+      type: "boolean",
+    });
+    yargs.options("test", {
+      alias: "t",
+      describe: "This will be used when pushing deployment requests to RIO, its used for deploying to a test environment. \n Example: rio deploy --test",
       default: false,
       boolean: true,
       type: "boolean",

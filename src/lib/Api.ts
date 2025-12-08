@@ -471,12 +471,13 @@ export class Api {
   // *************** V2 *****************
 
   // v2
-  async deployProjectV2(force: boolean): Promise<string | void> {
+  async deployProjectV2(force: boolean, test: boolean): Promise<string | void> {
     try {
       const response = await this.projectInstance.call<any>({
         method: 'deploy',
         body: {
           force,
+          test,
         },
         headers: {
           'cli-version': RIO_CLI_VERSION, // TODO delete this after 6 months

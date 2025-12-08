@@ -112,11 +112,11 @@ const setProjectFiles = async (api: Api, analyzationResult: AnalyzationResult) =
   })
 }
 
-const deployProject = async (api: Api, force: boolean) => {
+const deployProject = async (api: Api, force: boolean, test: boolean) => {
   const tab = '         '
   
   console.log(chalk.yellow(`\n${tab}🟡 Deployment STARTED`))
-  const deploymentId = await api.deployProjectV2(force)
+  const deploymentId = await api.deployProjectV2(force, test)
 
   console.log(chalk.yellow(`\n${tab}${tab}🔸 Deployment ID: ${deploymentId}`))
   await api.waitDeploymentV2(deploymentId as string)
@@ -127,7 +127,7 @@ const createClass = async (api: Api, className: string) => {
   console.log(`${subHeaderTab}${subHeaderColor(className.padEnd(20," "))}${subHeaderSuccesCreate}`)
 }
 
-export const deployV2 = async ({ api, analyzationResult, force, deploy }: DeployInput): Promise<void> => {
+export const deployV2 = async ({ api, analyzationResult, force, test, deploy }: DeployInput): Promise<void> => {
   const fileWorkers = []
 
   if (analyzationResult.deploymentCount > 0) {
@@ -200,7 +200,7 @@ export const deployV2 = async ({ api, analyzationResult, force, deploy }: Deploy
   // ********* PROJECT FILES *********
 
   if (deploy) {
-    await deployProject(api, force)
+    await deployProject(api, force, test)
   }
 
   console.log('\n')

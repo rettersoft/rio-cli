@@ -14,6 +14,7 @@ import { getProjectConfig } from './v2/utils'
 export interface Input {
   profile: string
   force: boolean
+  test: boolean
   classes?: string[]
   'project-id': string
   'ignore-approval': boolean
@@ -69,6 +70,7 @@ const processV1 = async (api: Api, args: Input) => {
 const processV2 = async (api: Api, args: Input) => {
   const skipDiff = args['skip-diff-check']
   const force = args.force
+  const test = args.test
   const deploy = !args['save-only']
 
   const start = Date.now()
@@ -113,6 +115,7 @@ const processV2 = async (api: Api, args: Input) => {
     api,
     analyzationResult,
     force,
+    test,
     deploy,
   })
 

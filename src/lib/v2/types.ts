@@ -120,6 +120,7 @@ export interface DeployInput {
   api: Api
   analyzationResult: AnalyzationResult
   force: boolean
+  test: boolean
   deploy: boolean
 }
 
