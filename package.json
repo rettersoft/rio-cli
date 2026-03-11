@@ -1,6 +1,6 @@
 {
   "name": "@retter/rio-cli",
-  "version": "1.27.0",
+  "version": "1.32.0",
   "description": "Retter.io Command Line Tool",
   "main": "./dist/index.js",
   "bin": {
@@ -23,16 +23,16 @@
     "clean-install": "npm cache clean --force && rm -rf node_modules package-lock.json && npm install"
   },
   "dependencies": {
-    "@retter/sdk": "0.7.4",
+    "@retter/sdk": "0.10.0",
     "adm-zip": "0.5.9",
-    "axios": "1.7.7",
+    "axios": "1.13.6",
     "chalk": "4.1.2",
     "chokidar": "3.5.3",
     "fs-extra": "10.0.0",
     "ignore": "5.2.0",
     "jsonwebtoken": "9.0.2",
     "listr": "0.14.3",
-    "lodash": "4.17.21",
+    "lodash": "4.17.23",
     "prompts": "2.4.2",
     "table": "6.8.0",
     "yaml": "2.5.1",
