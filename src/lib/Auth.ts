@@ -59,9 +59,12 @@ async function getRootAdminCustomToken(config: IRIOCliConfigProfileItemData) {
     throw new Error('Custom token error!')
   }
 
+  // V2 environment but VERSION_HEADER_DISABLED is on
+  const staticV2 = result.headers['x-srv-time'] ? '2.0.0' : undefined
+
   return {
     customToken: result.data.customToken,
-    core_version: result.headers['x-rio-version'] || result.data.version, // TODO delete result.data.version after 6 months
+    core_version: result.headers['x-rio-version'] || staticV2 || result.data.version, // TODO delete result.data.version after 6 months
   }
 }
 
