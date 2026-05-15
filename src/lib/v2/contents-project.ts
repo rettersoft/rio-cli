@@ -109,17 +109,24 @@ export const fetchLocalModelContents = async (directoryPath: string): Promise<Fi
 // ****** FILES ******
 // ****** FILES ******
 
-// for now only package.json
+const PROJECT_FILES = ['package.json', 'pnpm-workspace.yaml']
+
 export async function fetchLocalFiles(projectPath: string): Promise<Files> {
-  const packageJSONpath = path.join(projectPath, 'package.json')
-  try {
-    await fs.promises.access(packageJSONpath, fs.constants.R_OK)
-  } catch (err: any) {
-    throw new Error('No package.json found in project')
+  const files: Files = {}
+
+  for (const fileName of PROJECT_FILES) {
+    const filePath = path.join(projectPath, fileName)
+    try {
+      await fs.promises.access(filePath, fs.constants.R_OK)
+      files[fileName] = (await fs.promises.readFile(filePath)).toString()
+    } catch (err: any) {
+      if (fileName === 'package.json') {
+        throw new Error('No package.json found in project')
+      }
+    }
   }
-  return {
-    'package.json': (await fs.promises.readFile(packageJSONpath)).toString(),
-  }
+
+  return files
 }
 
 // ****** MAIN ******
