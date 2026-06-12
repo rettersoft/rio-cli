@@ -4,7 +4,7 @@ import { FileInfo, V2ProjectConfig } from './types'
 import { PROJECT_RIO_CONFIG } from '../../config'
 
 const excludedFolders = ['__tests__', 'node_modules', 'scripts', '.turbo', '.nyc_output']
-const excludedFiles = ['.DS_Store', 'package-lock.json', 'yarn.lock']
+const excludedFiles = ['.DS_Store', 'package-lock.json', 'yarn.lock', '.eslintcache']
 
 export function listFilesRecursively(ogPath: string, directoryPath: string): { files: FileInfo[] } {
   const fileInfos: FileInfo[] = []
@@ -13,12 +13,15 @@ export function listFilesRecursively(ogPath: string, directoryPath: string): { f
     const fullPath = path.join(directoryPath, name)
     const stats = fs.statSync(fullPath)
     if (stats.isDirectory()) {
-      if (excludedFolders.includes(name) || excludedFiles.includes(name)) {
+      if (excludedFolders.includes(name)) {
         return
-      } 
-        const { files } = listFilesRecursively(ogPath, fullPath)
-        fileInfos.push(...files)  
+      }
+      const { files } = listFilesRecursively(ogPath, fullPath)
+      fileInfos.push(...files)
     } else {
+      if (excludedFiles.includes(name)) {
+        return
+      }
       const relativePath = path.relative(ogPath, fullPath)
       const fileName = relativePath.includes('/') ? relativePath : name
       fileInfos.push({ fileName, filePath: fullPath })
