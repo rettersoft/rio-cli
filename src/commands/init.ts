@@ -6,8 +6,6 @@ import {Api} from "../lib/Api";
 import path from "path";
 import {CustomError} from "../lib/v1/CustomError";
 import {CommandModule} from "yargs";
-import Listr from "listr";
-import {IProjectDetail} from "../Interfaces/IProjectDetail";
 import afterCommand from "./AfterCommand";
 import {ConsoleMessage} from "../lib/v1/ConsoleMessage";
 import { CliConfig } from "../lib/CliConfig";
@@ -18,10 +16,6 @@ import { RIO_CLI_URL, RIO_CLI_VERSION } from "../config";
 interface Input extends GlobalInput {
     alias: string,
     template: string,
-}
-
-interface TaskContext {
-    project: { projectId: string, detail: IProjectDetail }
 }
 
 module.exports = {

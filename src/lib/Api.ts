@@ -200,6 +200,7 @@ export class Api {
   async createNewProject(alias: string): Promise<{ projectId: string; detail: IProjectDetail }> {
     try {
       const projectInstance = await this.retter.getCloudObject({
+        useLocal: false,
         classId: RetterRootClasses.Project,
         body: {
           alias,

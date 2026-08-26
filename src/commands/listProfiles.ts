@@ -4,14 +4,9 @@ import afterCommand from "./AfterCommand";
 import chalk from "chalk";
 import {ConsoleMessage} from "../lib/v1/ConsoleMessage";
 import {CommandModule} from "yargs";
-import Listr from "listr";
 
 interface Input extends GlobalInput {
 
-}
-
-interface TaskContext {
-    profiles: AdminProfileSummary[]
 }
 
 module.exports = {
@@ -20,20 +15,12 @@ module.exports = {
     description: 'List local admin profiles',
     handler: async () => {
 
-        const tasks = new Listr([
-            {
-                title: 'Getting Profile',
-                task: (ctx: TaskContext) => {
-                    ctx.profiles = CliConfig.listAdminProfiles()
-                }
-            }
-        ])
-
-        const ctx: TaskContext = await tasks.run()
+        const profiles: AdminProfileSummary[] = CliConfig.listAdminProfiles()
+        console.log(chalk.greenBright('Getting Profile ✅'))
 
         ConsoleMessage.table([
             ["Profile Name", "Secret", "EndPoint"],
-            ...ctx.profiles.map(item => {
+            ...profiles.map(item => {
                 return [chalk.whiteBright(item.name), chalk.gray(item.secretId),chalk.gray(item.endpoint || 'Not Configured')]
             })
         ], 'Profiles')

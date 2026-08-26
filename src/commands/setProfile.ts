@@ -4,7 +4,6 @@ import {RIO_CLI_DEFAULT_ADMIN_PROFILE_NAME} from "../config";
 import chalk from "chalk";
 import afterCommand from "./AfterCommand";
 import {CommandModule} from "yargs";
-import Listr from "listr";
 
 
 interface Input extends GlobalInput {
@@ -13,10 +12,6 @@ interface Input extends GlobalInput {
     "secret-key": string,
     "no-auth-dump": boolean,
     "endpoint": string
-}
-
-interface TaskContext {
-
 }
 
 module.exports = {
@@ -39,22 +34,15 @@ module.exports = {
     },
     handler: async (args) => {
 
-        const tasks = new Listr([
-            {
-                title: `[${chalk.whiteBright.bold(args["profile-name"])}] Profile Set`,
-                task: async (ctx: TaskContext) => {
-                    CliConfig.upsertAdminProfile({
-                        secretId: args["secret-id"],
-                        secretKey: args["secret-key"],
-                        profileName: args["profile-name"],
-                        noAuthDump: args["no-auth-dump"],
-                        endpoint: args["endpoint"]
-                    })
-                }
-            }
-        ])
+        CliConfig.upsertAdminProfile({
+            secretId: args["secret-id"],
+            secretKey: args["secret-key"],
+            profileName: args["profile-name"],
+            noAuthDump: args["no-auth-dump"],
+            endpoint: args["endpoint"]
+        })
+        console.log(`[${chalk.whiteBright.bold(args["profile-name"])}] ${chalk.greenBright('Profile Set ✅')}`)
 
-        await tasks.run()
         afterCommand()
     }
 } as CommandModule<Input, Input>
