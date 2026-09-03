@@ -24,7 +24,7 @@
   },
   "dependencies": {
     "@retter/sdk": "0.17.0",
-    "adm-zip": "0.5.18",
+    "adm-zip": "0.6.0",
     "axios": "1.19.0",
     "chalk": "4.1.2",
     "chokidar": "3.5.3",
