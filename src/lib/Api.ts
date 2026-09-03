@@ -1,4 +1,4 @@
-import Retter, { RetterCallResponse, RetterCloudObject, RetterCloudObjectState } from '@retter/sdk'
+import Retter, { RetterCallResponse, RetterCloudObject, RetterCloudObjectState, RetterStateError } from '@retter/sdk'
 import { RetterRootClasses, RetterRootMethods, authenticateCurrentSession, AuthenticateCurrentSessionResponse } from './Auth'
 import { IProjectDetail } from '../Interfaces/IProjectDetail'
 import { Project } from './v1/Project'
@@ -502,54 +502,90 @@ export class Api {
   async waitDeploymentV2(deploymentId: string): Promise<boolean | void> {
     const tab = '         '
     let lastMessage = ''
+
+    // Realtime stream health. When the Firestore listener dies (SDK >= 0.17.0 reports it via the error callback)
+    // we try to re-attach a few times, then fall back to fast HTTP polling so the deploy is still tracked.
+    const STALL_POLL_MS = 3000 * 60 // default stall timer cadence: every 3 minutes
+    const FALLBACK_POLL_MS = 15 * 1000 // cadence once the realtime stream is considered lost
+    const RESUBSCRIBE_MAX_ATTEMPTS = 3
+    const RESUBSCRIBE_DELAY_MS = 2000
+    let pollIntervalMs = STALL_POLL_MS
+
     try {
       const racer1 = new Promise(async (resolve, reject) => {
-        try {
-          const subscription = this.projectInstance.state?.public?.subscribe((event: any) => {
-            if (!event.deployments) return
-            if (!event.deployments[deploymentId]) return
+        const onDeploymentEvent = (event: any) => {
+          if (!event.deployments) return
+          if (!event.deployments[deploymentId]) return
 
-            const deployment = event.deployments[deploymentId]
+          const deployment = event.deployments[deploymentId]
 
-            // prevent other deployments from triggering our deployment listener
-            if (deployment.statusMessage === lastMessage) return
-            lastMessage = deployment.statusMessage
+          // prevent other deployments from triggering our deployment listener
+          if (deployment.statusMessage === lastMessage) return
+          lastMessage = deployment.statusMessage
 
-            switch (deployment.status) {
-              case 'ongoing': {
-                console.log(chalk.yellow(`\n${tab}${tab}🔸 ${deployment.statusMessage}`))
-                break
-              }
-              case 'finished': {
-                const otherDeployments = Object.values(event.deployments).filter((d: any) => d.status !== 'finished' && d.status !== 'failed') as any[]
-
-                if (otherDeployments.length > 0) {
-                  console.log(chalk.grey(`\n${tab}${tab}📌 Your deployment completed but there are ${otherDeployments.length} more deployment(s) that are still ongoing`))
-                }
-
-                console.log(chalk.greenBright(`\n${tab}🟢 Deployment FINISHED ✅`))
-                resolve(true)
-                break
-              }
-              case 'failed': {
-                console.log(chalk.redBright(`\n${tab}🔴 Deployment FAILED ❌`))
-                console.log(chalk.redBright(`\n${tab}${tab} ${deployment.statusMessage}`))
-                for (const line of deployment.error_stack || []) {
-                  console.log(chalk.redBright(`${tab}${tab} ${line}`))
-                }
-
-                // THROW MAIN THREAD
-                process.exit(1)
-              }
-              default: {
-                break
-              }
+          switch (deployment.status) {
+            case 'ongoing': {
+              console.log(chalk.yellow(`\n${tab}${tab}🔸 ${deployment.statusMessage}`))
+              break
             }
+            case 'finished': {
+              const otherDeployments = Object.values(event.deployments).filter((d: any) => d.status !== 'finished' && d.status !== 'failed') as any[]
+
+              if (otherDeployments.length > 0) {
+                console.log(chalk.grey(`\n${tab}${tab}📌 Your deployment completed but there are ${otherDeployments.length} more deployment(s) that are still ongoing`))
+              }
+
+              console.log(chalk.greenBright(`\n${tab}🟢 Deployment FINISHED ✅`))
+              resolve(true)
+              break
+            }
+            case 'failed': {
+              console.log(chalk.redBright(`\n${tab}🔴 Deployment FAILED ❌`))
+              console.log(chalk.redBright(`\n${tab}${tab} ${deployment.statusMessage}`))
+              for (const line of deployment.error_stack || []) {
+                console.log(chalk.redBright(`${tab}${tab} ${line}`))
+              }
+
+              // THROW MAIN THREAD
+              process.exit(1)
+            }
+            default: {
+              break
+            }
+          }
+        }
+
+        const subscribeToDeployment = (attempt: number) => {
+          const subscription = this.projectInstance.state?.public?.subscribe(onDeploymentEvent, (error: RetterStateError) => {
+            // Firestore closed the listener; no more realtime events will arrive on this subscription.
+            subscription?.unsubscribe()
+
+            if (attempt < RESUBSCRIBE_MAX_ATTEMPTS) {
+              console.log(
+                chalk.yellow(
+                  `\n${tab}⚠️  Realtime deployment stream interrupted (${error.code}). Reconnecting (${attempt + 1}/${RESUBSCRIBE_MAX_ATTEMPTS})...`,
+                ),
+              )
+              setTimeout(() => subscribeToDeployment(attempt + 1), RESUBSCRIBE_DELAY_MS)
+              return
+            }
+
+            pollIntervalMs = FALLBACK_POLL_MS
+            console.log(
+              chalk.yellow(
+                `\n${tab}⚠️  Realtime deployment stream lost (${error.code}). Falling back to polling every ${FALLBACK_POLL_MS / 1000}s; progress messages may be delayed.`,
+              ),
+            )
           })
 
           if (!subscription) {
             throw new Error('Deployment state subscription is unavailable')
           }
+          return subscription
+        }
+
+        try {
+          subscribeToDeployment(0)
         } catch (err) {
           console.error(chalk.redBright(`\n${tab}🔴 Subscription setup failed, we cannot monitor the deployment at the moment. ❌`))
           console.error(err)
@@ -565,13 +601,26 @@ export class Api {
         }, 1000 * 60 * 30)
       })
 
+      // Sleep in 1s slices so a switch to FALLBACK_POLL_MS takes effect without waiting out a full 3-minute nap.
+      const sleepUntilNextPoll = async () => {
+        const startedAt = Date.now()
+        while (Date.now() - startedAt < pollIntervalMs) {
+          await this.sleep(Math.min(1000, pollIntervalMs - (Date.now() - startedAt)))
+        }
+      }
+
       const racer3 = new Promise(async (resolve, reject) => {
         while (true) {
-          await this.sleep(3000 * 60) // check every 3 minutes, until racer2 is triggered since it does terminates the process
+          await sleepUntilNextPoll() // check every 3 minutes (15s after realtime loss), until racer2 is triggered since it does terminates the process
           const state = await this.getProjectState(false)
           const deployment = state?.public?.deployments?.[deploymentId]
 
           if (!deployment) continue
+
+          if (pollIntervalMs === FALLBACK_POLL_MS && deployment.status === 'ongoing' && deployment.statusMessage !== lastMessage) {
+            lastMessage = deployment.statusMessage
+            console.log(chalk.yellow(`\n${tab}${tab}🔸 ${deployment.statusMessage} (polled)`))
+          }
 
           if (deployment?.status === 'finished') {
             console.log(chalk.greenBright(`\n${tab}🟢 Deployment FINISHED ✅ (captured by stall timer)`)) // calling it stall timer in the honor of mustafa

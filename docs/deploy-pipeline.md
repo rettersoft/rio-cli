@@ -201,6 +201,28 @@ The `finished` status from **any** of the deployments in `event.deployments` is 
 
 > 📌 Your deployment completed but there are 2 more deployment(s) that are still ongoing
 
+#### Realtime stream errors (SDK ≥ 0.17.0)
+
+The subscription passes a second argument, the SDK's error callback (`RetterStateError`). Firestore closes the listener when it reports an error (`permission-denied`, `unauthenticated`, `unavailable`, …), so without this callback the CLI would sit silently until the 3-minute stall timer.
+
+```ts
+const subscribeToDeployment = (attempt: number) => {
+    const subscription = this.projectInstance.state?.public?.subscribe(onDeploymentEvent, (error: RetterStateError) => {
+        subscription?.unsubscribe()
+        if (attempt < RESUBSCRIBE_MAX_ATTEMPTS) {           // 3 attempts, 2s apart
+            console.log(`⚠️  Realtime deployment stream interrupted (${error.code}). Reconnecting (${attempt + 1}/3)...`)
+            setTimeout(() => subscribeToDeployment(attempt + 1), RESUBSCRIBE_DELAY_MS)
+            return
+        }
+        pollIntervalMs = FALLBACK_POLL_MS                    // 15s
+        console.log(`⚠️  Realtime deployment stream lost (${error.code}). Falling back to polling every 15s; progress messages may be delayed.`)
+    })
+    ...
+}
+```
+
+Sequence on a dead stream: 3 re-subscribe attempts (the SDK opens a fresh Firestore listener on each `subscribe()` after an error), then racer3 switches from a 3-minute to a 15-second cadence and also prints `ongoing` status messages it observes (`(polled)` suffix). The `lastMessage` dedupe covers the replayed last state on every re-subscribe. Details of the SDK side: [`../../retter-js-sdk/docs/realtime-state-errors.md`](../../retter-js-sdk/docs/realtime-state-errors.md).
+
 ### racer2 — 30-minute hard timeout
 
 ```ts
@@ -213,20 +235,21 @@ setTimeout(async () => {
 
 Hard ceiling. Anything beyond 30 minutes is a runaway deploy.
 
-### racer3 — stall timer (every 3 minutes, HTTP poll)
+### racer3 — stall timer (every 3 minutes, HTTP poll; 15s after realtime loss)
 
 ```ts
 while (true) {
-    await this.sleep(3000 * 60)                        // every 3 minutes
+    await sleepUntilNextPoll()                         // pollIntervalMs: 3 min, or 15s once the realtime stream is lost
     const state = await this.getProjectState(false)    // HTTP, not the realtime stream
     const deployment = state?.public?.deployments?.[deploymentId]
     if (!deployment) continue
+    if (fallback && deployment.status === 'ongoing' && deployment.statusMessage !== lastMessage) log('🔸 ... (polled)')
     if (deployment.status === 'finished') resolve(true); break
     if (deployment.status === 'failed') exit(1)
 }
 ```
 
-Safety net in case the realtime subscription drops events. Named "stall timer" in honour of Mustafa (per code comment).
+Safety net in case the realtime subscription drops events. Named "stall timer" in honour of Mustafa (per code comment). `sleepUntilNextPoll` sleeps in 1-second slices so a switch to the 15-second cadence takes effect immediately instead of after the current 3-minute nap.
 
 ## Error handling
 

@@ -185,9 +185,9 @@ Returns the `requestId` string. This is the deployment id used by everything dow
 
 The complex one. Races 3 completion signals (full detail in [`deploy-pipeline.md`](deploy-pipeline.md#stage-5-wait--stream-apiwaitdeploymentv2)):
 
-1. Realtime RxJS subscription to `Project.state.public.deployments[deploymentId]`
+1. Realtime RxJS subscription to `Project.state.public.deployments[deploymentId]` — with the SDK's error callback (`RetterStateError`, SDK ≥ 0.17.0): on listener failure it re-subscribes up to 3 times, then hands over to polling
 2. 30-minute hard timeout
-3. 3-minute polling (HTTP) for stalled deploys
+3. 3-minute polling (HTTP) for stalled deploys — drops to 15 seconds once the realtime stream is declared lost
 
 Returns `true` on `finished`, `process.exit(1)`s on `failed` or any of the timeouts.
 

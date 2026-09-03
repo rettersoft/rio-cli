@@ -199,6 +199,8 @@ if (!projectId) { error }
 
 The first to fire wins.
 
+Since `@retter/sdk@0.17.0` the live subscription also passes an **error callback**. When Firestore kills the listener (`permission-denied`, `unauthenticated`, `unavailable`), the CLI prints a ⚠️ warning, re-subscribes up to 3 times (2s apart), and if that fails drops the stall timer to a 15-second cadence so the deploy is still tracked and `ongoing` messages keep appearing (with a `(polled)` suffix). See `docs/deploy-pipeline.md` → "Realtime stream errors".
+
 ## Docs
 
 | Doc | Contents |
