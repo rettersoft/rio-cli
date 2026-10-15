@@ -31,6 +31,7 @@ async function generateHashForPath(path: string): Promise<string> {
   }
 }
 
+// adm-zip must stay 0.5.18: 0.6.x drops symlinked node_modules from the zip (see CLAUDE.md "Pinned dependencies").
 function zipFolder(dependencyPath: string, dependencyName: string): Promise<Buffer> {
   return new Promise<Buffer>((resolve, reject) => {
     const zip = new AdmZip();

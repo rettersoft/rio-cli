@@ -201,6 +201,16 @@ The first to fire wins.
 
 Since `@retter/sdk@0.17.0` the live subscription also passes an **error callback**. When Firestore kills the listener (`permission-denied`, `unauthenticated`, `unavailable`), the CLI prints a ⚠️ warning, re-subscribes up to 3 times (2s apart), and if that fails drops the stall timer to a 15-second cadence so the deploy is still tracked and `ongoing` messages keep appearing (with a `(polled)` suffix). See `docs/deploy-pipeline.md` → "Realtime stream errors".
 
+## Pinned dependencies
+
+### `adm-zip` — keep at `0.5.18`, do not bump to `0.6.x`
+
+`adm-zip@0.6.x` (GHSA-wx42-xcp7-pgr4 fix) makes `addLocalFolder` skip every symlink whose target is outside the folder being zipped. Package managers with an isolated/symlinked layout (bun, pnpm) link each dependency's npm packages from the root store, so `zipFolder` in `src/lib/v2/contents-project.ts` (and `Dependencies.zipDependency` in v1) silently ships dependencies without their `node_modules`. The deploy succeeds and the runtime fails with `Cannot find module '<pkg>'` (rio-cli 1.47.0 → a101-cos outage, `yaml` missing from `dependencies/shared`).
+
+`generateHashForPath` follows symlinks, so the hash does not change when the zip loses files — a broken deploy is not redeployed until `rio deploy --skip-diff-check`.
+
+The advisory is about leaking files outside the archive root; the CLI zips the developer's own project, so it does not apply here. Bumping `adm-zip` requires replacing `addLocalFolder` with a walk that dereferences symlinks first.
+
 ## Docs
 
 | Doc | Contents |
