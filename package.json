@@ -1,6 +1,6 @@
 {
   "name": "@retter/rio-cli",
-  "version": "1.47.1",
+  "version": "1.48.0",
   "description": "Retter.io Command Line Tool",
   "main": "./dist/index.js",
   "bin": {
@@ -13,7 +13,6 @@
   "scripts": {
     "build": "tsc -b",
     "clean": "tsc --build --clean && rm -rf dist",
-    "test": "jest",
     "patch-release": "npm version patch && npm run build && npm publish --access public",
     "minor-release": "npm version minor && npm run build && npm publish --access public",
     "major-release": "npm version major && npm run build && npm publish --access public",
@@ -23,11 +22,10 @@
     "clean-install": "npm cache clean --force && rm -rf node_modules package-lock.json && npm install"
   },
   "dependencies": {
-    "@retter/sdk": "0.17.0",
+    "@retter/sdk": "0.17.2",
     "adm-zip": "0.5.18",
-    "axios": "1.19.0",
+    "axios": "1.20.0",
     "chalk": "4.1.2",
-    "chokidar": "3.5.3",
     "fs-extra": "10.0.0",
     "ignore": "5.2.0",
     "jsonwebtoken": "9.0.2",
@@ -40,15 +38,11 @@
   },
   "devDependencies": {
     "@types/adm-zip": "0.4.34",
-    "@types/figlet": "1.5.4",
     "@types/fs-extra": "9.0.13",
-    "@types/jest": "27.4.0",
     "@types/jsonwebtoken": "9.0.2",
     "@types/lodash": "4.14.179",
     "@types/node": "12.12.6",
     "@types/prompts": "2.0.14",
-    "@types/readable-stream": "2.3.13",
-    "@types/urijs": "1.19.18",
     "@types/yargs": "17.0.7",
     "typescript": "5.1.6"
   },
