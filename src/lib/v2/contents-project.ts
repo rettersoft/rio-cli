@@ -1,4 +1,6 @@
 import path from 'path'
+import os from 'os'
+import fse from 'fs-extra'
 import fs, { stat } from 'fs'
 import { Files, ProjectContents, ProjectState } from './types'
 import { join } from 'path'
@@ -31,19 +33,21 @@ async function generateHashForPath(path: string): Promise<string> {
   }
 }
 
-// adm-zip must stay 0.5.18: 0.6.x drops symlinked node_modules from the zip (see CLAUDE.md "Pinned dependencies").
+// adm-zip >= 0.6 skips symlinks that leave the zipped folder, so bun/pnpm-linked node_modules are resolved into a temp copy first.
 function zipFolder(dependencyPath: string, dependencyName: string): Promise<Buffer> {
   return new Promise<Buffer>((resolve, reject) => {
-    const zip = new AdmZip();
-    
-    // Add all files and directories inside the given folder to the archive
-    zip.addLocalFolder(dependencyPath, `nodejs/node_modules/${dependencyName}`);
+    const dereferencedPath = fs.mkdtempSync(join(os.tmpdir(), 'rio-dependency-'));
+    try {
+      fse.copySync(dependencyPath, dereferencedPath, { dereference: true });
 
-    // Get the zip buffer
-    const zipBuffer = zip.toBuffer();
-
-    // Return the zip buffer
-    resolve(zipBuffer);
+      const zip = new AdmZip();
+      zip.addLocalFolder(dereferencedPath, `nodejs/node_modules/${dependencyName}`);
+      resolve(zip.toBuffer());
+    } catch (err) {
+      reject(err);
+    } finally {
+      fse.removeSync(dereferencedPath);
+    }
   });
 }
 

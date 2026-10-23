@@ -15,8 +15,8 @@ export class FileExtra {
         await fse.writeFile(path, content)
     }
 
-    static copySync(src: string, dest: string) {
-        fse.copySync(src, dest)
+    static copySync(src: string, dest: string, options?: fse.CopyOptionsSync) {
+        fse.copySync(src, dest, options)
     }
 
     static isClassFile(className: string, fileKey: string) {
