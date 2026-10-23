@@ -23,7 +23,7 @@ export class Repo {
         const zip = new AdmZip(response.data)
         zip.extractAllTo(dest)
         FileExtra.copySync(path.join(dest, zippedRepoName, templateName, '/'), dest)
-        fs.rmdirSync(path.join(dest, zippedRepoName), {recursive: true})
+        fs.rmSync(path.join(dest, zippedRepoName), {recursive: true})
 
 
         FileExtra.copySync(dest, process.cwd())
@@ -51,7 +51,7 @@ export class Repo {
         FileExtra.copySync(path.join(process.cwd(), 'rio-cos-templates-2'), process.cwd())
 
         // remove zip & folder
-        fs.rmdirSync(path.join(process.cwd(), 'rio-cos-templates-2'), {recursive: true})
+        fs.rmSync(path.join(process.cwd(), 'rio-cos-templates-2'), {recursive: true})
         
         const config = {
             projectId,

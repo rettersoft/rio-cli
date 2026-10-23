@@ -14,7 +14,7 @@ export class Tmp {
     }
 
     static clearUniqueTmpPath(uniquePath: string) {
-        fs.rmdirSync(uniquePath, {recursive: true})
+        fs.rmSync(uniquePath, {recursive: true})
     }
 
 }
