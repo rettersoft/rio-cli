@@ -254,8 +254,14 @@ rio set-settings            # upload
 | `RIO_CLI_STAGE` | `PROD` (default) or `TEST` — shown in `--help` banner; doesn't change behavior much |
 | `RIO_CLI_PROJECT_ID` | (Internal) The `deploy`/`save` commands set this from `--project-id` for child processes |
 
+## Build
+
+TypeScript 7 (`tsc -b`) with `module: commonjs` and no `moduleResolution` (TS 7 removed `node`/`node10`; the default resolves the same `.d.cts` types). `rootDir` must stay `./src`: `bin` points at `dist/index.js` and `config.ts` resolves `package.json` relative to `dist/`, so any change that makes output land in `dist/src/` breaks the CLI. `@types/node` is pinned to the 22.x line — don't use Node APIs newer than Node 22.
+
+The 22.x types don't flag APIs that newer Node versions removed, and users run the CLI on whatever Node they have (Node 26 throws `ERR_INVALID_ARG_VALUE` on `fs.rmdirSync(path, { recursive: true })`, which broke `rio init` up to 1.49.0 — use `fs.rmSync`). Before a release, build once against the latest `@types/node` to surface such removals.
+
 ## Versioning
 
-`package.json#version` ⇄ `src/config.ts:RIO_CLI_VERSION` must be kept in sync — the constant is sent as `x-cli-version` on every backend call (and is `TODO`'d to be replaced with a package.json read).
+`src/config.ts:RIO_CLI_VERSION` is read at runtime from `package.json` (`dist/config.js` → `../package.json`), so bumping `package.json#version` is enough. It is sent as `x-cli-version` on every backend call.
 
 Released to npm via `npm run patch-release` / `minor-release` / `major-release` (these run `npm version`, `npm run build`, and `npm publish --access public`).

@@ -4,7 +4,6 @@
     "module": "commonjs",
     "lib": ["es6", "es2020", "dom"],
     "esModuleInterop": true,
-    "moduleResolution": "node",
     "sourceMap": false,
     "strict": true,
     "noImplicitAny": true,
@@ -13,17 +12,10 @@
     "alwaysStrict": true,
     "resolveJsonModule": true,
     "removeComments": true,
-    "typeRoots": [
-      "./node_modules/@types"
-    ],
+    "types": ["node"],
     "outDir": "./dist",
-    "rootDirs": [
-      "src"
-    ]
+    "rootDir": "./src"
   },
   "include": ["src"],
-  "exclude": ["node_modules"],
-  "lib": [
-    "es2020"
-  ]
+  "exclude": ["node_modules"]
 }

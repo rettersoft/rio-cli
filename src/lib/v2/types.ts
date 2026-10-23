@@ -152,7 +152,7 @@ export const cloudObjectStateStreamTarget = z.enum(['Elasticsearch', 'Firestore'
 export const stateStreamTarget = z.object({
   id: z.string().regex(new RegExp('[a-zA-Z0-9_]', 'g')).min(1),
   type: cloudObjectStateStreamTarget,
-  credentials: z.record(z.any()).default({}),
+  credentials: z.record(z.string(), z.any()).default({}),
   pfactor: z.number().min(0).optional(),
   retryConfig: RetryConfig.default({ count: 3, delay: 50, rate: 1.5 }),
   transformationTemplate: z.string().optional(),
