@@ -146,8 +146,8 @@ Each subdirectory is a "dependency" — RIO's term for what AWS calls a Lambda L
 
 Build process:
 
-1. Each `dependencies/<name>/` directory is zipped via `adm-zip` with the layout `nodejs/node_modules/<name>/*` inside the zip.
-2. A sha256 hash is computed over the whole tree.
+1. Each `dependencies/<name>/` directory is copied with symlinks dereferenced and zipped via `adm-zip` with the layout `nodejs/node_modules/<name>/*` inside the zip. Left out of the copy: `node_modules/<name>` links to an uploaded sibling dependency `<name>` (resolved through `NODE_PATH` instead, unless the root `package.json` `dependencies` also has `<name>` with a spec other than `link:`; a self link `<name>/node_modules/<name>` is always left out), and `__tests__` folders plus `*.test.ts` / `*.test.js` files outside `node_modules`.
+2. A sha256 hash is computed over the same tree the zip holds.
 3. If `tsconfig.json` is present at the dep root → `isTS = true` is set (the deployer will run `@swc/core` on the dep's `.ts` files during image build).
 4. If `.ignore` is present → the dep is entirely skipped (won't be uploaded or referenced).
 
@@ -186,6 +186,7 @@ const excludedFiles   = ['.DS_Store', 'package-lock.json', 'yarn.lock']
 Applies to:
 - `classes/<name>/**`
 - `models/**`
+- Not to `dependencies/<name>/**` — see the dependency build process above.
 - (Not applied to top-level files — `package.json` and `pnpm-workspace.yaml` are explicitly named in `PROJECT_FILES`)
 
 There is **no** `.rioignore` support in the v2 path. The constant `RIO_CLI_IGNORE_FILE = '.rioignore'` exists in `src/config.ts` but is only read by the v1 code path. Add custom excludes by editing `excludedFolders` / `excludedFiles` in `utils.ts` (or by structuring your code under one of the existing exclude names like `__tests__`).

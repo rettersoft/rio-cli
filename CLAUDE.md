@@ -106,7 +106,7 @@ dependencies/   ↑  (each zipped, hashed, uploaded via Project.upsertDependency
 package.json    ↑
 ```
 
-Files excluded everywhere (`lib/v2/utils.ts:excludedFolders/Files`): `__tests__`, `node_modules`, `scripts`, `.turbo`, `.nyc_output`, `.DS_Store`, `package-lock.json`, `yarn.lock`.
+Files excluded from class and model uploads (`lib/v2/utils.ts:excludedFolders/Files`): `__tests__`, `node_modules`, `scripts`, `.turbo`, `.nyc_output`, `.DS_Store`, `package-lock.json`, `yarn.lock`. Dependency zips have their own rule — see "Dependency zips must dereference symlinks".
 
 The CLI does **not** honour `.rioignore` in the v2 path — that's a v1 artifact (`RIO_CLI_IGNORE_FILE` constant exists but is unused by v2).
 
@@ -207,7 +207,11 @@ Since `@retter/sdk@0.17.0` the live subscription also passes an **error callback
 
 Both zip paths therefore copy the dependency with `{ dereference: true }` first and zip the copy — `zipFolder` in `src/lib/v2/contents-project.ts` and `Dependencies.zipDependency` in v1. Never call `addLocalFolder` on a folder that may contain symlinks.
 
-`generateHashForPath` follows symlinks, so the hash does not change when the zip loses files — a broken deploy is not redeployed until `rio deploy --skip-diff-check`.
+The v2 copy skips one kind of link: `node_modules/<name>` whose real path is the uploaded sibling `dependencies/<name>` (a bun/pnpm `workspace:*` link). The runtime resolves `<name>` to that sibling through `NODE_PATH=/opt/user-extension/user-src/dependencies`, so dereferencing it only shipped a second copy of the module — each copy has its own classes (`instanceof` fails across copies) and its own memory (a101-cos: 13 314 zip entries, 3 698 duplicate modules, +110 MB heap). Links to npm packages, scoped or renamed links, links to `.ignore`d dependencies and links outside `node_modules` are still dereferenced. So is a link whose name is also a root `package.json` dependency: the image installs those into `user-src/node_modules`, which Node searches before `NODE_PATH`, so without the copy the npm package would shadow the sibling. A root `link:` dependency is the exception — pnpm installs it as a symlink to the sibling itself (it installs fine before `dependencies/` is copied into the image), so it does not shadow and the link is still skipped. `file:` and `workspace:` root dependencies fail that `pnpm install` step, since `dependencies/` is not in the image yet. A self link (`<dep>/node_modules/<dep>`) is always skipped, root `package.json` or not: copying it recurses until `ELOOP`.
+
+Tests are left out of dependency zips the same way classes leave them out: `__tests__` folders and `*.test.ts` / `*.test.js` files, except inside `node_modules`, where npm packages ship as installed.
+
+`generateHashForPath` follows symlinks, so the hash does not change when the zip loses files — a broken deploy is not redeployed until `rio deploy --skip-diff-check`. It skips the same sibling links and tests as the zip, so the hash changes exactly when the zip content does — editing only a test no longer re-uploads the dependency.
 
 ## Docs
 
