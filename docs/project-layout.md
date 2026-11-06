@@ -138,6 +138,8 @@ models/
 
 The CLI reads recursively; nested folders work but you'll get the full relative path as the model name. By convention people keep them flat.
 
+A model named `<ClassId><Method>RouteInput` (first letters upper-cased, e.g. `IstockUpdatePriceRouteInput`) that no template references is picked up by the console as the method's form when the method declares no `inputModel`; Rio never validates against it. Projects whose handlers validate in code (a Hono factory with `zValidator`) export their body schemas under this name to keep the console form without turning on Rio's model validation.
+
 ## `dependencies/` — custom Lambda Layers
 
 Each subdirectory is a "dependency" — RIO's term for what AWS calls a Lambda Layer (or a private npm package, depending on how you use it).
